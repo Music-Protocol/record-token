@@ -2,5 +2,4 @@ node_modules
 cache
 .env
 
-artifacts/*
-!artifacts/contracts
+artifacts

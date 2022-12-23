@@ -8,8 +8,6 @@ describe('JTP', () => {
         Token = await ethers.getContractFactory('JTP');
         token = await Token.deploy();
         [owner, addr1, addr2] = await ethers.getSigners();
-        console.log(typeof owner);
-
     });
 
     describe('Deployment', () => {

@@ -4,6 +4,15 @@
 ```
 yarn install
 ```
+### to compile
+```
+yarn compile
+```
+### to run test on hardhat
+```
+yarn test 
+```
+
 ### deploy on ganache to be tested on Remix
 - install [ganache](https://trufflesuite.com/ganache/)
 - create [.env](./.env) copying from [.example.env](./.example.env)
@@ -11,4 +20,8 @@ yarn install
 - run  
     ```
     npx hardhat run ./scripts/deploy.js --network localganache
+    ``` 
+    or
     ```
+    yarn deploy:ganache
+    ``` 

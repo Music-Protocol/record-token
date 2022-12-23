@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "deploy": "echo hi"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy:ganache": "npx hardhat run ./scripts/deploy.js --network localganache"
   },
   "repository": {
     "type": "git",
