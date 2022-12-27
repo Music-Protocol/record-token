@@ -12,7 +12,12 @@ async function main() {
   const jtp = await JTP.deploy();
   await jtp.deployed();
   // do jtp.mint as the pp whitepaper  
-  console.log( `deployed to ${jtp.address}` );
+  console.log( `deployed JTP to ${jtp.address}` );
+
+  const JTPManagement = await hre.ethers.getContractFactory("JTP");
+  const jtpManagement = await JTPManagement.deploy();
+  await jtpManagement.deployed();
+  console.log( `deployed JTPManagement to ${jtpManagement.address}` );
 
 }
 
