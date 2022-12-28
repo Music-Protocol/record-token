@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
 interface IJTP{
     function mint(address to, uint256 amount) external;
     function burn(uint256 amount) external;
+    function burnFrom(address account, uint256 amount) external;
 }
 
 contract JTPManagement is AccessControl {
@@ -26,5 +27,15 @@ contract JTPManagement is AccessControl {
         _grantRole(BURNER_ROLE, msg.sender);
     }
 
-//require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
+        jtp.mint(to, amount);
+    }
+
+    function burn(uint256 amount) external onlyRole(MINTER_ROLE) {
+        jtp.burn(amount);
+    }
+
+    function burnFrom(address account, uint256 amount) external onlyRole(MINTER_ROLE) {
+        jtp.burnFrom(account, amount);
+    }
 }
