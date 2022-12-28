@@ -4,17 +4,17 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const hre = require("hardhat");
+import { ethers } from "hardhat";
 
 async function main() {
 
-  const JTP = await hre.ethers.getContractFactory("JTP");
+  const JTP = await ethers.getContractFactory("JTP");
   const jtp = await JTP.deploy();
   await jtp.deployed();
   // do jtp.mint as the pp whitepaper  
   console.log(`deployed JTP to ${jtp.address}`);
 
-  const JTPManagement = await hre.ethers.getContractFactory("JTPManagement");
+  const JTPManagement = await ethers.getContractFactory("JTPManagement");
   const jtpManagement = await JTPManagement.deploy(jtp.address);
   await jtpManagement.deployed();
   await jtp.transferOwnership(jtpManagement.address);

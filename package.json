@@ -5,9 +5,9 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test ",
-    "test:jtp": "npx hardhat test ./test/JTP.test.js",
-    "test:management": "npx hardhat test ./test/JTPmanagement.test.js",
-    "deploy:ganache": "npx hardhat run ./scripts/deploy.js --network localganache"
+    "test:jtp": "npx hardhat test ./test/JTP.test.ts",
+    "test:management": "npx hardhat test ./test/JTPmanagement.test.ts",
+    "deploy:ganache": "npx hardhat run ./scripts/deploy.ts --network localganache"
   },
   "repository": {
     "type": "git",
@@ -28,8 +28,8 @@
     "@nomiclabs/hardhat-etherscan": "^3.0.0",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@openzeppelin/contracts": "^4.8.0",
-    "@typechain/ethers-v5": "^10.1.0",
-    "@typechain/hardhat": "^6.1.2",
+    "@typechain/ethers-v5": "^10.2.0",
+    "@typechain/hardhat": "^6.1.5",
     "@types/mocha": "^9.1.0",
     "chai": "^4.3.7",
     "dotenv": "^16.0.3",
@@ -38,7 +38,7 @@
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.1",
     "ts-node": ">=8.0.0",
-    "typechain": "^8.1.0",
+    "typechain": "^8.1.1",
     "typescript": ">=4.5.0"
   }
 }

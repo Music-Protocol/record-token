@@ -1,8 +1,9 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomiclabs/hardhat-waffle");
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-waffle";
 require("dotenv").config();
 
-module.exports = {
+const config: HardhatUserConfig = {
   solidity: "0.8.2",
   defaultNetwork: "hardhat",
   networks: {
@@ -14,3 +15,5 @@ module.exports = {
     }
   }
 };
+
+export default config;

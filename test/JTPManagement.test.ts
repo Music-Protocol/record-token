@@ -1,16 +1,26 @@
-const { expect } = require('chai');
-const { ethers } = hre;
+import { expect } from 'chai';
+import { Bytes } from 'ethers';
+import { ethers } from 'hardhat';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { Contract } from 'ethers';
 
-describe('JTPManagement', () => {
-    let jtpManagement, jtp, adminRole, minterRole, burnerRole, owner, addr1, addr2, fakeDAO;
+describe('JTPManagement', function () {
+    let jtp: Contract;
+    let jtpManagement: Contract;
+    let owner: SignerWithAddress;
+    let addr1: SignerWithAddress;
+    let addr2: SignerWithAddress;
+    let fakeDAO: SignerWithAddress;
+    let adminRole: Bytes;
+    let minterRole: Bytes;
+    let burnerRole: Bytes;
 
-
-    before(async () => { //same as deploy
+    before(async function () { //same as deploy
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy();
         await jtp.deployed();
 
-        const cJTPManagement = await hre.ethers.getContractFactory("JTPManagement");
+        const cJTPManagement = await ethers.getContractFactory("JTPManagement");
         jtpManagement = await cJTPManagement.deploy(jtp.address);
         await jtpManagement.deployed();
         await jtp.transferOwnership(jtpManagement.address);
@@ -21,63 +31,63 @@ describe('JTPManagement', () => {
         [owner, addr1, addr2, fakeDAO] = await ethers.getSigners();
     });
 
-    describe('Deployment', () => {
-        it('The owner of JTP should be the JTPManagement contract', async () => {
+    describe('Deployment', function () {
+        it('The owner of JTP should be the JTPManagement contract', async function () {
             expect(await jtp.owner()).to.equal(jtpManagement.address);
         });
 
-        it('The deployer of the contract should have all the roles', async () => {
+        it('The deployer of the contract should have all the roles', async function () {
             expect(await jtpManagement.hasRole(adminRole, owner.address)).to.be.true;
             expect(await jtpManagement.hasRole(minterRole, owner.address)).to.be.true;
             expect(await jtpManagement.hasRole(burnerRole, owner.address)).to.be.true;
         });
-        it('Another user should not have all the roles', async () => {
+        it('Another user should not have all the roles', async function () {
             expect(await jtpManagement.hasRole(adminRole, addr1.address)).to.be.false;
             expect(await jtpManagement.hasRole(minterRole, addr1.address)).to.be.false;
             expect(await jtpManagement.hasRole(burnerRole, addr1.address)).to.be.false;
         });
     });
 
-    describe('JTP', () => {
-        it('The deployer of JTP should not be able to call a onlyOwner method', async () => {
+    describe('JTP', function () {
+        it('The deployer of JTP should not be able to call a onlyOwner method', async function () {
             await expect(jtp.connect(owner).mint(addr1.address, 10)).to.revertedWith('Ownable: caller is not the owner');
         });
 
-        describe('Minting', () => {
-            it('An address with the MINTER_ROLE should be able to mint JTP', async () => {
+        describe('Minting', function () {
+            it('An address with the MINTER_ROLE should be able to mint JTP', async function () {
                 await jtpManagement.connect(owner).mint(addr1.address, 10);
                 expect(await jtp.balanceOf(addr1.address)).to.equal(10);
             });
 
-            it('An address without the MINTER_ROLE should not be able to mint JTP', async () => {
+            it('An address without the MINTER_ROLE should not be able to mint JTP', async function () {
                 await expect(jtpManagement.connect(addr1).mint(addr1.address, 10))
                     .to.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${minterRole}`);
             });
         });
 
-        describe('Burning', () => {
-            before(async () => {
+        describe('Burning', function () {
+            before(async function () {
                 await jtpManagement.connect(owner).mint(jtpManagement.address, 10);
             });
 
-            it('An address without the BURNERN_ROLE should not be able to burn JTP', async () => {
+            it('An address without the BURNERN_ROLE should not be able to burn JTP', async function () {
                 await expect(jtpManagement.connect(addr1).burn(10))
                     .to.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${burnerRole}`);
             });
 
-            it('An address with the BURNERN_ROLE should be able to burn JTP', async () => {
+            it('An address with the BURNERN_ROLE should be able to burn JTP', async function () {
                 await jtpManagement.connect(owner).burn(10);
                 expect(await jtp.balanceOf(owner.address)).to.equal(0);
             });
         });
 
-        describe('Transfer Ownership', () => {
-            it('An address without the DEFAULT_ADMIN_ROLE should not be able to transfer the ownership of JTP contract', async () => {
+        describe('Transfer Ownership', function () {
+            it('An address without the DEFAULT_ADMIN_ROLE should not be able to transfer the ownership of JTP contract', async function () {
                 await expect(jtpManagement.connect(addr1).transferJTP(fakeDAO.address))
                     .to.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${adminRole}`);
             });
 
-            it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of JTP contract', async () => {
+            it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of JTP contract', async function () {
                 await jtpManagement.connect(owner).transferJTP(fakeDAO.address);
                 expect(await jtp.owner()).to.equal(fakeDAO.address);
             });

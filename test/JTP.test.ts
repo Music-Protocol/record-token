@@ -1,8 +1,13 @@
-const { expect } = require('chai');
-const { ethers } = hre;
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
+import { Contract } from 'ethers';
+import { ethers } from 'hardhat';
 
 describe('JTP', () => {
-    let jtp, owner, addr1, addr2;
+    let jtp: Contract;
+    let owner: SignerWithAddress;
+    let addr1: SignerWithAddress;
+    let addr2: SignerWithAddress;
 
     before(async () => {
         const cJTP = await ethers.getContractFactory('JTP');
