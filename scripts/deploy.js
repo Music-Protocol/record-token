@@ -15,8 +15,9 @@ async function main() {
   console.log( `deployed JTP to ${jtp.address}` );
 
   const JTPManagement = await hre.ethers.getContractFactory("JTP");
-  const jtpManagement = await JTPManagement.deploy();
+  const jtpManagement = await JTPManagement.deploy(jtp.address);
   await jtpManagement.deployed();
+  await jtp.transferOwnership(jtpManagement.address);
   console.log( `deployed JTPManagement to ${jtpManagement.address}` );
 
 }

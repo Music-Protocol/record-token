@@ -10,6 +10,7 @@ interface IJTP{
     function mint(address to, uint256 amount) external;
     function burn(uint256 amount) external;
     function burnFrom(address account, uint256 amount) external;
+    function transferOwnership(address to) external;
 }
 
 contract JTPManagement is AccessControl {
@@ -31,11 +32,16 @@ contract JTPManagement is AccessControl {
         jtp.mint(to, amount);
     }
 
+    // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(JTPManament)
     function burn(uint256 amount) external onlyRole(BURNER_ROLE) {
         jtp.burn(amount);
     }
 
     function burnFrom(address account, uint256 amount) external onlyRole(BURNER_ROLE) {
         jtp.burnFrom(account, amount);
+    }
+
+    function transferJTP(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        jtp.transferOwnership(to);
     }
 }

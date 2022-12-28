@@ -25,7 +25,7 @@ describe('JTP', () => {
         it('Only the owner should be able to call the mint', async () => {
             await jtp.connect(owner).mint(owner.address, 1);
             expect(await jtp.totalSupply()).to.equal(await jtp.balanceOf(owner.address));
-            
+
             await expect(jtp.connect(addr1).mint(addr1.address, 1)).to.be.revertedWith('Ownable: caller is not the owner');
         });
 
@@ -39,9 +39,9 @@ describe('JTP', () => {
         it('Only the owner should be able to call the burnFrom', async () => {
             await expect(jtp.connect(addr1).burn(1)).to.be.revertedWith('Ownable: caller is not the owner');
         });
-        
+
     });
-    
+
     describe('Behaviour', () => {
         it('TotalSupply should increase as we mint', async () => {
             await jtp.connect(owner).mint(addr1.address, 100);
