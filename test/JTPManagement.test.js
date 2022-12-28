@@ -66,12 +66,12 @@ describe('JTPManagement', () => {
             });
 
             it('An address with the BURNERN_ROLE should be able to burn JTP', async () => {
-                await jtpManagement.connect(owner).burn(10); 
+                await jtpManagement.connect(owner).burn(10);
                 expect(await jtp.balanceOf(owner.address)).to.equal(0);
             });
         });
 
-        describe('Transfer Ownership', ()=>{
+        describe('Transfer Ownership', () => {
             it('An address without the DEFAULT_ADMIN_ROLE should not be able to transfer the ownership of JTP contract', async () => {
                 await expect(jtpManagement.connect(addr1).transferJTP(fakeDAO.address))
                     .to.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${adminRole}`);
@@ -81,6 +81,11 @@ describe('JTPManagement', () => {
                 await jtpManagement.connect(owner).transferJTP(fakeDAO.address);
                 expect(await jtp.owner()).to.equal(fakeDAO.address);
             });
+
+            // This test work but is redundant, already tested on JTP.js -> Access Control 
+            // it('An address with the correct role should not be able to perfom ', async()=>{ 
+            //     await expect(jtpManagement.connect(owner).mint(jtpManagement.address, 10)).to.revertedWith(`Ownable: caller is not the owner`);
+            // });
         });
     });
 });

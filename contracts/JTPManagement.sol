@@ -3,13 +3,17 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
+
 //import interface of JTP(erc20) to call mint and burn
 
-//the interfaces of JTP that we need to call on 
-interface IJTP{
+//the interfaces of JTP that we need to call on
+interface IJTP {
     function mint(address to, uint256 amount) external;
+
     function burn(uint256 amount) external;
+
     function burnFrom(address account, uint256 amount) external;
+
     function transferOwnership(address to) external;
 }
 
@@ -37,7 +41,10 @@ contract JTPManagement is AccessControl {
         jtp.burn(amount);
     }
 
-    function burnFrom(address account, uint256 amount) external onlyRole(BURNER_ROLE) {
+    function burnFrom(
+        address account,
+        uint256 amount
+    ) external onlyRole(BURNER_ROLE) {
         jtp.burnFrom(account, amount);
     }
 
