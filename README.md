@@ -4,24 +4,24 @@
 ```
 yarn install
 ```
-### to compile
+### to compile and generate types necessary for testing
 ```
 yarn compile
 ```
-### to run test on hardhat
+### to run all test on hardhat
 ```
 yarn test 
 ```
+### to run a single test on hardhat
+```
+yarn test ./test/<filename>.test.ts
+```
 
-### deploy on ganache to be tested on Remix
+### to deploy on ganache to be tested on Remix
 - install [ganache](https://trufflesuite.com/ganache/)
 - create [.env](./.env) copying from [.example.env](./.example.env)
     - insert the pk of an address and the url of ganache rpc server 
 - run  
     ```
-    npx hardhat run ./scripts/deploy.js --network localganache
-    ``` 
-    or
-    ```
     yarn deploy:ganache
-    ``` 
+    ```
