@@ -5,13 +5,14 @@ import { JTP } from '../typechain-types/index';
 
 describe('JTP', () => {
     let jtp: JTP;
-    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, fakeStaking: SignerWithAddress;
 
     before(async () => {
+        [owner, addr1, fakeStaking] = await ethers.getSigners();
+        
         const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy() as JTP;
+        jtp = await cJTP.deploy(fakeStaking.address) as JTP;
         await jtp.deployed();
-        [owner, addr1, addr2] = await ethers.getSigners();
     });
 
     describe('Deployment', () => {

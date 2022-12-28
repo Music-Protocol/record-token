@@ -7,9 +7,13 @@
 import { ethers } from "hardhat";
 
 async function main() {
+  const FTAS = await ethers.getContractFactory("FanToArtistStaking");
+  const FanToArtistStaking = await FTAS.deploy();
+  await FanToArtistStaking.deployed();
+  console.log(`deployed FanToArtistStaking to ${FanToArtistStaking.address}`);
 
   const JTP = await ethers.getContractFactory("JTP");
-  const jtp = await JTP.deploy();
+  const jtp = await JTP.deploy(FanToArtistStaking.address);
   await jtp.deployed();
   // do jtp.mint as the pp whitepaper  
   console.log(`deployed JTP to ${jtp.address}`);
@@ -18,6 +22,7 @@ async function main() {
   const jtpManagement = await JTPManagement.deploy(jtp.address);
   await jtpManagement.deployed();
   await jtp.transferOwnership(jtpManagement.address);
+  await FanToArtistStaking.transferOwnership(jtpManagement.address);
   console.log(`deployed JTPManagement to ${jtpManagement.address}`);
 
 }

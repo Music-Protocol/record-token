@@ -1,18 +1,20 @@
 import { expect } from 'chai';
 import { BytesLike } from 'ethers';
-import { ethers } from 'hardhat';
+import { ethers, waffle } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { JTP, JTPManagement } from '../typechain-types/index';
 
 describe('JTPManagement', function () {
     let jtp: JTP;
     let jtpManagement: JTPManagement;
-    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeDAO: SignerWithAddress;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike;
 
     before(async function () { //same as deploy
+        [owner, addr1, fakeStaking, fakeDAO] = await ethers.getSigners();
+
         const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy();
+        jtp = await cJTP.deploy(fakeStaking.address);
         await jtp.deployed();
 
         const cJTPManagement = await ethers.getContractFactory("JTPManagement");
@@ -23,7 +25,6 @@ describe('JTPManagement', function () {
         adminRole = await jtpManagement.DEFAULT_ADMIN_ROLE();
         minterRole = await jtpManagement.MINTER_ROLE();
         burnerRole = await jtpManagement.BURNER_ROLE();
-        [owner, addr1, addr2, fakeDAO] = await ethers.getSigners();
     });
 
     describe('Deployment', function () {

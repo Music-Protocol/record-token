@@ -7,7 +7,20 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
 contract JTP is ERC20, Ownable, Pausable {
-    constructor() ERC20("JoinThePressure", "JTP") {}
+    address private _FanToArtistStaking;
+
+    //for the function callable only by FanToArtistStaking.sol
+    modifier onlyStaking() {
+        require(
+            _FanToArtistStaking == _msgSender(),
+            "onlyStaking: caller is not the FanToArtistStaking contract"
+        );
+        _;
+    }
+
+    constructor(address _Staking) ERC20("JoinThePressure", "JTP") {
+        _FanToArtistStaking = _Staking;
+    }
 
     function pause() external onlyOwner {
         _pause();
@@ -36,5 +49,14 @@ contract JTP is ERC20, Ownable, Pausable {
     function burnFrom(address account, uint256 amount) external onlyOwner {
         _spendAllowance(account, _msgSender(), amount);
         _burn(account, amount);
+    }
+
+    //Safe since it can be called only by FanToArtistStaking, could add a mapping(address => amount) to check if someone is unlocking more than what he previously locked
+    function lock(address from, uint256 amount) external onlyStaking {
+        transferFrom(from, address(this), amount);
+    }
+
+    function unlock(address from, uint256 amount) external onlyStaking {
+        transferFrom(address(this), from, amount);
     }
 }
