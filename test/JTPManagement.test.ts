@@ -1,19 +1,14 @@
 import { expect } from 'chai';
-import { Bytes } from 'ethers';
+import { BytesLike } from 'ethers';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Contract } from 'ethers';
+import { JTP, JTPManagement } from '../typechain-types/index';
 
 describe('JTPManagement', function () {
-    let jtp: Contract;
-    let jtpManagement: Contract;
-    let owner: SignerWithAddress;
-    let addr1: SignerWithAddress;
-    let addr2: SignerWithAddress;
-    let fakeDAO: SignerWithAddress;
-    let adminRole: Bytes;
-    let minterRole: Bytes;
-    let burnerRole: Bytes;
+    let jtp: JTP;
+    let jtpManagement: JTPManagement;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeDAO: SignerWithAddress;
+    let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike;
 
     before(async function () { //same as deploy
         const cJTP = await ethers.getContractFactory('JTP');

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "compile": "npx hardhat compile",
+    "compile": "npx hardhat clean && npx hardhat compile",
     "test": "npx hardhat test ",
     "test:jtp": "npx hardhat test ./test/JTP.test.ts",
     "test:management": "npx hardhat test ./test/JTPmanagement.test.ts",

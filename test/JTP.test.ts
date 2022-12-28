@@ -1,17 +1,15 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
+import { JTP } from '../typechain-types/index';
 
 describe('JTP', () => {
-    let jtp: Contract;
-    let owner: SignerWithAddress;
-    let addr1: SignerWithAddress;
-    let addr2: SignerWithAddress;
+    let jtp: JTP;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress;
 
     before(async () => {
         const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy();
+        jtp = await cJTP.deploy() as JTP;
         await jtp.deployed();
         [owner, addr1, addr2] = await ethers.getSigners();
     });
