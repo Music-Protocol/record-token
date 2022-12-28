@@ -10,11 +10,11 @@ contract JTP is ERC20, Ownable, Pausable {
 
     constructor() ERC20("JoinThePressure", "JTP") {}
 
-    function pause() public onlyOwner {
+    function pause() external onlyOwner {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    function unpause() external onlyOwner {
         _unpause();
     }
 
@@ -26,15 +26,15 @@ contract JTP is ERC20, Ownable, Pausable {
         super._beforeTokenTransfer(from, to, amount);
     }
 
-     function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 
-    function burn(uint256 amount) public onlyOwner {
+    function burn(uint256 amount) external onlyOwner {
         _burn(_msgSender(), amount);
     }
 
-    function burnFrom(address account, uint256 amount) public onlyOwner {
+    function burnFrom(address account, uint256 amount) external onlyOwner {
         _spendAllowance(account, _msgSender(), amount);
         _burn(account, amount);
     }
