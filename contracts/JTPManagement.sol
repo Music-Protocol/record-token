@@ -31,11 +31,11 @@ contract JTPManagement is AccessControl {
         jtp.mint(to, amount);
     }
 
-    function burn(uint256 amount) external onlyRole(MINTER_ROLE) {
+    function burn(uint256 amount) external onlyRole(BURNER_ROLE) {
         jtp.burn(amount);
     }
 
-    function burnFrom(address account, uint256 amount) external onlyRole(MINTER_ROLE) {
+    function burnFrom(address account, uint256 amount) external onlyRole(BURNER_ROLE) {
         jtp.burnFrom(account, amount);
     }
 }
