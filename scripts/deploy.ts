@@ -24,7 +24,6 @@ async function main() {
   await jtp.transferOwnership(jtpManagement.address);
   await FanToArtistStaking.transferOwnership(jtpManagement.address);
   console.log(`deployed JTPManagement to ${jtpManagement.address}`);
-
 }
 
 // We recommend this pattern to be able to use async/await everywhere

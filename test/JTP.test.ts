@@ -5,10 +5,10 @@ import { JTP } from '../typechain-types/index';
 
 describe('JTP', () => {
     let jtp: JTP;
-    let owner: SignerWithAddress, addr1: SignerWithAddress, fakeStaking: SignerWithAddress;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
 
     before(async () => {
-        [owner, addr1, fakeStaking] = await ethers.getSigners();
+        [owner, addr1, fakeStaking, fakeDAO] = await ethers.getSigners();
         
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fakeStaking.address) as JTP;
@@ -62,10 +62,29 @@ describe('JTP', () => {
     });
 
     describe('Event emitting', () => {
-        it('TotalSupply should increase as we mint', async () => {
-            await jtp.connect(owner).mint(addr1.address, 100);
-
-            expect(await jtp.totalSupply()).to.equal(await jtp.balanceOf(addr1.address));
+        it('The minting should emit an event', async () => {
+            await expect(jtp.connect(owner).mint(addr1.address, 100))
+                .to.emit(jtp, "Transfer")
+                .withArgs('0x0000000000000000000000000000000000000000', addr1.address, 100);
         });
+
+        it('The token transfer should emit an event', async () => {
+            await expect(jtp.connect(addr1).transfer(owner.address, 100))
+                .to.emit(jtp, "Transfer")
+                .withArgs(addr1.address, owner.address, 100);
+        });
+        
+        it('The burn should emit an event', async () => {
+            await expect(jtp.connect(owner).burn(100))
+                .to.emit(jtp, "Transfer")
+                .withArgs(owner.address, '0x0000000000000000000000000000000000000000', 100);
+        });
+
+        it('The transfer of ownership should emit an event', async () => {
+            await expect(jtp.transferOwnership(fakeDAO.address))
+                .to.emit(jtp, "OwnershipTransferred")
+                .withArgs(owner.address, fakeDAO.address);
+        });
+
     });
 });
