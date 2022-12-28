@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { ethers } = hre;
 
 describe('JTPManagement', () => {
     let jtpManagement, jtp, adminRole, minterRole, burnerRole, owner, addr1, addr2, fakeDAO;

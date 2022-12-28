@@ -14,7 +14,7 @@ async function main() {
   // do jtp.mint as the pp whitepaper  
   console.log(`deployed JTP to ${jtp.address}`);
 
-  const JTPManagement = await hre.ethers.getContractFactory("JTP");
+  const JTPManagement = await hre.ethers.getContractFactory("JTPManagement");
   const jtpManagement = await JTPManagement.deploy(jtp.address);
   await jtpManagement.deployed();
   await jtp.transferOwnership(jtpManagement.address);

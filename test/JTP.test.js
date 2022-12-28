@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { ethers } = hre;
 
 describe('JTP', () => {
     let jtp, owner, addr1, addr2;
@@ -54,6 +54,14 @@ describe('JTP', () => {
             await jtp.connect(owner).burnFrom(addr1.address, 100);
 
             expect(await jtp.totalSupply()).to.equal(await jtp.balanceOf(addr1.address)).to.equal(0);
+        });
+    });
+
+    describe('Event emitting', () => {
+        it('TotalSupply should increase as we mint', async () => {
+            await jtp.connect(owner).mint(addr1.address, 100);
+
+            expect(await jtp.totalSupply()).to.equal(await jtp.balanceOf(addr1.address));
         });
     });
 });
