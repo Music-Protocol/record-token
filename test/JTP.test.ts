@@ -9,7 +9,7 @@ describe('JTP', () => {
 
     before(async () => {
         [owner, addr1, fakeStaking, fakeDAO] = await ethers.getSigners();
-        
+
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fakeStaking.address) as JTP;
         await jtp.deployed();
@@ -61,6 +61,26 @@ describe('JTP', () => {
         });
     });
 
+    describe('Lock & Unlock', () => {
+        before(async () => {
+            await jtp.mint(addr1.address, 100);
+        });
+
+        it('User should be able to lock', async () => {
+            await jtp.connect(fakeStaking).lock(addr1.address, 100);
+
+            expect(await jtp.balanceOf(addr1.address)).to.equal(0);
+            expect(await jtp.balanceOf(fakeStaking.address)).to.equal(100);
+        });
+
+        it('User should be able to unlock', async () => {
+            await jtp.connect(fakeStaking).unlock(addr1.address, 100);
+
+            expect(await jtp.balanceOf(addr1.address)).to.equal(100);
+            expect(await jtp.balanceOf(fakeStaking.address)).to.equal(0);
+        });
+    });
+
     describe('Event emitting', () => {
         it('The minting should emit an event', async () => {
             await expect(jtp.connect(owner).mint(addr1.address, 100))
@@ -73,7 +93,7 @@ describe('JTP', () => {
                 .to.emit(jtp, "Transfer")
                 .withArgs(addr1.address, owner.address, 100);
         });
-        
+
         it('The burn should emit an event', async () => {
             await expect(jtp.connect(owner).burn(100))
                 .to.emit(jtp, "Transfer")
