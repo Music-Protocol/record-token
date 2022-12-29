@@ -30,19 +30,23 @@ describe('JTP', () => {
             await jtp.connect(owner).mint(owner.address, 1);
             expect(await jtp.totalSupply()).to.equal(await jtp.balanceOf(owner.address));
 
-            await expect(jtp.connect(addr1).mint(addr1.address, 1)).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(jtp.connect(addr1).mint(addr1.address, 1))
+                .to.be.revertedWith('Ownable: caller is not the owner');
         });
 
         it('Only the owner should be able to call the burn', async () => {
-            await expect(jtp.connect(addr1).burn(1)).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(jtp.connect(addr1).burn(1))
+                .to.be.revertedWith('Ownable: caller is not the owner');
 
             await jtp.connect(owner).burn(1);
             expect(await jtp.totalSupply()).to.equal(await jtp.balanceOf(owner.address));
         });
 
         it('Only the owner should be able to call the burnFrom', async () => {
-            await expect(jtp.connect(addr1).burn(1)).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(jtp.connect(addr1).burnFrom(addr1.address, 1))
+                .to.be.revertedWith('Ownable: caller is not the owner');
         });
+        
 
     });
 
@@ -58,6 +62,16 @@ describe('JTP', () => {
             await jtp.connect(owner).burnFrom(addr1.address, 100);
 
             expect(await jtp.totalSupply()).to.equal(await jtp.balanceOf(addr1.address)).to.equal(0);
+        });
+
+        it('Should revert if the minter is not the owner', async () => {
+            await expect(jtp.connect(addr1).mint(addr1.address, 100))
+                .to.be.revertedWith('Ownable: caller is not the owner');
+        });
+
+        it('Should not allow to burnFrom without allowance', async () => {
+            await expect(jtp.connect(owner).burnFrom(addr1.address, 100))
+                .to.be.revertedWith('ERC20: insufficient allowance');
         });
     });
 
@@ -78,6 +92,17 @@ describe('JTP', () => {
 
             expect(await jtp.balanceOf(addr1.address)).to.equal(100);
             expect(await jtp.balanceOf(fakeStaking.address)).to.equal(0);
+        });
+
+        describe('Unauthorized access', () => {
+            it('Should not be able to lock', async () => {
+                await expect(jtp.connect(addr1).lock(addr1.address, 100))
+                    .to.be.revertedWith('JTP: caller is not the FanToArtistStaking contract');
+            });
+            it('Should not be able to unlock', async () => {
+                await expect(jtp.connect(addr1).unlock(addr1.address, 100))
+                    .to.be.revertedWith('JTP: caller is not the FanToArtistStaking contract');
+            });
         });
     });
 

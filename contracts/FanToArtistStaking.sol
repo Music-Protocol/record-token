@@ -8,13 +8,18 @@ import "./interfaces/IJTP.sol";
 contract FanToArtistStaking is Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
-    event ArtistStaked(address indexed artist, address indexed sender, uint256 amount, uint128 end);
+    event ArtistStaked(
+        address indexed artist,
+        address indexed sender,
+        uint256 amount,
+        uint128 end
+    );
 
     struct Stake {
         uint256 amount;
         uint128 start; //block.timestamp
         uint128 end;
-    }//add a checkpoint inside the struct?? TBD costs/benefits?
+    } //add a checkpoint inside the struct?? TBD costs/benefits?
 
     IJTP private _JTP;
 
@@ -31,8 +36,11 @@ contract FanToArtistStaking is Ownable {
     uint256 private veJTPRewardRate; //change onylOwner
     uint256 private ArtistJTPRewardRate; //change onylOwner
 
-    function setJTP(address _jtp) external onlyOwner{
-        require(address(_JTP)==address(0), "FanToArtistStaking: JTP contract already linked");
+    function setJTP(address _jtp) external onlyOwner {
+        require(
+            address(_JTP) == address(0),
+            "FanToArtistStaking: JTP contract already linked"
+        );
         _JTP = IJTP(_jtp);
     }
 
@@ -48,28 +56,33 @@ contract FanToArtistStaking is Ownable {
         return _verifiedArtists[artist];
     }
 
-    function addArtist(address artist, address sender) external onlyOwner{
+    function addArtist(address artist, address sender) external onlyOwner {
         if (!_verifiedArtists[artist]) {
-            _verifiedArtists[artist]=true;
+            _verifiedArtists[artist] = true;
             emit ArtistAdded(artist, sender);
         }
     }
 
-    function removeArtist(address artist, address sender) external onlyOwner{
+    function removeArtist(address artist, address sender) external onlyOwner {
         if (_verifiedArtists[artist]) {
-            _verifiedArtists[artist]=false;
+            _verifiedArtists[artist] = false;
             //stop all stake
             emit ArtistRemoved(artist, sender);
         }
     }
 
-    function stake(address artist, uint256 amount, uint128 end) external onlyVerifiedArtist(artist){
-        //end>now+1week && no current stake 
+    function stake(
+        address artist,
+        uint256 amount,
+        uint128 end
+    ) external onlyVerifiedArtist(artist) {
+        //end>now+1week && no current stake
         _JTP.lock(_msgSender(), amount);
         emit ArtistStaked(artist, _msgSender(), amount, end);
     }
 
-    function redeem(address artist, uint256 amount) external onlyVerifiedArtist(artist){
+    function redeem(address artist, uint256 amount) external {
+        artist;//placeholder
         _JTP.unlock(_msgSender(), amount);
     }
 }

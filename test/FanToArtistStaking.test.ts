@@ -54,6 +54,11 @@ describe('FanToArtistStaking', () => {
             await expect(fanToArtistStaking.connect(addr2).addArtist(artist1.address, addr1.address))
                 .to.be.revertedWith('Ownable: caller is not the owner');
         });
+
+        it('Should return an error if the caller is not the owner', async () => {
+            await expect(fanToArtistStaking.connect(addr2).removeArtist(artist1.address, addr1.address))
+                .to.be.revertedWith('Ownable: caller is not the owner');
+        });
     });
 
     describe('Staking', () => {
@@ -76,6 +81,13 @@ describe('FanToArtistStaking', () => {
 
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
             expect(await jtp.balanceOf(addr1.address)).to.equal(100);
+        });
+
+        describe('Reverts', () => {
+            it('Should not be able to stake to a non verified artist', async () => {
+                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, 10))
+                    .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
+            });
         });
     });
 
