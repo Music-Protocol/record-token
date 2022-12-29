@@ -52,12 +52,18 @@ contract JTP is ERC20, Ownable, Pausable {
     }
 
     //Safe since it can be called only by FanToArtistStaking, could add a mapping(address => amount) to check if someone is unlocking more than what he previously locked
-    function lock(address from, uint256 amount) external onlyStaking returns (bool) {
+    function lock(
+        address from,
+        uint256 amount
+    ) external onlyStaking returns (bool) {
         _transfer(from, _msgSender(), amount);
         return true;
     }
 
-    function unlock(address from, uint256 amount) external onlyStaking returns (bool) {
+    function unlock(
+        address from,
+        uint256 amount
+    ) external onlyStaking returns (bool) {
         return transfer(from, amount);
     }
 }

@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-//import interface of JTP(erc20) to lock on new stake
-interface IJTP {
-    function lock(uint256 amount, uint128 end) external;
-}
+import "./interfaces/IJTP.sol";
 
 contract FanToArtistStaking is Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);

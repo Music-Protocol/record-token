@@ -3,19 +3,8 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
-
-//import interface of JTP(erc20) to call mint and burn
-
-//the interfaces of JTP that we need to call on
-interface IJTP {
-    function mint(address to, uint256 amount) external;
-
-    function burn(uint256 amount) external;
-
-    function burnFrom(address account, uint256 amount) external;
-
-    function transferOwnership(address to) external;
-}
+import "./interfaces/IJTP.sol";
+import "./interfaces/IFanToArtistStaking.sol";
 
 interface IFTAS {
     function addArtist(address artist, address sender) external;
@@ -32,7 +21,7 @@ contract JTPManagement is AccessControl {
         keccak256("VERIFY_ARTIST_ROLE");
 
     IJTP private jtp;
-    IFTAS private ftas;
+    IFanToArtistStaking private ftas;
 
     constructor(address _jtp, address _ftas) {
         //set jtp
@@ -43,7 +32,7 @@ contract JTPManagement is AccessControl {
         _grantRole(BURNER_ROLE, msg.sender);
 
         //set FanToArtistStaking
-        ftas = IFTAS(_ftas);
+        ftas = IFanToArtistStaking(_ftas);
         //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
         _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
     }
