@@ -146,6 +146,9 @@ describe('JTPManagement', () => {
                 expect(await jtp.owner()).to.equal(fakeDAO.address);
             });
 
+            after(async () => {
+                await jtp.connect(fakeDAO).transferOwnership(jtpManagement.address);
+            });
             // This test work but is redundant, already tested on JTP.js -> Access Control 
             // it('An address with the correct role should not be able to perfom ', async()=>{ 
             //     await expect(jtpManagement.connect(owner).mint(jtpManagement.address, 10)).to.be.revertedWith(`Ownable: caller is not the owner`);
@@ -178,40 +181,28 @@ describe('JTPManagement', () => {
 
             it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of FTAS contract', async () => {
                 await jtpManagement.connect(owner).transferFanToArtistStaking(fakeDAO.address);
-                expect(await jtp.owner()).to.equal(fakeDAO.address);
+                expect(await fanToArtistStaking.owner()).to.equal(fakeDAO.address);
             });
 
-            // This test work but is redundant, already tested on JTP.js -> Access Control 
-            // it('An address with the correct role should not be able to perfom ', async()=>{ 
-            //     await expect(jtpManagement.connect(owner).mint(jtpManagement.address, 10)).to.be.revertedWith(`Ownable: caller is not the owner`);
-            // });
+            after(async () => {
+                await fanToArtistStaking.connect(fakeDAO).transferOwnership(jtpManagement.address);
+            });
+            
         });
     });
 
     describe('Event emitting', () => {
-        // it('The minting should emit an event', async () => {
-        //     await expect(jtp.connect(owner).mint(addr1.address, 100))
-        //         .to.emit(jtp, 'Transfer')
-        //         .withArgs('0x0000000000000000000000000000000000000000', addr1.address, 100);
-        // });
+        it('The minting should emit a Mint event', async () => {
+            await expect(jtpManagement.connect(owner).mint(addr1.address, 100))
+                .to.emit(jtpManagement, 'Mint')
+                .withArgs(addr1.address, 100, owner.address);
+        });
 
-        // it('The token transfer should emit an event', async () => {
-        //     await expect(jtp.connect(addr1).transfer(owner.address, 100))
-        //         .to.emit(jtp, 'Transfer')
-        //         .withArgs(addr1.address, owner.address, 100);
-        // });
-
-        // it('The burn should emit an event', async () => {
-        //     await expect(jtp.connect(owner).burn(100))
-        //         .to.emit(jtp, 'Transfer')
-        //         .withArgs(owner.address, '0x0000000000000000000000000000000000000000', 100);
-        // });
-
-        // it('The transfer of ownership should emit an event', async () => {
-        //     await expect(jtp.transferOwnership(fakeDAO.address))
-        //         .to.emit(jtp, 'OwnershipTransferred')
-        //         .withArgs(owner.address, fakeDAO.address);
-        // });
-
+        it('The burning should emit a Burn event', async () => {
+            await jtp.connect(addr1).approve(jtpManagement.address, 100);
+            await expect(jtpManagement.connect(owner).burnFrom(addr1.address, 100))
+                .to.emit(jtpManagement, 'Burn')
+                .withArgs(addr1.address, 100, owner.address);
+        });
     });
 });
