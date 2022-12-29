@@ -8,12 +8,12 @@ describe('JTPManagement', () => {
     let jtp: JTP;
     let jtpManagement: JTPManagement;
     let fanToArtistStaking: FanToArtistStaking;
-    let owner: SignerWithAddress, addr1: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let artist1: SignerWithAddress, artist2: SignerWithAddress;
     let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike;
 
     before(async () => { //same as deploy
-        [owner, addr1, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
+        [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
         const FTAS = await ethers.getContractFactory("FanToArtistStaking");
         fanToArtistStaking = await FTAS.deploy();
@@ -124,5 +124,6 @@ describe('JTPManagement', () => {
             await expect(jtpManagement.connect(addr1).removeArtist(artist1.address))
                 .to.emit(fanToArtistStaking, "ArtistRemoved")//emit event correct
         });
+
     });
 });

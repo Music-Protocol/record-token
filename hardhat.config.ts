@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-waffle";
+import 'solidity-coverage'
 require("dotenv").config();
 
 const config: HardhatUserConfig = {

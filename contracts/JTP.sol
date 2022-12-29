@@ -13,7 +13,7 @@ contract JTP is ERC20, Ownable, Pausable {
     modifier onlyStaking() {
         require(
             _FanToArtistStaking == _msgSender(),
-            "onlyStaking: caller is not the FanToArtistStaking contract"
+            "FanToArtistStaking: caller is not the FanToArtistStaking contract"
         );
         _;
     }
