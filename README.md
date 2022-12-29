@@ -12,6 +12,10 @@ yarn compile
 ```
 yarn test 
 ```
+### to see the coverage
+```
+yarn coverage 
+```
 ### to run a single test on hardhat
 ```
 yarn test ./test/<filename>.test.ts
