@@ -8,21 +8,21 @@ import { ethers } from "hardhat";
 
 async function main() {
   const FTAS = await ethers.getContractFactory("FanToArtistStaking");
-  const FanToArtistStaking = await FTAS.deploy();
-  await FanToArtistStaking.deployed();
-  console.log(`deployed FanToArtistStaking to ${FanToArtistStaking.address}`);
+  const fanToArtistStaking = await FTAS.deploy();
+  await fanToArtistStaking.deployed();
+  console.log(`deployed FanToArtistStaking to ${fanToArtistStaking.address}`);
 
   const JTP = await ethers.getContractFactory("JTP");
-  const jtp = await JTP.deploy(FanToArtistStaking.address);
+  const jtp = await JTP.deploy(fanToArtistStaking.address);
   await jtp.deployed();
   // do jtp.mint as the pp whitepaper  
   console.log(`deployed JTP to ${jtp.address}`);
 
   const JTPManagement = await ethers.getContractFactory("JTPManagement");
-  const jtpManagement = await JTPManagement.deploy(jtp.address);
+  const jtpManagement = await JTPManagement.deploy(jtp.address, fanToArtistStaking.address);
   await jtpManagement.deployed();
   await jtp.transferOwnership(jtpManagement.address);
-  await FanToArtistStaking.transferOwnership(jtpManagement.address);
+  await fanToArtistStaking.transferOwnership(jtpManagement.address);
   console.log(`deployed JTPManagement to ${jtpManagement.address}`);
 }
 

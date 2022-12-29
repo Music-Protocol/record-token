@@ -17,19 +17,35 @@ interface IJTP {
     function transferOwnership(address to) external;
 }
 
+interface IFTAS {
+    function addArtist(address artist, address sender) external;
+
+    function removeArtist(address artist, address sender) external;
+
+    function transferOwnership(address to) external;
+}
+
 contract JTPManagement is AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant VERIFY_ARTIST_ROLE =
+        keccak256("VERIFY_ARTIST_ROLE");
 
     IJTP private jtp;
+    IFTAS private ftas;
 
-    constructor(address _jtp) {
+    constructor(address _jtp, address _ftas) {
         //set jtp
         jtp = IJTP(_jtp);
         // Grant the minter role to a specified account
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(BURNER_ROLE, msg.sender);
+
+        //set FanToArtistStaking
+        ftas = IFTAS(_ftas);
+        //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
+        _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
     }
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
@@ -50,5 +66,19 @@ contract JTPManagement is AccessControl {
 
     function transferJTP(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
         jtp.transferOwnership(to);
+    }
+
+    function transferFanToArtistStaking(
+        address to
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        ftas.transferOwnership(to);
+    }
+
+    function addArtist(address artist) external onlyRole(VERIFY_ARTIST_ROLE) {
+        ftas.addArtist(artist, _msgSender());
+    }
+
+    function removeArtist(address artist) external onlyRole(VERIFY_ARTIST_ROLE) {
+        ftas.removeArtist(artist, _msgSender());
     }
 }
