@@ -4,49 +4,78 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
 
-describe('FanToArtistStaking', function () {
+describe('FanToArtistStaking', () => {
     let jtp: JTP;
     let fanToArtistStaking: FanToArtistStaking;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress;
 
-    before(async function () { //same as deploy
+    before(async () => {
         [owner, addr1, addr2, addr3, artist1, artist2] = await ethers.getSigners();
 
-        const FTAS = await ethers.getContractFactory("FanToArtistStaking");
+        const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         fanToArtistStaking = await FTAS.deploy();
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fanToArtistStaking.address);
         await jtp.deployed();
+        fanToArtistStaking.setJTP(jtp.address);
     });
 
-    describe('Deployment', function () {
-        it('Should set the right owner', async function () {
+    describe('Deployment', () => {
+        it('Should set the right owner', async () => {
             expect(await jtp.owner()).to.equal(owner.address);
+        });
+
+        it('Should not allow to change the address of JTP contract', async () => {
+            await expect(fanToArtistStaking.setJTP(addr3.address))
+                .to.be.revertedWith('FanToArtistStaking: JTP contract already linked');
         });
     });
 
-    describe('Verified Artist', function () {
-        it('Should add the right artist to the verifiedArtists list and emit an event', async function () {
+    describe('Verified Artist', () => {
+        it('Should add the right artist to the verifiedArtists list and emit an event', async () => {
             await expect(fanToArtistStaking.addArtist(artist1.address, addr1.address))
-                .to.emit(fanToArtistStaking, "ArtistAdded")
+                .to.emit(fanToArtistStaking, 'ArtistAdded')
                 .withArgs(artist1.address, addr1.address);
 
             expect(await fanToArtistStaking.isVerified(artist1.address)).to.equal(true);
         });
 
-        it('Should remove the right artist to the verifiedArtists list and emit an event', async function () {
+        it('Should remove the right artist to the verifiedArtists list and emit an event', async () => {
             await expect(fanToArtistStaking.removeArtist(artist1.address, addr1.address))
-                .to.emit(fanToArtistStaking, "ArtistRemoved")
+                .to.emit(fanToArtistStaking, 'ArtistRemoved')
                 .withArgs(artist1.address, addr1.address);
 
             expect(await fanToArtistStaking.isVerified(artist1.address)).to.equal(false);
         });
 
-        it('Should return an error if the caller is not the owner', async function () {
+        it('Should return an error if the caller is not the owner', async () => {
             await expect(fanToArtistStaking.connect(addr2).addArtist(artist1.address, addr1.address))
                 .to.be.revertedWith('Ownable: caller is not the owner');
+        });
+    });
+
+    describe('Staking', () => {
+        before(async () => {
+            await fanToArtistStaking.addArtist(artist1.address, owner.address);
+            await jtp.mint(addr1.address, 100)
+        });
+
+        it('Should be able to stake only to a verified artist', async () => {
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 100, 10))
+                .to.emit(fanToArtistStaking, 'ArtistStaked')
+                .withArgs(artist1.address, addr1.address, 100, 10);
+
+            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
+            expect(await jtp.balanceOf(addr1.address)).to.equal(0);
+        });
+
+        it('Should be able to redeem the token locked', async () => {
+            await fanToArtistStaking.connect(addr1).redeem(artist1.address, 100);
+
+            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
+            expect(await jtp.balanceOf(addr1.address)).to.equal(100);
         });
     });
 

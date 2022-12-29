@@ -15,15 +15,16 @@ describe('JTPManagement', () => {
     before(async () => { //same as deploy
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
-        const FTAS = await ethers.getContractFactory("FanToArtistStaking");
+        const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         fanToArtistStaking = await FTAS.deploy();
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fakeStaking.address);
         await jtp.deployed();
+        fanToArtistStaking.setJTP(jtp.address);
 
-        const cJTPManagement = await ethers.getContractFactory("JTPManagement");
+        const cJTPManagement = await ethers.getContractFactory('JTPManagement');
         jtpManagement = await cJTPManagement.deploy(jtp.address, fanToArtistStaking.address);
         await jtpManagement.deployed();
         await jtp.transferOwnership(jtpManagement.address);
@@ -160,12 +161,12 @@ describe('JTPManagement', () => {
 
             it('When an artist is added through ftas should emit an event', async () => {
                 await expect(jtpManagement.connect(addr1).addArtist(artist1.address))
-                    .to.emit(fanToArtistStaking, "ArtistAdded")//emit event correct
+                    .to.emit(fanToArtistStaking, 'ArtistAdded')//emit event correct
             });
 
             it('When an artist is removed through ftas should emit an event', async () => {
                 await expect(jtpManagement.connect(addr1).removeArtist(artist1.address))
-                    .to.emit(fanToArtistStaking, "ArtistRemoved")//emit event correct
+                    .to.emit(fanToArtistStaking, 'ArtistRemoved')//emit event correct
             });
         });
 
@@ -190,25 +191,25 @@ describe('JTPManagement', () => {
     describe('Event emitting', () => {
         // it('The minting should emit an event', async () => {
         //     await expect(jtp.connect(owner).mint(addr1.address, 100))
-        //         .to.emit(jtp, "Transfer")
+        //         .to.emit(jtp, 'Transfer')
         //         .withArgs('0x0000000000000000000000000000000000000000', addr1.address, 100);
         // });
 
         // it('The token transfer should emit an event', async () => {
         //     await expect(jtp.connect(addr1).transfer(owner.address, 100))
-        //         .to.emit(jtp, "Transfer")
+        //         .to.emit(jtp, 'Transfer')
         //         .withArgs(addr1.address, owner.address, 100);
         // });
 
         // it('The burn should emit an event', async () => {
         //     await expect(jtp.connect(owner).burn(100))
-        //         .to.emit(jtp, "Transfer")
+        //         .to.emit(jtp, 'Transfer')
         //         .withArgs(owner.address, '0x0000000000000000000000000000000000000000', 100);
         // });
 
         // it('The transfer of ownership should emit an event', async () => {
         //     await expect(jtp.transferOwnership(fakeDAO.address))
-        //         .to.emit(jtp, "OwnershipTransferred")
+        //         .to.emit(jtp, 'OwnershipTransferred')
         //         .withArgs(owner.address, fakeDAO.address);
         // });
 

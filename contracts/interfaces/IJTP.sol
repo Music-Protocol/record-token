@@ -3,7 +3,9 @@
 pragma solidity ^0.8.2;
 
 interface IJTP {
-    function lock(uint256 amount, uint128 end) external;
+    function lock(address from, uint256 amount) external;
+
+    function unlock(address from, uint256 amount) external;
 
     function mint(address to, uint256 amount) external;
 

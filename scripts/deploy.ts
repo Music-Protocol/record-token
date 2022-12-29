@@ -15,6 +15,7 @@ async function main() {
   const JTP = await ethers.getContractFactory("JTP");
   const jtp = await JTP.deploy(fanToArtistStaking.address);
   await jtp.deployed();
+  fanToArtistStaking.setJTP(jtp.address);
   // do jtp.mint as the pp whitepaper  
   console.log(`deployed JTP to ${jtp.address}`);
 
