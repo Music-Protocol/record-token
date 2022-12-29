@@ -12,4 +12,8 @@ interface IJTP {
     function burnFrom(address account, uint256 amount) external;
 
     function transferOwnership(address to) external;
+
+    function pause() external;
+
+    function unpause() external;
 }

@@ -15,6 +15,9 @@ interface IFTAS {
 }
 
 contract JTPManagement is AccessControl {
+    event Mint(address indexed to, uint256 amount, address indexed sender);
+    event Burn(address indexed from, uint256 amount, address indexed sender);
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant VERIFY_ARTIST_ROLE =
@@ -39,11 +42,13 @@ contract JTPManagement is AccessControl {
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
         jtp.mint(to, amount);
+        emit Mint(to, amount, _msgSender());
     }
 
     // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(JTPManament)
     function burn(uint256 amount) external onlyRole(BURNER_ROLE) {
         jtp.burn(amount);
+        emit Burn(address(this), amount, _msgSender());
     }
 
     function burnFrom(
@@ -51,6 +56,7 @@ contract JTPManagement is AccessControl {
         uint256 amount
     ) external onlyRole(BURNER_ROLE) {
         jtp.burnFrom(account, amount);
+        emit Burn(account, amount, _msgSender());
     }
 
     function transferJTP(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -67,7 +73,17 @@ contract JTPManagement is AccessControl {
         ftas.addArtist(artist, _msgSender());
     }
 
-    function removeArtist(address artist) external onlyRole(VERIFY_ARTIST_ROLE) {
+    function removeArtist(
+        address artist
+    ) external onlyRole(VERIFY_ARTIST_ROLE) {
         ftas.removeArtist(artist, _msgSender());
+    }
+
+    function pauseJTP() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        jtp.pause();
+    }
+
+    function unpauseJTP() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        jtp.unpause();
     }
 }
