@@ -44,3 +44,7 @@ yarn test ./test/<filename>.test.ts
         ```
         slither /TP
         ```
+        to exclude @openzeppelin contracts
+        ```
+        slither /TP --filter-paths "/TP/node_modules/@openzeppelin/"
+        ```

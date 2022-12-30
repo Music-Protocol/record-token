@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.7;
+pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IJTP.sol";
+import "./interfaces/IFanToArtistStaking.sol";
 
-contract FanToArtistStaking is Ownable {
+contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistStaked(
@@ -52,18 +53,24 @@ contract FanToArtistStaking is Ownable {
         _;
     }
 
+    function transferOwnership(
+        address to
+    ) public override(IFanToArtistStaking, Ownable) onlyOwner {
+        super.transferOwnership(to);
+    }
+
     function isVerified(address artist) external view returns (bool) {
         return _verifiedArtists[artist];
     }
 
-    function addArtist(address artist, address sender) external onlyOwner {
+    function addArtist(address artist, address sender) external override onlyOwner {
         if (!_verifiedArtists[artist]) {
             _verifiedArtists[artist] = true;
             emit ArtistAdded(artist, sender);
         }
     }
 
-    function removeArtist(address artist, address sender) external onlyOwner {
+    function removeArtist(address artist, address sender) external override onlyOwner {
         if (_verifiedArtists[artist]) {
             _verifiedArtists[artist] = false;
             //stop all stake
@@ -82,7 +89,7 @@ contract FanToArtistStaking is Ownable {
     }
 
     function redeem(address artist, uint256 amount) external {
-        artist;//placeholder
+        artist; //placeholder
         _JTP.unlock(_msgSender(), amount);
     }
 }

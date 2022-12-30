@@ -1,18 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.7;
+pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
-
-interface IFTAS {
-    function addArtist(address artist, address sender) external;
-
-    function removeArtist(address artist, address sender) external;
-
-    function transferOwnership(address to) external;
-}
 
 contract JTPManagement is AccessControl {
     event Mint(address indexed to, uint256 amount, address indexed sender);
