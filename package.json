@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "toolbox":"MSYS_NO_PATHCONV=1 docker run -it --rm -v $(pwd):/TP trailofbits/eth-security-toolbox",
     "compile": "npx hardhat clean && npx hardhat compile",
     "coverage": "npx hardhat coverage",
     "test": "npx hardhat test ",
@@ -32,7 +33,7 @@
     "@openzeppelin/contracts": "^4.8.0",
     "@typechain/ethers-v5": "^10.2.0",
     "@typechain/hardhat": "^6.1.5",
-    "@types/mocha": "^9.1.0",
+    "@types/mocha": "^10.0.1",
     "chai": "^4.3.7",
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
@@ -42,5 +43,8 @@
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.1",
     "typescript": ">=4.5.0"
-  }
+  },
+  "resolutions": {
+    "minimatch": "^3.0.5"
+  } 
 }

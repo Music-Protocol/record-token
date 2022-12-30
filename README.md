@@ -29,3 +29,18 @@ yarn test ./test/<filename>.test.ts
     ```
     yarn deploy:ganache
     ```
+
+### audit
+- install docker
+- pull the [eth-security-toolbox](https://github.com/trailofbits/eth-security-toolbox/) container
+    ```
+    docker pull trailofbits/eth-security-toolbox
+    ```
+- run 
+    ```
+    yarn toolbox
+    ```
+    - run slither
+        ```
+        slither /TP
+        ```
