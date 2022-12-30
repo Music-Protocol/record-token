@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.17;
 
 interface IJTP {
     function lock(address from, uint256 amount) external;
