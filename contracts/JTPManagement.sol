@@ -15,31 +15,31 @@ contract JTPManagement is AccessControl {
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
 
-    IJTP private _JTP;
-    IFanToArtistStaking private _FTAS;
+    IJTP private _jtp;
+    IFanToArtistStaking private _ftas;
 
-    constructor(address _jtp, address _ftas) {
+    constructor(address jtp, address ftas) {
         //set jtp
-        _JTP = IJTP(_jtp);
+        _jtp = IJTP(jtp);
         // Grant the minter role to a specified account
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(BURNER_ROLE, msg.sender);
 
         //set FanToArtistStaking
-        _FTAS = IFanToArtistStaking(_ftas);
+        _ftas = IFanToArtistStaking(ftas);
         //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
         _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
     }
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
-        _JTP.mint(to, amount);
+        _jtp.mint(to, amount);
         emit Mint(to, amount, _msgSender());
     }
 
     // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(JTPManament)
     function burn(uint256 amount) external onlyRole(BURNER_ROLE) {
-        _JTP.burn(amount);
+        _jtp.burn(amount);
         emit Burn(address(this), amount, _msgSender());
     }
 
@@ -47,35 +47,35 @@ contract JTPManagement is AccessControl {
         address account,
         uint256 amount
     ) external onlyRole(BURNER_ROLE) {
-        _JTP.burnFrom(account, amount);
+        _jtp.burnFrom(account, amount);
         emit Burn(account, amount, _msgSender());
     }
 
     function transferJTP(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _JTP.transferOwnership(to);
+        _jtp.transferOwnership(to);
     }
 
     function transferFanToArtistStaking(
         address to
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _FTAS.transferOwnership(to);
+        _ftas.transferOwnership(to);
     }
 
     function addArtist(address artist) external onlyRole(VERIFY_ARTIST_ROLE) {
-        _FTAS.addArtist(artist, _msgSender());
+        _ftas.addArtist(artist, _msgSender());
     }
 
     function removeArtist(
         address artist
     ) external onlyRole(VERIFY_ARTIST_ROLE) {
-        _FTAS.removeArtist(artist, _msgSender());
+        _ftas.removeArtist(artist, _msgSender());
     }
 
     function pauseJTP() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _JTP.pause();
+        _jtp.pause();
     }
 
     function unpauseJTP() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _JTP.unpause();
+        _jtp.unpause();
     }
 }

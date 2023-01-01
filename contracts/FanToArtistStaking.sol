@@ -22,7 +22,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 end;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
-    IJTP private _JTP;
+    IJTP private _jtp;
 
     mapping(address => mapping(address => Stake)) private _stake;
     //stake[artist][staker] = (new Stake)
@@ -35,14 +35,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     mapping(address => uint256) private _artistAlreadyPaid;
 
     uint256 private veJTPRewardRate; //change onylOwner
-    uint256 private ArtistJTPRewardRate; //change onylOwner
+    uint256 private artistJTPRewardRate; //change onylOwner
 
-    function setJTP(address _jtp) external onlyOwner {
+    function setJTP(address jtp) external onlyOwner {
         require(
-            address(_JTP) == address(0),
+            address(jtp) == address(0),
             "FanToArtistStaking: JTP contract already linked"
         );
-        _JTP = IJTP(_jtp);
+        _jtp = IJTP(jtp);
     }
 
     modifier onlyVerifiedArtist(address artist) {
@@ -84,12 +84,12 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 end
     ) external onlyVerifiedArtist(artist) {
         //end>now+1week && no current stake
-        _JTP.lock(_msgSender(), amount);
+        _jtp.lock(_msgSender(), amount);
         emit ArtistStaked(artist, _msgSender(), amount, end);
     }
 
     function redeem(address artist, uint256 amount) external {
         artist; //placeholder
-        _JTP.unlock(_msgSender(), amount);
+        _jtp.unlock(_msgSender(), amount);
     }
 }

@@ -8,12 +8,12 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "./interfaces/IJTP.sol";
 
 contract JTP is IJTP, ERC20, Ownable, Pausable {
-    address private _FanToArtistStaking;
+    address private _fanToArtistStaking;
 
     //for the function callable only by FanToArtistStaking.sol
     modifier onlyStaking() {
         require(
-            _FanToArtistStaking == _msgSender(),
+            _fanToArtistStaking == _msgSender(),
             "JTP: caller is not the FanToArtistStaking contract"
         );
         _;
@@ -24,7 +24,7 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
             _Staking != address(0),
             "JTP: the address of FanToArtistStaking is 0"
         );
-        _FanToArtistStaking = _Staking;
+        _fanToArtistStaking = _Staking;
     }
 
     function transferOwnership(
