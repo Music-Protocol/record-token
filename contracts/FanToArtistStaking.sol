@@ -87,7 +87,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     }
 
     function _addStake(address sender, address artist, uint128 end, uint256 amount) internal {
-        OrderedArray.insertInOrder(_artistStaked[sender], artist); //TOFIX 
+        OrderedArray.insertInOrder(_artistStaked[sender], artist);
         _stake[artist][sender].push(Stake({amount: amount,
         start: uint128(block.timestamp),
         end: end,
