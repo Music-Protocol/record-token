@@ -12,8 +12,12 @@ describe('FanToArtistStaking', () => {
     before(async () => {
         [owner, addr1, addr2, addr3, artist1, artist2] = await ethers.getSigners();
 
-        const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy(10, 10);
+        const ORDERED_ARRAY = await ethers.getContractFactory('OrderedArray');
+        const oa = await ORDERED_ARRAY.deploy();
+        await oa.deployed();
+
+        const FTAS = await ethers.getContractFactory('FanToArtistStaking', { libraries: { OrderedArray: oa.address } });
+        fanToArtistStaking = await FTAS.deploy(10, 10, 60, 86400,);
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
@@ -68,9 +72,10 @@ describe('FanToArtistStaking', () => {
         });
 
         it('Should be able to stake only to a verified artist', async () => {
-            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 100, 10))
+            const time = Date.now()+70;
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 100, time))
                 .to.emit(fanToArtistStaking, 'ArtistStaked')
-                .withArgs(artist1.address, addr1.address, 100, 10);
+                .withArgs(artist1.address, addr1.address, 100, time);
 
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
             expect(await jtp.balanceOf(addr1.address)).to.equal(0);
@@ -85,7 +90,7 @@ describe('FanToArtistStaking', () => {
 
         describe('Reverts', () => {
             it('Should not be able to stake to a non verified artist', async () => {
-                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, 10))
+                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, Date.now()+70))
                     .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
             });
         });
