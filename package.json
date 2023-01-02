@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "toolbox":"MSYS_NO_PATHCONV=1 docker run -it --rm -v $(pwd):/TP trailofbits/eth-security-toolbox",
+    "toolbox":"MSYS_NO_PATHCONV=1 docker run -it --rm -v $(pwd):/TP eth-security-toolbox",
     "compile": "npx hardhat clean && npx hardhat compile",
     "coverage": "npx hardhat coverage",
     "test": "npx hardhat test ",

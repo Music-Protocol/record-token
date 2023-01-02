@@ -32,9 +32,12 @@ yarn test ./test/<filename>.test.ts
 
 ### audit
 - install docker
-- pull the [eth-security-toolbox](https://github.com/trailofbits/eth-security-toolbox/) container
+  - since the [eth-security-toolbox](https://github.com/trailofbits/eth-security-toolbox/) container last update was made May 2022 I decided to build it directly from their [github repo](https://github.com/trailofbits/eth-security-toolbox), but since the parent image changed I had to update the Dockefile. Here are the commands to build it 
     ```
-    docker pull trailofbits/eth-security-toolbox
+    git clone https://github.com/simonemastella/eth-security-toolbox.git
+    cd eth-security-security
+    docker build -t eth-security-toolbox .
+    cd ..
     ```
 - run 
     ```
