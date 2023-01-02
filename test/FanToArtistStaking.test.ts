@@ -13,7 +13,7 @@ describe('FanToArtistStaking', () => {
         [owner, addr1, addr2, addr3, artist1, artist2] = await ethers.getSigners();
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy();
+        fanToArtistStaking = await FTAS.deploy(10, 10);
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
@@ -88,6 +88,24 @@ describe('FanToArtistStaking', () => {
                 await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, 10))
                     .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
             });
+        });
+    });
+
+    describe('Rates', () => {
+        it('Should be able to change the veJTP reward rate', async () => {
+            expect(await fanToArtistStaking.getStakingVeRate()).to.equal(10);
+            await expect(fanToArtistStaking.changeStakingVeRate(90, owner.address))
+                .to.emit(fanToArtistStaking, 'VeJTPRewardChanged')
+                .withArgs(90, owner.address);
+            expect(await fanToArtistStaking.getStakingVeRate()).to.equal(90);
+        });
+
+        it('Should be able to change the artist reward rate', async () => {
+            expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(10);
+            await expect(fanToArtistStaking.changeArtistRewardRate(50, owner.address))
+                .to.emit(fanToArtistStaking, 'ArtistJTPRewardChanged')
+                .withArgs(50, owner.address);
+            expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(50);
         });
     });
 

@@ -15,16 +15,20 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint256 amount,
         uint128 end
     );
+    event VeJTPRewardChanged(uint128 newRate, address indexed sender);
+    event ArtistJTPRewardChanged(uint128 newRate, address indexed sender);
 
     struct Stake {
         uint256 amount;
         uint128 start; //block.timestamp
         uint128 end;
+        uint128 rewardVe;
+        uint128 rewardArtist;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
     IJTP private _jtp;
 
-    mapping(address => mapping(address => Stake)) private _stake;
+    mapping(address => mapping(address => Stake[])) private _stake;
     //stake[artist][staker] = (new Stake)
 
     mapping(address => address[]) private _artistStaked;
@@ -34,8 +38,13 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
 
     mapping(address => uint256) private _artistAlreadyPaid;
 
-    uint256 private veJTPRewardRate; //change onylOwner
-    uint256 private artistJTPRewardRate; //change onylOwner
+    uint128 private _veJTPRewardRate; //change onylOwner
+    uint128 private _artistJTPRewardRate; //change onylOwner
+
+    constructor(uint128 veJTPRewardRate, uint128 artistJTPRewardRate) {
+        _veJTPRewardRate = veJTPRewardRate;
+        _artistJTPRewardRate = artistJTPRewardRate;
+    }
 
     function setJTP(address jtp) external onlyOwner {
         require(
@@ -59,23 +68,51 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         super.transferOwnership(to);
     }
 
-    function isVerified(address artist) external view returns (bool) {
-        return _verifiedArtists[artist];
-    }
-
-    function addArtist(address artist, address sender) external override onlyOwner {
+    function addArtist(
+        address artist,
+        address sender
+    ) external override onlyOwner {
         if (!_verifiedArtists[artist]) {
             _verifiedArtists[artist] = true;
             emit ArtistAdded(artist, sender);
         }
     }
 
-    function removeArtist(address artist, address sender) external override onlyOwner {
+    function removeArtist(
+        address artist,
+        address sender
+    ) external override onlyOwner {
         if (_verifiedArtists[artist]) {
             _verifiedArtists[artist] = false;
             //stop all stake
             emit ArtistRemoved(artist, sender);
         }
+    }
+
+    function changeStakingVeRate(
+        uint128 rate,
+        address sender
+    ) external onlyOwner {
+        //stop all stakes
+        _veJTPRewardRate = rate;
+        emit VeJTPRewardChanged(rate, sender);
+    }
+
+    function changeArtistRewardRate(
+        uint128 rate,
+        address sender
+    ) external onlyOwner {
+        //stop all stakes and create change 
+        _artistJTPRewardRate = rate;
+        emit ArtistJTPRewardChanged(rate, sender);
+    }
+
+    function getStakingVeRate() external view returns (uint128) {
+        return _veJTPRewardRate;
+    }
+
+    function getArtistRewardRate() external view returns (uint128) {
+        return _artistJTPRewardRate;
     }
 
     function stake(
@@ -91,5 +128,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     function redeem(address artist, uint256 amount) external {
         artist; //placeholder
         _jtp.unlock(_msgSender(), amount);
+    }
+
+    function isVerified(address artist) external view returns (bool) {
+        return _verifiedArtists[artist];
     }
 }

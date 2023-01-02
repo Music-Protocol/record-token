@@ -16,7 +16,7 @@ describe('JTPManagement', () => {
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy();
+        fanToArtistStaking = await FTAS.deploy(10, 10);
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');

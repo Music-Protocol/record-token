@@ -8,7 +8,7 @@ import { ethers } from "hardhat";
 
 async function main() {
   const FTAS = await ethers.getContractFactory("FanToArtistStaking");
-  const fanToArtistStaking = await FTAS.deploy();
+  const fanToArtistStaking = await FTAS.deploy(10, 10);
   await fanToArtistStaking.deployed();
   console.log(`deployed FanToArtistStaking to ${fanToArtistStaking.address}`);
 
