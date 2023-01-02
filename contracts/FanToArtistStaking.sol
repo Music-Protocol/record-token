@@ -39,7 +39,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
 
     function setJTP(address jtp) external onlyOwner {
         require(
-            address(jtp) == address(0),
+            address(_jtp) == address(0),
             "FanToArtistStaking: JTP contract already linked"
         );
         _jtp = IJTP(jtp);

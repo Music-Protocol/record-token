@@ -19,7 +19,7 @@ describe('FanToArtistStaking', () => {
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fanToArtistStaking.address);
         await jtp.deployed();
-        fanToArtistStaking.setJTP(jtp.address);
+        await fanToArtistStaking.setJTP(jtp.address);
     });
 
     describe('Deployment', () => {
