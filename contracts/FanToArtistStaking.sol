@@ -5,7 +5,6 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
-import "./utils/OrderedArray.sol";
 
 contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
@@ -27,10 +26,17 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 rewardArtist;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
+    struct DetailedStake {
+        Stake stake;
+        address artist;
+    }
+
     IJTP private _jtp;
 
     mapping(address => mapping(address => Stake[])) private _stake;
-    //stake[artist][staker] = (new Stake)
+    //_stake[artist][staker]
+    //                      = Stake[]
+    //                      .push(new Stake)
 
     mapping(address => address[]) private _artistStaked;
     //_artistStaked[staker] = Array of artist staked (past and present)
@@ -82,27 +88,61 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist
     ) internal view returns (bool) {
-        int256 index = OrderedArray.binarySearch(_artistStaked[sender], artist);
-        return index != -1;
+        for (uint256 i = 0; i < _artistStaked[sender].length; i++)
+            if (_artistStaked[sender][i] == artist) return true;
+        return false;
     }
 
-    function _addStake(address sender, address artist, uint128 end, uint256 amount) internal {
-        OrderedArray.insertInOrder(_artistStaked[sender], artist);
-        _stake[artist][sender].push(Stake({amount: amount,
-        start: uint128(block.timestamp),
-        end: end,
-        rewardVe: _veJTPRewardRate,
-        rewardArtist: _artistJTPRewardRate}));
-    }
-
-    function searchStake(
+    function _isStakingNow(
+        address sender,
         address artist
-    ) external view onlyVerifiedArtist(artist) {
-        require(
-            _isStaking(_msgSender(), artist),
-            "FanToArtistStaking: the msg sender is not staking the passed artist"
+    ) internal view returns (bool) {
+        if (!_isStaking(sender, artist)) return false;
+        for (uint256 i = 0; i < _stake[artist][sender].length; i++) {
+            if(_stake[artist][sender][i].end>block.timestamp) return true;
+        }
+        return false;
+    }
+
+    function _addStake(
+        address sender,
+        address artist,
+        uint128 end,
+        uint256 amount
+    ) internal {
+        if (!_isStaking(sender, artist)) {
+            //TODO pass @params new to not double check // doing this to avoid same values inside
+            _artistStaked[sender].push(artist);
+        }
+        _stake[artist][sender].push(
+            Stake({
+                amount: amount,
+                start: uint128(block.timestamp),
+                end: uint128(block.timestamp) + end,
+                rewardVe: _veJTPRewardRate,
+                rewardArtist: _artistJTPRewardRate
+            })
         );
-        //TODO
+    }
+
+    // @return the array of all Stake from the msg.sender
+    function getAllStake() external view returns (DetailedStake[] memory) {
+        uint count = 0;
+        address[] memory array = _artistStaked[_msgSender()];
+        for (uint i = 0; i < array.length; i++) {
+            count += _stake[array[i]][_msgSender()].length;
+        }
+        DetailedStake[] memory result = new DetailedStake[](count);
+
+        uint z = 0;
+        for (uint i = 0; i < array.length; i++) {
+            for (uint j = 0; j < _stake[array[i]][_msgSender()].length; j++) {
+                result[z].stake = _stake[array[i]][_msgSender()][j];
+                result[z].artist = array[i];
+                z++;
+            }
+        }
+        return result;
     }
 
     function addArtist(
@@ -158,18 +198,26 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 end
     ) external onlyVerifiedArtist(artist) {
         require(
-            end > (block.timestamp + _minStakePeriod),
+            end > _minStakePeriod,
             "FanToArtistStaking: the end period is less than minimum"
         );
         require(
-            (end - block.timestamp) > _maxStakePeriod,
+            end < _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
-        // require(!_isStaking(_msgSender(), artist), "FanToArtistStaking: already staking");
-        // require(!_isStaking(_msgSender(), artist), "FanToArtistStaking: already staking");
+        require(
+            !_isStaking(_msgSender(), artist),
+            "FanToArtistStaking: already staking"
+        );
+        require(!_isStakingNow(_msgSender(), artist), "FanToArtistStaking: already staking");
         _jtp.lock(_msgSender(), amount);
         _addStake(_msgSender(), artist, end, amount);
-        emit ArtistStaked(artist, _msgSender(), amount, end);
+        emit ArtistStaked(
+            artist,
+            _msgSender(),
+            amount,
+            uint128(block.timestamp) + end
+        );
     }
 
     function redeem(address artist, uint256 amount) external {

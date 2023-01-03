@@ -1,23 +1,19 @@
 import { expect } from 'chai';
-import { BytesLike } from 'ethers';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
+import { FanToArtistStaking, JTP } from '../typechain-types/index';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 describe('FanToArtistStaking', () => {
     let jtp: JTP;
     let fanToArtistStaking: FanToArtistStaking;
-    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress, artist3: SignerWithAddress;
 
     before(async () => {
-        [owner, addr1, addr2, addr3, artist1, artist2] = await ethers.getSigners();
+        [owner, addr1, addr2, addr3, artist1, artist2, artist3] = await ethers.getSigners();
 
-        const ORDERED_ARRAY = await ethers.getContractFactory('OrderedArray');
-        const oa = await ORDERED_ARRAY.deploy();
-        await oa.deployed();
-
-        const FTAS = await ethers.getContractFactory('FanToArtistStaking', { libraries: { OrderedArray: oa.address } });
-        fanToArtistStaking = await FTAS.deploy(10, 10, 60, 86400,);
+        const FTAS = await ethers.getContractFactory('FanToArtistStaking');
+        fanToArtistStaking = await FTAS.deploy(10, 10, 10, 86400,);
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
@@ -68,14 +64,14 @@ describe('FanToArtistStaking', () => {
     describe('Staking', () => {
         before(async () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
-            await jtp.mint(addr1.address, 100)
+            await jtp.mint(addr1.address, 100);
+            await fanToArtistStaking.addArtist(artist2.address, owner.address);
         });
 
         it('Should be able to stake only to a verified artist', async () => {
-            const time = Date.now()+70;
-            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 100, time))
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 100, 50))
                 .to.emit(fanToArtistStaking, 'ArtistStaked')
-                .withArgs(artist1.address, addr1.address, 100, time);
+                .withArgs(artist1.address, addr1.address, 100, anyValue);
 
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
             expect(await jtp.balanceOf(addr1.address)).to.equal(0);
@@ -88,9 +84,18 @@ describe('FanToArtistStaking', () => {
             expect(await jtp.balanceOf(addr1.address)).to.equal(100);
         });
 
+        it('Should be able to see his own stakes', async () => {
+            await fanToArtistStaking.connect(addr1).stake(artist2.address, 50, 70);
+            const as = await fanToArtistStaking.connect(addr1).getAllStake();
+            // console.log(as);
+            console.log(as);
+            expect(as[0]).to.have.property('artist', artist1.address);
+
+        });
+
         describe('Reverts', () => {
-            it('Should not be able to stake to a non verified artist', async () => {
-                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, Date.now()+70))
+            it('Should not be able to stake a non verified artist', async () => {
+                await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, 100, Date.now() + 70))
                     .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
             });
         });

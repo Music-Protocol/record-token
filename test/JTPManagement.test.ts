@@ -15,11 +15,12 @@ describe('JTPManagement', () => {
     before(async () => { //same as deploy
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
-        const ORDERED_ARRAY = await ethers.getContractFactory('OrderedArray');
-        const oa = await ORDERED_ARRAY.deploy();
-        await oa.deployed();
+        // const ORDERED_ARRAY = await ethers.getContractFactory('OrderedArray');
+        // const oa = await ORDERED_ARRAY.deploy();
+        // await oa.deployed();
+        // const FTAS = await ethers.getContractFactory('FanToArtistStaking', { libraries: { OrderedArray: oa.address } });
 
-        const FTAS = await ethers.getContractFactory('FanToArtistStaking', { libraries: { OrderedArray: oa.address } });
+        const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         fanToArtistStaking = await FTAS.deploy(10, 10, 60, 86400);
         await fanToArtistStaking.deployed();
 
