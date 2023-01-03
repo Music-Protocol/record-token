@@ -2,32 +2,33 @@
 
 pragma solidity ^0.8.16;
 
+// import "hardhat/console.sol";
+
 library OrderedArray {
     //insertInOrder(myArray, address);
-    function insertInOrder(address[] storage arr, address element) internal {
-        if (arr.length == 0) {
-            // Array is empty, just add the element
-            arr.push(element);
+    function insertInOrder(address[] storage arr) internal {
+        if (arr.length <= 1) {
             return;
         }
+        address element =arr[arr.length - 1];
         // Find the correct position for the element using binary search
-        uint256 min = 0;
-        uint256 max = arr.length - 1;
+        int256 min = 0;
+        int256 max = int256(arr.length) - 2;
         while (min <= max) {
-            uint256 mid = (min + max) / 2;
-            if (arr[mid] < element) {
+            int256 mid = (min + max) / 2;
+            if (arr[uint256(mid)] < element) {
                 min = mid + 1;
             } else {
                 max = mid - 1;
             }
         }
-        uint256 insertPos = min;
+        int256 insertPos = min;
         // Shift the elements to the right to make room for the new element
-        for (uint256 i = arr.length - 1; i > insertPos; i--) {
-            arr[i] = arr[i - 1];
+        for (int256 i = int256(arr.length) - 1; i > insertPos; i--) {
+            arr[uint256(i)] = arr[uint256(i) - 1];
         }
         // Insert the element
-        arr[insertPos] = element;
+        arr[uint256(insertPos)] = element;
     }
 
     //int index = binarySearch(myArray, address);
@@ -35,17 +36,17 @@ library OrderedArray {
         address[] memory arr,
         address target
     ) public pure returns (int256) {
-        uint min = 0;
-        uint max = arr.length - 1;
+        int256 min = 0;
+        int256 max = int256(arr.length) - 1;
         while (min <= max) {
-            uint mid = (min + max) / 2;
-            if (arr[mid] < target) {
+            int256 mid = (min + max) / 2;
+            if (arr[uint256(mid)] < target) {
                 min = mid + 1;
-            } else if (arr[mid] > target) {
+            } else if (arr[uint256(mid)] > target) {
                 max = mid - 1;
             } else {
                 // Target found
-                return int(mid);
+                return int256(mid);
             }
         }
         // Target not found
