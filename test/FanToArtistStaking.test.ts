@@ -9,11 +9,14 @@ describe('FanToArtistStaking', () => {
     let fanToArtistStaking: FanToArtistStaking;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress, artist3: SignerWithAddress;
 
+    const defVeReward = 10;
+    const defArtistReward = 10;
+
     before(async () => {
         [owner, addr1, addr2, addr3, artist1, artist2, artist3] = await ethers.getSigners();
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy(10, 10, 10, 86400,);
+        fanToArtistStaking = await FTAS.deploy(defVeReward, defArtistReward, 10, 86400,);
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
@@ -61,45 +64,7 @@ describe('FanToArtistStaking', () => {
         });
     });
 
-    describe('Staking', () => {
-        before(async () => {
-            await fanToArtistStaking.addArtist(artist1.address, owner.address);
-            await jtp.mint(addr1.address, 100);
-            await fanToArtistStaking.addArtist(artist2.address, owner.address);
-        });
 
-        it('Should be able to stake only to a verified artist', async () => {
-            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 100, 50))
-                .to.emit(fanToArtistStaking, 'ArtistStaked')
-                .withArgs(artist1.address, addr1.address, 100, anyValue);
-
-            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
-            expect(await jtp.balanceOf(addr1.address)).to.equal(0);
-        });
-
-        it('Should be able to redeem the token locked', async () => {
-            await fanToArtistStaking.connect(addr1).redeem(artist1.address, 100);
-
-            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
-            expect(await jtp.balanceOf(addr1.address)).to.equal(100);
-        });
-
-        it('Should be able to see his own stakes', async () => {
-            await fanToArtistStaking.connect(addr1).stake(artist2.address, 50, 70);
-            const as = await fanToArtistStaking.connect(addr1).getAllStake();
-            // console.log(as);
-            console.log(as);
-            expect(as[0]).to.have.property('artist', artist1.address);
-
-        });
-
-        describe('Reverts', () => {
-            it('Should not be able to stake a non verified artist', async () => {
-                await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, 100, Date.now() + 70))
-                    .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
-            });
-        });
-    });
 
     describe('Rates', () => {
         it('Should be able to change the veJTP reward rate', async () => {
@@ -119,4 +84,95 @@ describe('FanToArtistStaking', () => {
         });
     });
 
+    describe('Staking', () => {
+        let stake1 = {}, stake2 = {};
+        let times:number[] = [];
+        before(async () => {
+            await fanToArtistStaking.addArtist(artist1.address, owner.address);
+            await jtp.mint(addr1.address, 100);
+            await fanToArtistStaking.addArtist(artist2.address, owner.address);
+            await fanToArtistStaking.changeStakingVeRate(10, owner.address);
+            await fanToArtistStaking.changeArtistRewardRate(10, owner.address);
+        });
+
+        it('Should be able to stake only to a verified artist', async () => {
+            const amount = 100;
+            const time = 50;
+            times.push(time);
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
+                .to.emit(fanToArtistStaking, 'ArtistStaked')
+                .withArgs(artist1.address, addr1.address, 100, anyValue);
+            stake1 = {
+                artist: artist1.address,
+                amount,
+                // start: anyValue,
+                // end: anyValue,
+                rewardVe: defVeReward,
+                rewardArtist: defArtistReward,
+                redeemed: false
+            };
+            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
+            expect(await jtp.balanceOf(addr1.address)).to.equal(0);
+        });
+
+        it('Should be able to redeem the token locked', async () => {
+            //pass time
+            await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, 100)).to.be.revertedWith("hi");
+
+            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
+            expect(await jtp.balanceOf(addr1.address)).to.equal(100);
+        });
+
+        it('Should be able to see his own stakes', async () => {
+            const amount = 50;
+            const time = 70;
+            times.push(time);
+            await fanToArtistStaking.connect(addr1).stake(artist2.address, amount, time);
+            const as = await fanToArtistStaking.connect(addr1).getAllStake();
+            const all = as.map(o => {
+                return {
+                    artist: o.artist,
+                    amount: o.stake.amount.toNumber(),
+                    // start: o.stake.start.toNumber(),
+                    // end: o.stake.end.toNumber(),
+                    rewardVe: o.stake.rewardVe.toNumber(),
+                    rewardArtist: o.stake.rewardArtist.toNumber(),
+                    redeemed: o.stake.redeemed
+                }
+            });
+            stake2 = {
+                artist: artist2.address,
+                amount,
+                // start: anyValue,
+                // end: anyValue,
+                rewardVe: defVeReward,
+                rewardArtist: defArtistReward,
+                redeemed: false
+            };
+            expect(all).to.have.deep.members([stake1, stake2]);
+            const returnedTime = as.map(x => {
+                return {
+                    start: x.stake.start.toNumber(),
+                    end: x.stake.end.toNumber(),
+                }
+            });
+            const myTimes:Object[] = [];
+            returnedTime.forEach(x => {
+                times.forEach(element => {
+                    myTimes.push({
+                        start: x.start,
+                        end: x.start+element 
+                        })
+                })
+            });
+            expect(myTimes).to.include.deep.members(returnedTime);
+        });
+
+        describe('Reverts', () => {
+            it('Should not be able to stake a non verified artist', async () => {
+                await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, 100, Date.now() + 70))
+                    .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
+            });
+        });
+    });
 });

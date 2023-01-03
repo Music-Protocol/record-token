@@ -24,6 +24,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 end;
         uint128 rewardVe;
         uint128 rewardArtist;
+        bool redeemed;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
     struct DetailedStake {
@@ -99,7 +100,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     ) internal view returns (bool) {
         if (!_isStaking(sender, artist)) return false;
         for (uint256 i = 0; i < _stake[artist][sender].length; i++) {
-            if(_stake[artist][sender][i].end>block.timestamp) return true;
+            if (_stake[artist][sender][i].end > block.timestamp) return true;
         }
         return false;
     }
@@ -120,9 +121,30 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 start: uint128(block.timestamp),
                 end: uint128(block.timestamp) + end,
                 rewardVe: _veJTPRewardRate,
-                rewardArtist: _artistJTPRewardRate
+                rewardArtist: _artistJTPRewardRate,
+                redeemed: false
             })
         );
+    }
+
+    function _getStake(
+        address sender,
+        address artist,
+        uint128 end
+    ) internal view returns (Stake memory) {
+        for (uint i = 0; i < _stake[artist][sender].length; i++) {
+            if (_stake[artist][sender][i].end == end)
+                return _stake[artist][sender][i];
+        }
+        return
+            Stake({
+                amount: 0,
+                start: 0,
+                end: 0,
+                rewardVe: 0,
+                rewardArtist: 0,
+                redeemed: false
+            });
     }
 
     // @return the array of all Stake from the msg.sender
@@ -209,7 +231,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             !_isStaking(_msgSender(), artist),
             "FanToArtistStaking: already staking"
         );
-        require(!_isStakingNow(_msgSender(), artist), "FanToArtistStaking: already staking");
+        require(
+            !_isStakingNow(_msgSender(), artist),
+            "FanToArtistStaking: already staking"
+        );
         _jtp.lock(_msgSender(), amount);
         _addStake(_msgSender(), artist, end, amount);
         emit ArtistStaked(
@@ -220,9 +245,21 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         );
     }
 
-    function redeem(address artist, uint256 amount) external {
-        artist; //placeholder
-        _jtp.unlock(_msgSender(), amount);
+    function redeem(address artist, uint128 end) external {
+        require(
+            end < block.timestamp,
+            "FanToArtistStaking: you are trying to redeem a stake before his end"
+        );
+        Stake memory target = _getStake(_msgSender(), artist, end);
+        require(
+            target.amount>0,
+            "FanToArtistStaking: No stake found with this end date"
+        );
+        require(
+            !target.redeemed,
+            "FanToArtistStaking: this stake has already been redeemed"
+        );
+        _jtp.unlock(_msgSender(), target.amount);
     }
 
     function isVerified(address artist) external view returns (bool) {
