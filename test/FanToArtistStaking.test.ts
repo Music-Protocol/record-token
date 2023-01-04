@@ -3,7 +3,6 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, JTP } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { boolean } from 'hardhat/internal/core/params/argumentTypes';
 
 describe('FanToArtistStaking', () => {
     let jtp: JTP;
