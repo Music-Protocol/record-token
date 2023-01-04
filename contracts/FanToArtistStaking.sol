@@ -222,14 +222,15 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             !(isStaking && _isStakingNow(_msgSender(), artist)),
             "FanToArtistStaking: already staking"
         );
-        _jtp.lock(_msgSender(), amount);
-        _addStake(_msgSender(), artist, end, amount, isStaking);
-        emit ArtistStaked(
-            artist,
-            _msgSender(),
-            amount,
-            uint128(block.timestamp) + end
-        );
+        if (_jtp.lock(_msgSender(), amount)) {
+            _addStake(_msgSender(), artist, end, amount, isStaking);
+            emit ArtistStaked(
+                artist,
+                _msgSender(),
+                amount,
+                uint128(block.timestamp) + end
+            );
+        }
     }
 
     function redeem(address artist, uint128 end) external {
@@ -246,8 +247,12 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             !_stake[artist][_msgSender()][uint(index)].redeemed,
             "FanToArtistStaking: this stake has already been redeemed"
         );
-        _jtp.unlock(_msgSender(), _stake[artist][_msgSender()][uint(index)].amount);
-        _stake[artist][_msgSender()][uint(index)].redeemed = true;
+        if (
+            _jtp.unlock(
+                _msgSender(),
+                _stake[artist][_msgSender()][uint(index)].amount
+            )
+        ) _stake[artist][_msgSender()][uint(index)].redeemed = true;
     }
 
     function isVerified(address artist) external view returns (bool) {
