@@ -98,7 +98,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist
     ) internal view returns (bool) {
-        if (!_isStaking(sender, artist)) return false;
         for (uint256 i = 0; i < _stake[artist][sender].length; i++) {
             if (_stake[artist][sender][i].end > block.timestamp) return true;
         }
@@ -109,10 +108,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist,
         uint128 end,
-        uint256 amount
+        uint256 amount,
+        bool isStaking
     ) internal {
-        if (!_isStaking(sender, artist)) {
-            //TODO pass @params new to not double check // doing this to avoid same values inside
+        if (!isStaking) {
             _artistStaked[sender].push(artist);
         }
         _stake[artist][sender].push(
@@ -218,16 +217,13 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             end < _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
+        bool isStaking = _isStaking(_msgSender(), artist);
         require(
-            !_isStaking(_msgSender(), artist),
-            "FanToArtistStaking: already staking"
-        );
-        require(
-            !_isStakingNow(_msgSender(), artist),
+            !(isStaking && _isStakingNow(_msgSender(), artist)),
             "FanToArtistStaking: already staking"
         );
         _jtp.lock(_msgSender(), amount);
-        _addStake(_msgSender(), artist, end, amount);
+        _addStake(_msgSender(), artist, end, amount, isStaking);
         emit ArtistStaked(
             artist,
             _msgSender(),

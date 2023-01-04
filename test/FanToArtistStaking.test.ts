@@ -176,10 +176,25 @@ describe('FanToArtistStaking', () => {
             expect(myTimes).to.include.deep.members(returnedTime);
         });
 
+        it('Should be able to stake again', async () => {
+            const amount = 50;
+            const time = 50;
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
+                .to.emit(fanToArtistStaking, 'ArtistStaked')
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
+            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
+            expect(await jtp.balanceOf(addr1.address)).to.equal(0);
+        });
+
         describe('Reverts', () => {
             it('Should not be able to stake a non verified artist', async () => {
                 await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, 100, Date.now() + 70))
                     .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
+            });
+
+            it('Should not be able to redeem a non existent stake', async () => {
+                await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, 123))
+                    .to.be.revertedWith('FanToArtistStaking: No stake found with this end date');
             });
         });
     });
