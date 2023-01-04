@@ -76,3 +76,6 @@ We are using two differents solidity version, the 0.8.0 (openzeppelin) and 0.8.1
 ## Others
 Some warnings appear in the contract [FanToArtistStaking](./contracts/FanToArtistStaking.sol)  which is being developed
 The remaining ones comes from the @openzeppelin module which can be excluded running slither with this flag `--filter-paths "/TP/node_modules/@openzeppelin/"`
+
+## Phishing Safe
+We don't use `tx.origin` but we use `msg.sender` sometimes passed as argument to avoid [phishing](https://solidity-by-example.org/hacks/phishing-with-tx-origin/) smart contract attacks 
