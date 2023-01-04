@@ -3,6 +3,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, JTP } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { boolean } from 'hardhat/internal/core/params/argumentTypes';
 
 describe('FanToArtistStaking', () => {
     let jtp: JTP;
@@ -85,8 +86,9 @@ describe('FanToArtistStaking', () => {
     });
 
     describe('Staking', () => {
-        let stake1 = {}, stake2 = {};
-        let times:number[] = [];
+        type Stake = { redeemed?: boolean, artist?: string, amount?: number, rewardVe?: number, rewardArtist?: number }
+        let stake1: Stake = {}, stake2 = {};
+        let times: number[] = [];
         before(async () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
             await jtp.mint(addr1.address, 100);
@@ -117,7 +119,13 @@ describe('FanToArtistStaking', () => {
 
         it('Should be able to redeem the token locked', async () => {
             //pass time
-            await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, 100)).to.be.revertedWith("hi");
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
+            const activeStake = await fanToArtistStaking.connect(addr1).getAllStake();
+            const endTime = activeStake[0].stake.end.toNumber();
+            await fanToArtistStaking.connect(addr1).redeem(artist1.address, endTime);
+            stake1.redeemed = true;
 
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
             expect(await jtp.balanceOf(addr1.address)).to.equal(100);
@@ -156,13 +164,13 @@ describe('FanToArtistStaking', () => {
                     end: x.stake.end.toNumber(),
                 }
             });
-            const myTimes:Object[] = [];
+            const myTimes: Object[] = [];
             returnedTime.forEach(x => {
                 times.forEach(element => {
                     myTimes.push({
                         start: x.start,
-                        end: x.start+element 
-                        })
+                        end: x.start + element
+                    })
                 })
             });
             expect(myTimes).to.include.deep.members(returnedTime);

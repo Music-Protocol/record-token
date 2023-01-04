@@ -127,24 +127,15 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         );
     }
 
-    function _getStake(
+    function _getStakeIndex(
         address sender,
         address artist,
         uint128 end
-    ) internal view returns (Stake memory) {
+    ) internal view returns (int) {
         for (uint i = 0; i < _stake[artist][sender].length; i++) {
-            if (_stake[artist][sender][i].end == end)
-                return _stake[artist][sender][i];
+            if (_stake[artist][sender][i].end == end) return int(i);
         }
-        return
-            Stake({
-                amount: 0,
-                start: 0,
-                end: 0,
-                rewardVe: 0,
-                rewardArtist: 0,
-                redeemed: false
-            });
+        return -1;
     }
 
     // @return the array of all Stake from the msg.sender
@@ -250,16 +241,17 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             end < block.timestamp,
             "FanToArtistStaking: you are trying to redeem a stake before his end"
         );
-        Stake memory target = _getStake(_msgSender(), artist, end);
+        int index = _getStakeIndex(_msgSender(), artist, end);
         require(
-            target.amount>0,
+            index > -1,
             "FanToArtistStaking: No stake found with this end date"
         );
         require(
-            !target.redeemed,
+            !_stake[artist][_msgSender()][uint(index)].redeemed,
             "FanToArtistStaking: this stake has already been redeemed"
         );
-        _jtp.unlock(_msgSender(), target.amount);
+        _jtp.unlock(_msgSender(), _stake[artist][_msgSender()][uint(index)].amount);
+        _stake[artist][_msgSender()][uint(index)].redeemed = true;
     }
 
     function isVerified(address artist) external view returns (bool) {
