@@ -85,8 +85,8 @@ describe('FanToArtistStaking', () => {
     });
 
     describe('Staking', () => {
-        type Stake = { redeemed?: boolean, artist?: string, amount?: number, rewardVe?: number, rewardArtist?: number }
-        let stake1: Stake = {}, stake2 = {};
+        type Stake = { redeemed?: boolean, artist?: string, amount?: number, rewardVe?: number, rewardArtist?: number, previous?: number }
+        let stake1: Stake = {}, stake2: Stake = {};
         let times: number[] = [];
         before(async () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
@@ -106,6 +106,7 @@ describe('FanToArtistStaking', () => {
             stake1 = {
                 artist: artist1.address,
                 amount,
+                previous: 0,
                 // start: anyValue,
                 // end: anyValue,
                 rewardVe: defVeReward,
@@ -140,6 +141,7 @@ describe('FanToArtistStaking', () => {
                 return {
                     artist: o.artist,
                     amount: o.stake.amount.toNumber(),
+                    previous: o.stake.previous.toNumber(),
                     // start: o.stake.start.toNumber(),
                     // end: o.stake.end.toNumber(),
                     rewardVe: o.stake.rewardVe.toNumber(),
@@ -150,6 +152,7 @@ describe('FanToArtistStaking', () => {
             stake2 = {
                 artist: artist2.address,
                 amount,
+                previous: 0,
                 // start: anyValue,
                 // end: anyValue,
                 rewardVe: defVeReward,
@@ -177,7 +180,7 @@ describe('FanToArtistStaking', () => {
 
         it('Should be able to stake again', async () => {
             const amount = 50;
-            const time = 50;
+            const time = 86400;
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'ArtistStaked')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);
@@ -186,8 +189,24 @@ describe('FanToArtistStaking', () => {
         });
 
         describe('Reverts', () => {
+            it('Should not be able to stake less than minimum', async () => {
+                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, 5))
+                    .to.be.revertedWith('FanToArtistStaking: the end period is less than minimum');
+            });
+
+            it('Should not be able to stake more than maximum', async () => {
+                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, 86401))
+                    .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
+            });
+
+            it('Should not be able to stake more than maximum', async () => {
+                await jtp.mint(addr2.address, 100);
+                await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 1, 30))
+                    .to.be.revertedWith('FanToArtistStaking: already staking');
+            });
+
             it('Should not be able to stake a non verified artist', async () => {
-                await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, 100, Date.now() + 70))
+                await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, 100, 70))
                     .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
             });
 
@@ -195,6 +214,7 @@ describe('FanToArtistStaking', () => {
                 await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, 123))
                     .to.be.revertedWith('FanToArtistStaking: No stake found with this end date');
             });
+
         });
     });
 });

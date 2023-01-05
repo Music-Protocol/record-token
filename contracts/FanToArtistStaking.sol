@@ -24,6 +24,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 end;
         uint128 rewardVe;
         uint128 rewardArtist;
+        uint128 previous;
         bool redeemed;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
@@ -107,8 +108,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     function _addStake(
         address sender,
         address artist,
-        uint128 end,
         uint256 amount,
+        uint128 end,
+        uint128 referencedStake,
         bool isStaking
     ) internal {
         if (!isStaking) {
@@ -121,6 +123,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 end: uint128(block.timestamp) + end,
                 rewardVe: _veJTPRewardRate,
                 rewardArtist: _artistJTPRewardRate,
+                previous: referencedStake,
                 redeemed: false
             })
         );
@@ -214,7 +217,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             "FanToArtistStaking: the end period is less than minimum"
         );
         require(
-            end < _maxStakePeriod,
+            end <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
         bool isStaking = _isStaking(_msgSender(), artist);
@@ -223,7 +226,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             "FanToArtistStaking: already staking"
         );
         if (_jtp.lock(_msgSender(), amount)) {
-            _addStake(_msgSender(), artist, end, amount, isStaking);
+            _addStake(_msgSender(), artist, amount, end, 0, isStaking);
             emit ArtistStaked(
                 artist,
                 _msgSender(),
@@ -231,6 +234,62 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 uint128(block.timestamp) + end
             );
         }
+    }
+
+    function incrementAmountStaked(
+        address artist,
+        uint256 amount,
+        uint128 end
+    ) external onlyVerifiedArtist(artist) {
+        require(
+            block.timestamp < end,
+            "FanToArtistStaking: you are trying to redeem a stake before his end"
+        );
+        int index = _getStakeIndex(_msgSender(), artist, end);
+        require(
+            index > -1,
+            "FanToArtistStaking: No stake found with this end date"
+        );
+        require(
+            !_stake[artist][_msgSender()][uint(index)].redeemed,
+            "FanToArtistStaking: this stake has already been redeemed"
+        );
+        if (_jtp.lock(_msgSender(), amount)) {
+            _stake[artist][_msgSender()][uint(index)].redeemed = true;
+            _addStake(
+                _msgSender(),//sender
+                artist,//artist
+                _stake[artist][_msgSender()][uint(index)].amount + amount,//amount
+                _stake[artist][_msgSender()][uint(index)].end -
+                    _stake[artist][_msgSender()][uint(index)].start,//end
+                _stake[artist][_msgSender()][uint(index)].end,//referencedStake
+                true//newEnd
+            );
+            _stake[artist][_msgSender()][uint(index)].end = uint128(
+                block.timestamp
+            );
+        }
+    }
+
+    function extendStake(
+        address artist,
+        uint128 end,
+        uint128 newEnd
+    ) external onlyVerifiedArtist(artist) {
+        require(
+            block.timestamp < end,
+            "FanToArtistStaking: you are trying to redeem a stake before his end"
+        );
+        int index = _getStakeIndex(_msgSender(), artist, end);
+        require(
+            index > -1,
+            "FanToArtistStaking: No stake found with this end date"
+        );
+        require(
+            !_stake[artist][_msgSender()][uint(index)].redeemed,
+            "FanToArtistStaking: this stake has already been redeemed"
+        );
+        _stake[artist][_msgSender()][uint(index)].end += newEnd;
     }
 
     function redeem(address artist, uint128 end) external {
