@@ -90,9 +90,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist
     ) internal view returns (bool) {
-        for (uint256 i = 0; i < _artistStaked[sender].length; i++)
-            if (_artistStaked[sender][i] == artist) return true;
-        return false;
+        return _stake[artist][sender].length !=0;
     }
 
     function _isStakingNow(
