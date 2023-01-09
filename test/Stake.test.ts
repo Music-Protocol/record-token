@@ -12,6 +12,8 @@ describe('Stake Simulation', () => {
     let users: SignerWithAddress[]; //13
     const defVeReward = 10;
     const defArtistReward = 10;
+    const minStakeTime = 10;
+    const maxStakeTime = 864000;
 
     async function timeMachine(minutes: number) {
         const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -26,7 +28,7 @@ describe('Stake Simulation', () => {
         users = signers.slice(7, 20);
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        ftas = await FTAS.deploy(defVeReward, defArtistReward, 10, 86400,);
+        ftas = await FTAS.deploy(defVeReward, defArtistReward, minStakeTime, maxStakeTime,);
         await ftas.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
@@ -68,19 +70,19 @@ describe('Stake Simulation', () => {
             .to.be.revertedWith('FanToArtistStaking: you are trying to redeem a stake before his end');
 
         await timeMachine(1);
-        
+
         await ftas.connect(user).redeem(artists[0].address, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(0);
 
     });
 
     it('A user should be able to fetch all his stakes', async () => {
-        async function StakeAndRedeem (){
+        async function StakeAndRedeem() {
             await ftas.connect(user).stake(artists[0].address, 100, 30);
             expect(await jtp.balanceOf(ftas.address)).to.equal(100);
-    
+
             activeStake = await ftas.connect(user).getAllStake();
-            endTime = Math.max(...activeStake.map(s=>s.stake.end.toNumber()));
+            endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
             await timeMachine(1);
             await ftas.connect(user).redeem(artists[0].address, endTime);
             expect(await jtp.balanceOf(ftas.address)).to.equal(0);
@@ -104,11 +106,11 @@ describe('Stake Simulation', () => {
         expect((await ftas.connect(user).getAllStake()).length).to.equal(1);
 
         const activeStake = await ftas.connect(user).getAllStake();
-        const endTime = Math.max(...activeStake.map(s=>s.stake.end.toNumber()));
-        await ftas.connect(user).incrementAmountStaked(artists[0].address, 50,endTime);
+        const endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        await ftas.connect(user).incrementAmountStaked(artists[0].address, 50, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(100);
         expect(await jtp.balanceOf(user.address)).to.equal(0);
-        
+
         expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
     });
 
@@ -119,10 +121,63 @@ describe('Stake Simulation', () => {
         expect((await ftas.connect(user).getAllStake()).length).to.equal(1);
 
         const activeStake = await ftas.connect(user).getAllStake();
-        const endTime = Math.max(...activeStake.map(s=>s.stake.end.toNumber()));
+        const endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
         await ftas.connect(user).extendStake(artists[0].address, endTime, 30);
-        
+
         expect((await ftas.connect(user).getAllStake()).length).to.equal(1);
+    });
+
+    it('A user should not be able to increase the time of a stake if exceed the max', async () => {
+        const user = users[0];
+
+        await ftas.connect(user).stake(artists[0].address, 50, 3000);
+        expect((await ftas.connect(user).getAllStake()).length).to.equal(1);
+
+        let activeStake = await ftas.connect(user).getAllStake();
+        let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        await ftas.connect(user).incrementAmountStaked(artists[0].address, 50, endTime);
+        expect(await jtp.balanceOf(ftas.address)).to.equal(100);
+        expect(await jtp.balanceOf(user.address)).to.equal(0);
+        expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
+
+        activeStake = await ftas.connect(user).getAllStake();
+        endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime))
+            .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
+        expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
+        expect(await jtp.balanceOf(ftas.address)).to.equal(100);
+        expect(await jtp.balanceOf(user.address)).to.equal(0);
+
+    });
+
+    it('A user should not be able to increase the time of a stake if exceed the max', async () => {
+        const user = users[0];
+
+        await ftas.connect(user).stake(artists[0].address, 50, 30);
+        expect((await ftas.connect(user).getAllStake()).length).to.equal(1);
+
+        let activeStake = await ftas.connect(user).getAllStake();
+        let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        await ftas.connect(user).incrementAmountStaked(artists[0].address, 20, endTime);
+        expect(await jtp.balanceOf(ftas.address)).to.equal(70);
+        expect(await jtp.balanceOf(user.address)).to.equal(30);
+        expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
+
+        activeStake = await ftas.connect(user).getAllStake();
+        endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        await ftas.connect(user).incrementAmountStaked(artists[0].address, 20, endTime);
+        expect(await jtp.balanceOf(ftas.address)).to.equal(90);
+        expect(await jtp.balanceOf(user.address)).to.equal(10);
+        expect((await ftas.connect(user).getAllStake()).length).to.equal(3);
+
+        activeStake = await ftas.connect(user).getAllStake();
+        endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime))
+            .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
+            expect(await jtp.balanceOf(ftas.address)).to.equal(90);
+            expect(await jtp.balanceOf(user.address)).to.equal(10);
+            expect((await ftas.connect(user).getAllStake()).length).to.equal(3);
+
     });
 
     describe('Stress Batch', () => {

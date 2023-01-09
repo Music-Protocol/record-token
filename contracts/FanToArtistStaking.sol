@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 
+import "hardhat/console.sol";
+
 contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
@@ -90,7 +92,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist
     ) internal view returns (bool) {
-        return _stake[artist][sender].length !=0;
+        return _stake[artist][sender].length != 0;
     }
 
     function _isStakingNow(
@@ -131,11 +133,30 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist,
         uint128 end
-    ) internal view returns (int) {
+    ) internal view returns (int256) {
         for (uint i = 0; i < _stake[artist][sender].length; i++) {
             if (_stake[artist][sender][i].end == end) return int(i);
         }
         return -1;
+    }
+
+    function _allStakePeriod(
+        address sender,
+        address artist,
+        uint256 index
+    ) internal view returns (uint128) {
+        uint128 time = _stake[artist][sender][index].end -
+            _stake[artist][sender][index].start;
+
+        if (_stake[artist][sender][index].previous == 0) return time;
+        index = uint256(
+            _getStakeIndex(
+                sender,
+                artist,
+                _stake[artist][sender][index].previous
+            )
+        );
+        return time + _allStakePeriod(sender, artist, index);
     }
 
     // @return the array of all Stake from the msg.sender
@@ -241,7 +262,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     ) external onlyVerifiedArtist(artist) {
         require(
             block.timestamp < end,
-            "FanToArtistStaking: you are trying to redeem a stake before his end"
+            "FanToArtistStaking: you are trying to increase the amount of a stake already ended"
         );
         int index = _getStakeIndex(_msgSender(), artist, end);
         require(
@@ -254,17 +275,17 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         );
         if (_jtp.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()][uint(index)].redeemed = true;
-            _addStake(
-                _msgSender(),//sender
-                artist,//artist
-                _stake[artist][_msgSender()][uint(index)].amount + amount,//amount
-                _stake[artist][_msgSender()][uint(index)].end -
-                    _stake[artist][_msgSender()][uint(index)].start,//end
-                _stake[artist][_msgSender()][uint(index)].end,//referencedStake
-                true//newEnd
-            );
+            uint128 prev = _stake[artist][_msgSender()][uint(index)].end;
             _stake[artist][_msgSender()][uint(index)].end = uint128(
                 block.timestamp
+            );
+            _addStake(
+                _msgSender(), //sender
+                artist, //artist
+                _stake[artist][_msgSender()][uint(index)].amount + amount, //amount
+                prev - _stake[artist][_msgSender()][uint(index)].end, //end
+                _stake[artist][_msgSender()][uint(index)].end, //referencedStake
+                true //newEnd
             );
         }
     }
@@ -276,12 +297,17 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     ) external onlyVerifiedArtist(artist) {
         require(
             block.timestamp < end,
-            "FanToArtistStaking: you are trying to redeem a stake before his end"
+            "FanToArtistStaking: you are trying to increase the time of a stake already ended!"
         );
-        int index = _getStakeIndex(_msgSender(), artist, end);
+        int index = _getStakeIndex(_msgSender(), artist, end);        
         require(
             index > -1,
             "FanToArtistStaking: No stake found with this end date"
+        );
+        require(
+            _allStakePeriod(_msgSender(), artist, uint256(index))+newEnd <=
+                _maxStakePeriod,
+            "FanToArtistStaking: the stake period exceed the maximum"
         );
         require(
             !_stake[artist][_msgSender()][uint(index)].redeemed,
