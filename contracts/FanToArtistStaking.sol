@@ -24,9 +24,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint256 amount;
         uint128 start; //block.timestamp
         uint128 end;
-        uint128 rewardVe;
         uint128 rewardArtist;
-        uint128 previous;
         bool redeemed;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
@@ -110,7 +108,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address artist,
         uint256 amount,
         uint128 end,
-        uint128 referencedStake,
         bool isStaking
     ) internal {
         if (!isStaking) {
@@ -121,9 +118,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 amount: amount,
                 start: uint128(block.timestamp),
                 end: uint128(block.timestamp) + end,
-                rewardVe: _veJTPRewardRate,
                 rewardArtist: _artistJTPRewardRate,
-                previous: referencedStake,
                 redeemed: false
             })
         );
@@ -148,15 +143,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 time = _stake[artist][sender][index].end -
             _stake[artist][sender][index].start;
 
-        if (_stake[artist][sender][index].previous == 0) return time;
-        index = uint256(
-            _getStakeIndex(
-                sender,
-                artist,
-                _stake[artist][sender][index].previous
-            )
+        int256 i = _getStakeIndex(
+            sender,
+            artist,
+            _stake[artist][sender][index].start
         );
-        return time + _allStakePeriod(sender, artist, index);
+        if (i == -1) return time;
+
+        return time + _allStakePeriod(sender, artist, uint256(i));
     }
 
     // @return the array of all Stake from the msg.sender
@@ -200,14 +194,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         }
     }
 
-    function changeStakingVeRate(
-        uint128 rate,
-        address sender
-    ) external onlyOwner {
-        //stop all stakes
-        _veJTPRewardRate = rate;
-        emit VeJTPRewardChanged(rate, sender);
-    }
 
     function changeArtistRewardRate(
         uint128 rate,
@@ -245,7 +231,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             "FanToArtistStaking: already staking"
         );
         if (_jtp.lock(_msgSender(), amount)) {
-            _addStake(_msgSender(), artist, amount, end, 0, isStaking);
+            _addStake(_msgSender(), artist, amount, end, isStaking);
             emit ArtistStaked(
                 artist,
                 _msgSender(),
@@ -284,7 +270,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 artist, //artist
                 _stake[artist][_msgSender()][uint(index)].amount + amount, //amount
                 prev - _stake[artist][_msgSender()][uint(index)].end, //end
-                _stake[artist][_msgSender()][uint(index)].end, //referencedStake
                 true //newEnd
             );
         }
@@ -299,13 +284,13 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             block.timestamp < end,
             "FanToArtistStaking: you are trying to increase the time of a stake already ended!"
         );
-        int index = _getStakeIndex(_msgSender(), artist, end);        
+        int index = _getStakeIndex(_msgSender(), artist, end);
         require(
             index > -1,
             "FanToArtistStaking: No stake found with this end date"
         );
         require(
-            _allStakePeriod(_msgSender(), artist, uint256(index))+newEnd <=
+            _allStakePeriod(_msgSender(), artist, uint256(index)) + newEnd <=
                 _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );

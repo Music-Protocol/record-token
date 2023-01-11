@@ -69,10 +69,6 @@ describe('FanToArtistStaking', () => {
     describe('Rates', () => {
         it('Should be able to change the veJTP reward rate', async () => {
             expect(await fanToArtistStaking.getStakingVeRate()).to.equal(10);
-            await expect(fanToArtistStaking.changeStakingVeRate(90, owner.address))
-                .to.emit(fanToArtistStaking, 'VeJTPRewardChanged')
-                .withArgs(90, owner.address);
-            expect(await fanToArtistStaking.getStakingVeRate()).to.equal(90);
         });
 
         it('Should be able to change the artist reward rate', async () => {
@@ -85,14 +81,13 @@ describe('FanToArtistStaking', () => {
     });
 
     describe('Staking', () => {
-        type Stake = { redeemed?: boolean, artist?: string, amount?: number, rewardVe?: number, rewardArtist?: number, previous?: number }
+        type Stake = { redeemed?: boolean, artist?: string, amount?: number, rewardArtist?: number }
         let stake1: Stake = {}, stake2: Stake = {};
         let times: number[] = [];
         before(async () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
             await jtp.mint(addr1.address, 100);
             await fanToArtistStaking.addArtist(artist2.address, owner.address);
-            await fanToArtistStaking.changeStakingVeRate(10, owner.address);
             await fanToArtistStaking.changeArtistRewardRate(10, owner.address);
         });
 
@@ -106,10 +101,8 @@ describe('FanToArtistStaking', () => {
             stake1 = {
                 artist: artist1.address,
                 amount,
-                previous: 0,
                 // start: anyValue,
                 // end: anyValue,
-                rewardVe: defVeReward,
                 rewardArtist: defArtistReward,
                 redeemed: false
             };
@@ -141,10 +134,8 @@ describe('FanToArtistStaking', () => {
                 return {
                     artist: o.artist,
                     amount: o.stake.amount.toNumber(),
-                    previous: o.stake.previous.toNumber(),
                     // start: o.stake.start.toNumber(),
                     // end: o.stake.end.toNumber(),
-                    rewardVe: o.stake.rewardVe.toNumber(),
                     rewardArtist: o.stake.rewardArtist.toNumber(),
                     redeemed: o.stake.redeemed
                 }
@@ -152,10 +143,8 @@ describe('FanToArtistStaking', () => {
             stake2 = {
                 artist: artist2.address,
                 amount,
-                previous: 0,
                 // start: anyValue,
                 // end: anyValue,
-                rewardVe: defVeReward,
                 rewardArtist: defArtistReward,
                 redeemed: false
             };
