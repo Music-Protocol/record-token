@@ -23,6 +23,12 @@ describe('JTP', () => {
         it('TotalSupply should be zero', async () => {
             expect(await jtp.totalSupply()).to.equal(0);
         });
+
+        it('Should revert if the FanToArtistStaking address is 0', async () => {
+            const cJTP = await ethers.getContractFactory('JTP');
+            await expect(cJTP.deploy('0x0000000000000000000000000000000000000000'))
+                .to.be.rejectedWith('JTP: the address of FanToArtistStaking is 0');
+        });
     });
 
     describe('Access control', () => {
@@ -46,8 +52,6 @@ describe('JTP', () => {
             await expect(jtp.connect(addr1).burnFrom(addr1.address, 1))
                 .to.be.revertedWith('Ownable: caller is not the owner');
         });
-        
-
     });
 
     describe('Behaviour', () => {
@@ -66,6 +70,36 @@ describe('JTP', () => {
 
         it('Should revert if the minter is not the owner', async () => {
             await expect(jtp.connect(addr1).mint(addr1.address, 100))
+                .to.be.revertedWith('Ownable: caller is not the owner');
+        });
+
+        it('Should revert if the burner is not the owner', async () => {
+            await expect(jtp.connect(addr1).burn(100))
+                .to.be.revertedWith('Ownable: caller is not the owner');
+        });
+
+        it('Should revert if the burner is not the owner', async () => {
+            await expect(jtp.connect(addr1).burnFrom(addr1.address, 100))
+                .to.be.revertedWith('Ownable: caller is not the owner');
+        });
+
+        it('Should revert if is not the the owner to call the transfer', async () => {
+            await expect(jtp.connect(addr1).transferOwnership(addr1.address))
+                .to.be.revertedWith('Ownable: caller is not the owner');
+        });
+
+        it('Pause/Unpause', async () => {
+            await jtp.connect(owner).pause();
+            await expect(jtp.connect(owner).pause())
+                .to.be.revertedWith('Pausable: paused');
+            await expect(jtp.connect(owner).mint(addr1.address, 100))
+                .to.be.revertedWith('Pausable: paused');
+            await jtp.connect(owner).unpause();
+            await expect(jtp.connect(owner).unpause())
+                .to.be.revertedWith('Pausable: not paused');
+            await expect(jtp.connect(addr1).pause())
+                .to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(jtp.connect(addr1).unpause())
                 .to.be.revertedWith('Ownable: caller is not the owner');
         });
 
