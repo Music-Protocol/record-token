@@ -176,6 +176,13 @@ describe('JTPManagement', () => {
                 await expect(jtpManagement.connect(addr1).removeArtist(artist1.address))
                     .to.emit(fanToArtistStaking, 'ArtistRemoved')//emit event correct
             });
+
+            it('Should revert', async () => {
+                await expect(jtpManagement.connect(artist1).addArtist(artist1.address))
+                    .to.be.revertedWith(`AccessControl: account ${artist1.address.toLowerCase()} is missing role ${verifyArtistRole}`);
+                await expect(jtpManagement.connect(artist1).removeArtist(artist1.address))
+                    .to.be.revertedWith(`AccessControl: account ${artist1.address.toLowerCase()} is missing role ${verifyArtistRole}`);
+            })
         });
 
         describe('Transfer Ownership', () => {
@@ -192,7 +199,7 @@ describe('JTPManagement', () => {
             after(async () => {
                 await fanToArtistStaking.connect(fakeDAO).transferOwnership(jtpManagement.address);
             });
-            
+
         });
     });
 
