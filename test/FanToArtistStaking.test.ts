@@ -204,6 +204,44 @@ describe('FanToArtistStaking', () => {
                     .to.be.revertedWith('FanToArtistStaking: No stake found with this end date');
             });
 
+            it('Should not be able to setJTP address if not the Owner', async () => {
+                await expect(fanToArtistStaking.connect(addr2).setJTP(artist3.address))
+                    .to.be.revertedWith('Ownable: caller is not the owner');
+            });
+
+            it('Should not be able to transferOwnership if not the Owner', async () => {
+                await expect(fanToArtistStaking.connect(addr2).transferOwnership(artist3.address))
+                    .to.be.revertedWith('Ownable: caller is not the owner');
+            });
+
+            it('Should not be able to changeArtistReward if not the Owner', async () => {
+                await expect(fanToArtistStaking.connect(addr2).changeArtistRewardRate(100000, artist3.address))
+                    .to.be.revertedWith('Ownable: caller is not the owner');
+            });
+
+            it('Should not be able to extend a a stake if the artist is not in the verified artist list', async () => {
+                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(owner.address, 50, 30))
+                    .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
+            });
+
+            it('Should not be able to extend a a stake if the stake is ended', async () => {
+                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, 30))
+                    .to.be.revertedWith('FanToArtistStaking: you are trying to increase the amount of a stake already ended');
+            });
+
+            it('Should not be able to extend a a stake if the stake not found', async () => {
+                const date = Date.now();
+                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, date))
+                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
+            });
+
+            it('No event should be emitted if the artist was already added or removed', async () => {
+                await expect(fanToArtistStaking.connect(owner).addArtist(artist1.address, artist1.address))
+                    .not.to.emit(fanToArtistStaking, 'ArtistAdded');
+                await fanToArtistStaking.connect(owner).removeArtist(artist1.address, artist1.address);
+                await expect(fanToArtistStaking.connect(owner).removeArtist(artist1.address, artist1.address))
+                    .not.to.emit(fanToArtistStaking, 'ArtistRemoved');
+            });
         });
     });
 });

@@ -136,7 +136,7 @@ describe('Stake Simulation', () => {
 
         const activeStake = await ftas.connect(user).getAllStake();
         const endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
-        await ftas.connect(user).incrementAmountStaked(artists[0].address, 50, endTime);
+        await ftas.connect(user).increaseAmountStaked(artists[0].address, 50, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(100);
         expect(await jtp.balanceOf(user.address)).to.equal(0);
 
@@ -170,7 +170,7 @@ describe('Stake Simulation', () => {
 
         let activeStake = await ftas.connect(user).getAllStake();
         let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
-        await ftas.connect(user).incrementAmountStaked(artists[0].address, 50, endTime);
+        await ftas.connect(user).increaseAmountStaked(artists[0].address, 50, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(100);
         expect(await jtp.balanceOf(user.address)).to.equal(0);
         expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
@@ -193,14 +193,14 @@ describe('Stake Simulation', () => {
 
         let activeStake = await ftas.connect(user).getAllStake();
         let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
-        await ftas.connect(user).incrementAmountStaked(artists[0].address, 20, endTime);
+        await ftas.connect(user).increaseAmountStaked(artists[0].address, 20, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(70);
         expect(await jtp.balanceOf(user.address)).to.equal(30);
         expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
 
         activeStake = await ftas.connect(user).getAllStake();
         endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
-        await ftas.connect(user).incrementAmountStaked(artists[0].address, 20, endTime);
+        await ftas.connect(user).increaseAmountStaked(artists[0].address, 20, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(90);
         expect(await jtp.balanceOf(user.address)).to.equal(10);
         expect((await ftas.connect(user).getAllStake()).length).to.equal(3);

@@ -241,7 +241,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         }
     }
 
-    function incrementAmountStaked(
+    function increaseAmountStaked(
         address artist,
         uint256 amount,
         uint128 end
@@ -253,7 +253,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         int index = _getStakeIndex(_msgSender(), artist, end);
         require(
             index > -1,
-            "FanToArtistStaking: No stake found with this end date"
+            "FanToArtistStaking: no stake found with this end date"
         );
         require(
             !_stake[artist][_msgSender()][uint(index)].redeemed,
