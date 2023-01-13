@@ -135,24 +135,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         return -1;
     }
 
-    function _allStakePeriod(
-        address sender,
-        address artist,
-        uint256 index
-    ) internal view returns (uint128) {
-        uint128 time = _stake[artist][sender][index].end -
-            _stake[artist][sender][index].start;
-
-        int256 i = _getStakeIndex(
-            sender,
-            artist,
-            _stake[artist][sender][index].start
-        );
-        if (i == -1) return time;
-
-        return time + _allStakePeriod(sender, artist, uint256(i));
-    }
-
     // @return the array of all Stake from the msg.sender
     function getAllStake() external view returns (DetailedStake[] memory) {
         uint count = 0;
@@ -290,8 +272,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             "FanToArtistStaking: No stake found with this end date"
         );
         require(
-            _allStakePeriod(_msgSender(), artist, uint256(index)) + newEnd <=
-                _maxStakePeriod,
+            newEnd <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
         require(

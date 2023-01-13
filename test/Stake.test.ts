@@ -177,7 +177,7 @@ describe('Stake Simulation', () => {
 
         activeStake = await ftas.connect(user).getAllStake();
         endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
-        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime))
+        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime + 1))
             .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
         expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
         expect(await jtp.balanceOf(ftas.address)).to.equal(100);
@@ -208,7 +208,7 @@ describe('Stake Simulation', () => {
         activeStake = await ftas.connect(user).getAllStake();
         // console.log(parseDetailedStakes(activeStake))
         endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
-        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime))
+        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime +1 ))
             .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
         expect(await jtp.balanceOf(ftas.address)).to.equal(90);
         expect(await jtp.balanceOf(user.address)).to.equal(10);
