@@ -201,7 +201,7 @@ describe('FanToArtistStaking', () => {
 
             it('Should not be able to redeem a non existent stake', async () => {
                 await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, 123))
-                    .to.be.revertedWith('FanToArtistStaking: No stake found with this end date');
+                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
             });
 
             it('Should not be able to setJTP address if not the Owner', async () => {
@@ -219,22 +219,47 @@ describe('FanToArtistStaking', () => {
                     .to.be.revertedWith('Ownable: caller is not the owner');
             });
 
-            it('Should not be able to extend a a stake if the artist is not in the verified artist list', async () => {
+            it('Should not be able to extend a stake if the artist is not in the verified artist list', async () => {
                 await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(owner.address, 50, 30))
                     .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
             });
 
-            it('Should not be able to extend a a stake if the stake is ended', async () => {
+            it('Should not be able to extend a stake if the stake is ended', async () => {
                 await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, 30))
-                    .to.be.revertedWith('FanToArtistStaking: you are trying to increase the amount of a stake already ended');
+                    .to.be.revertedWith('FanToArtistStaking: the stake is already ended');
             });
 
-            it('Should not be able to extend a a stake if the stake not found', async () => {
+            it('Should not be able to extend a stake if the stake not found', async () => {
                 const date = Date.now();
                 await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, date))
                     .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
             });
 
+            it('Should not be able to extend a stake if the stake not found', async () => {
+                const date = Date.now();
+                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, date))
+                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
+            });
+
+            it('Should not be able to extend a stake if the artist is not verified', async () => { //should not be necessary the test and the modifier
+                const date = Date.now();
+                await expect(fanToArtistStaking.connect(addr2).extendStake(owner.address, 0, date))
+                    .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
+            });
+
+            it('Should not be able to extend a stake is ended', async () => {
+                const date = Date.now();
+                await expect(fanToArtistStaking.connect(addr2).extendStake(artist1.address, 0, date + 50))
+                    .to.be.revertedWith('FanToArtistStaking: the stake is already ended');
+            });
+
+            it('Should revert when extend a not existing stake', async () => {
+                const date = Date.now();
+                await expect(fanToArtistStaking.connect(addr2).extendStake(artist1.address, date + 50, date + 50))
+                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
+            });
+
+           
             it('No event should be emitted if the artist was already added or removed', async () => {
                 await expect(fanToArtistStaking.connect(owner).addArtist(artist1.address, artist1.address))
                     .not.to.emit(fanToArtistStaking, 'ArtistAdded');

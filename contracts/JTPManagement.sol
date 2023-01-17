@@ -15,8 +15,8 @@ contract JTPManagement is AccessControl {
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
 
-    IJTP private _jtp;
-    IFanToArtistStaking private _ftas;
+    IJTP private immutable _jtp;
+    IFanToArtistStaking private immutable _ftas;
 
     constructor(address jtp, address ftas) {
         //set jtp

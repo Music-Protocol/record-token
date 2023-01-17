@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "./interfaces/IJTP.sol";
 
 contract JTP is IJTP, ERC20, Ownable, Pausable {
-    address private _fanToArtistStaking;
+    address private immutable _fanToArtistStaking;
 
     //for the function callable only by FanToArtistStaking.sol
     modifier onlyStaking() {

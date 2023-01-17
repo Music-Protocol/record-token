@@ -89,7 +89,7 @@ describe('Stake Simulation', () => {
         const activeStake = await ftas.connect(user).getAllStake();
         const endTime = activeStake[0].stake.end.toNumber();
         await expect(ftas.connect(user).redeem(artists[0].address, endTime))
-            .to.be.revertedWith('FanToArtistStaking: you are trying to redeem a stake before his end');
+            .to.be.revertedWith('FanToArtistStaking: the stake is not ended');
         const parsed = parseDetailedStakes(await ftas.connect(user).getAllStake())[0];
         matchDetailedStakes(parsed, artists[0].address, 50, 30, defArtistReward, false);
 

@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 
-import "hardhat/console.sol";
-
 contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
@@ -47,10 +45,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
 
     mapping(address => uint256) private _artistAlreadyPaid;
 
-    uint128 private _veJTPRewardRate; //change onylOwner
+    uint128 private immutable _veJTPRewardRate; //change onylOwner
     uint128 private _artistJTPRewardRate; //change onylOwner
-    uint128 private _minStakePeriod; //change onylOwner
-    uint128 private _maxStakePeriod; //change onylOwner
+    uint128 private immutable _minStakePeriod; //change onylOwner
+    uint128 private immutable _maxStakePeriod; //change onylOwner
 
     constructor(
         uint128 veJTPRewardRate,
@@ -76,6 +74,22 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         require(
             _verifiedArtists[artist],
             "FanToArtistStaking: the artist is not a verified artist"
+        );
+        _;
+    }
+
+    modifier onlyNotEnded(uint128 end) {
+        require(
+            block.timestamp < end,
+            "FanToArtistStaking: the stake is already ended"
+        );
+        _;
+    }
+
+    modifier onlyEnded(uint128 end) {
+        require(
+            end < block.timestamp,
+            "FanToArtistStaking: the stake is not ended"
         );
         _;
     }
@@ -176,7 +190,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         }
     }
 
-
     function changeArtistRewardRate(
         uint128 rate,
         address sender
@@ -227,20 +240,20 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address artist,
         uint256 amount,
         uint128 end
-    ) external onlyVerifiedArtist(artist) {
-        require(
-            block.timestamp < end,
-            "FanToArtistStaking: you are trying to increase the amount of a stake already ended"
-        );
+    ) external onlyVerifiedArtist(artist) onlyNotEnded(end) {
         int index = _getStakeIndex(_msgSender(), artist, end);
         require(
             index > -1,
             "FanToArtistStaking: no stake found with this end date"
         );
-        require(
-            !_stake[artist][_msgSender()][uint(index)].redeemed,
-            "FanToArtistStaking: this stake has already been redeemed"
-        );
+        // this check on redeemed is unecessary,
+        // redeem = true, When you call redeem() so stake time is ended and the modifier onlyNotEnded reverts the request
+        // redeem = true, also when you increase the amount and the end is set to block.timestamp, onlyNotEnded prevent also this case
+        // we could leave it as block.timestamp can be manipulated
+        // require(
+        //     !_stake[artist][_msgSender()][uint(index)].redeemed,
+        //     "FanToArtistStaking: this stake has already been redeemed"
+        // );
         if (_jtp.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()][uint(index)].redeemed = true;
             uint128 prev = _stake[artist][_msgSender()][uint(index)].end;
@@ -261,36 +274,32 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address artist,
         uint128 end,
         uint128 newEnd
-    ) external onlyVerifiedArtist(artist) {
-        require(
-            block.timestamp < end,
-            "FanToArtistStaking: you are trying to increase the time of a stake already ended!"
-        );
+    ) external onlyVerifiedArtist(artist) onlyNotEnded(end) {
         int index = _getStakeIndex(_msgSender(), artist, end);
         require(
             index > -1,
-            "FanToArtistStaking: No stake found with this end date"
+            "FanToArtistStaking: no stake found with this end date"
         );
         require(
             newEnd <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
-        require(
-            !_stake[artist][_msgSender()][uint(index)].redeemed,
-            "FanToArtistStaking: this stake has already been redeemed"
-        );
+        // this check on redeemed is unecessary,
+        // redeem = true, When you call redeem() so stake time is ended and the modifier onlyNotEnded reverts the request
+        // redeem = true, also when you increase the amount and the end is set to block.timestamp, onlyNotEnded prevent also this case
+        // we could leave it as block.timestamp can be manipulated
+        // require(
+        //     !_stake[artist][_msgSender()][uint(index)].redeemed,
+        //     "FanToArtistStaking: this stake has already been redeemed"
+        // );
         _stake[artist][_msgSender()][uint(index)].end += newEnd;
     }
 
-    function redeem(address artist, uint128 end) external {
-        require(
-            end < block.timestamp,
-            "FanToArtistStaking: you are trying to redeem a stake before his end"
-        );
+    function redeem(address artist, uint128 end) external onlyEnded(end) {
         int index = _getStakeIndex(_msgSender(), artist, end);
         require(
             index > -1,
-            "FanToArtistStaking: No stake found with this end date"
+            "FanToArtistStaking: no stake found with this end date"
         );
         require(
             !_stake[artist][_msgSender()][uint(index)].redeemed,
