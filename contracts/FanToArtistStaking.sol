@@ -29,6 +29,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     struct DetailedStake {
         Stake stake;
         address artist;
+        address user;
     }
 
     IJTP private _jtp;
@@ -40,6 +41,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
 
     mapping(address => address[]) private _artistStaked;
     //_artistStaked[staker] = Array of artist staked (past and present)
+
+    mapping(address => address[]) private _stakerOfArtist;
+    //_stakerOfArtist[artist] = Array of user that staked (past and present)
 
     mapping(address => bool) private _verifiedArtists;
 
@@ -126,6 +130,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     ) internal {
         if (!isStaking) {
             _artistStaked[sender].push(artist);
+            _stakerOfArtist[artist].push(sender);
         }
         _stake[artist][sender].push(
             Stake({
@@ -163,6 +168,28 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             for (uint j = 0; j < _stake[array[i]][_msgSender()].length; j++) {
                 result[z].stake = _stake[array[i]][_msgSender()][j];
                 result[z].artist = array[i];
+                result[z].user = _msgSender();
+                z++;
+            }
+        }
+        return result;
+    }
+
+    // @return the array of all Stake from the msg.sender
+    function getAllArtistStake() external view returns (DetailedStake[] memory) {
+        uint count = 0;
+        address[] memory array = _stakerOfArtist[_msgSender()];
+        for (uint i = 0; i < array.length; i++) {
+            count += _stake[_msgSender()][array[i]].length;
+        }
+        DetailedStake[] memory result = new DetailedStake[](count);
+
+        uint z = 0;
+        for (uint i = 0; i < array.length; i++) {
+            for (uint j = 0; j < _stake[_msgSender()][array[i]].length; j++) {
+                result[z].stake = _stake[_msgSender()][array[i]][j];
+                result[z].artist = _msgSender();
+                result[z].user = array[i];
                 z++;
             }
         }

@@ -25,6 +25,7 @@ describe('Stake Simulation', () => {
         return elements.map(o => {
             return {
                 artist: o.artist,
+                user: o.user,
                 amount: o.stake.amount.toNumber(),
                 duration: o.stake.end.toNumber() - o.stake.start.toNumber(),
                 rewardArtist: o.stake.rewardArtist.toNumber(),
@@ -33,8 +34,9 @@ describe('Stake Simulation', () => {
         });
     }
 
-    function matchDetailedStakes(element: any, artist: string, amount: number, time: any, rewardArtist: number, redeemed: boolean) {
+    function matchDetailedStakes(element: any, artist: string, user: string, amount: number, time: any, rewardArtist: number, redeemed: boolean) {
         expect(element.artist).to.equal(artist);
+        expect(element.user).to.equal(user);
         expect(element.amount).to.equal(amount);
         expect(element.duration).to.equal(time);
         expect(element.rewardArtist).to.equal(rewardArtist);
@@ -77,7 +79,7 @@ describe('Stake Simulation', () => {
         expect(await jtp.balanceOf(ftas.address)).to.equal(50);
         expect(await jtp.balanceOf(user.address)).to.equal(50);
         const parsed = parseDetailedStakes(await ftas.connect(user).getAllStake())[0];
-        matchDetailedStakes(parsed, artists[0].address, 50, 30, defArtistReward, false);
+        matchDetailedStakes(parsed, artists[0].address, user.address, 50, 30, defArtistReward, false);
     });
 
     it('A users should not be able to redeem a stake before his maturation', async () => {
@@ -91,13 +93,13 @@ describe('Stake Simulation', () => {
         await expect(ftas.connect(user).redeem(artists[0].address, endTime))
             .to.be.revertedWith('FanToArtistStaking: the stake is not ended');
         const parsed = parseDetailedStakes(await ftas.connect(user).getAllStake())[0];
-        matchDetailedStakes(parsed, artists[0].address, 50, 30, defArtistReward, false);
+        matchDetailedStakes(parsed, artists[0].address, user.address, 50, 30, defArtistReward, false);
 
         await timeMachine(1);
         await ftas.connect(user).redeem(artists[0].address, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(0);
         const parsed2 = parseDetailedStakes(await ftas.connect(user).getAllStake())[0];
-        matchDetailedStakes(parsed2, artists[0].address, 50, 30, defArtistReward, true);
+        matchDetailedStakes(parsed2, artists[0].address, user.address, 50, 30, defArtistReward, true);
 
         await expect(ftas.connect(user).redeem(artists[0].address, endTime))
             .to.be.revertedWith('FanToArtistStaking: this stake has already been redeemed');
@@ -132,7 +134,7 @@ describe('Stake Simulation', () => {
         expect(await jtp.balanceOf(user.address)).to.equal(50);
         expect((await ftas.connect(user).getAllStake()).length).to.equal(1);
         const parsed = parseDetailedStakes(await ftas.connect(user).getAllStake())[0];
-        matchDetailedStakes(parsed, artists[0].address, 50, 30, defArtistReward, false);
+        matchDetailedStakes(parsed, artists[0].address, user.address, 50, 30, defArtistReward, false);
 
         const activeStake = await ftas.connect(user).getAllStake();
         const endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
@@ -141,8 +143,8 @@ describe('Stake Simulation', () => {
         expect(await jtp.balanceOf(user.address)).to.equal(0);
 
         const parsed2 = parseDetailedStakes(await ftas.connect(user).getAllStake());
-        matchDetailedStakes(parsed2[0], artists[0].address, 50, parsed2[0].duration, defArtistReward, true);
-        matchDetailedStakes(parsed2[1], artists[0].address, 100, parsed2[1].duration, defArtistReward, false);
+        matchDetailedStakes(parsed2[0], artists[0].address, user.address, 50, parsed2[0].duration, defArtistReward, true);
+        matchDetailedStakes(parsed2[1], artists[0].address, user.address, 100, parsed2[1].duration, defArtistReward, false);
         expect(parsed2[0].duration + parsed2[1].duration).to.equal(30);
         expect((await ftas.connect(user).getAllStake()).length).to.equal(2);
     });
@@ -159,7 +161,7 @@ describe('Stake Simulation', () => {
 
         expect((await ftas.connect(user).getAllStake()).length).to.equal(1);
         const parsed = parseDetailedStakes(await ftas.connect(user).getAllStake());
-        matchDetailedStakes(parsed[0], artists[0].address, 50, 60, defArtistReward, false);
+        matchDetailedStakes(parsed[0], artists[0].address, user.address, 50, 60, defArtistReward, false);
     });
 
     it('A user should not be able to increase the time of a stake if exceed the max', async () => {
@@ -259,6 +261,32 @@ describe('Stake Simulation', () => {
         await ftas.connect(user).stake(artists[1].address, 50, 20);
         await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address, endTime))
             .to.be.revertedWith('FanToArtistStaking: already staking the new artist');
+    });
+
+    it('An artist should be able to see all the stakes', async () => {
+        const user = users[0];
+        expect((await ftas.connect(user).getAllArtistStake()).length).to.equal(0);
+
+        const artist = artists[0];
+        await ftas.connect(user).stake(artist.address, 50, 30);
+        expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(1);
+        await timeMachine(5);
+        await ftas.connect(user).stake(artist.address, 50, 3000);
+        expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(2);
+        await ftas.connect(users[1]).stake(artist.address, 50, 3000);
+        expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(3);
+
+        let activeStake = await ftas.connect(users[1]).getAllStake();
+        let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        await ftas.connect(users[1]).extendStake(artist.address, endTime, 10);
+        expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(3);
+
+        await ftas.connect(users[1]).increaseAmountStaked(artist.address, 10, endTime + 10);
+        expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(4);
+        await ftas.connect(users[1]).changeArtistStaked(artist.address, artists[1].address, endTime + 10);
+        expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(4);
+        expect((await ftas.connect(artists[1]).getAllArtistStake()).length).to.equal(1);
+
 
     });
 
