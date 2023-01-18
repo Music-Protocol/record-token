@@ -286,8 +286,38 @@ describe('Stake Simulation', () => {
         await ftas.connect(users[1]).changeArtistStaked(artist.address, artists[1].address, endTime + 10);
         expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(4);
         expect((await ftas.connect(artists[1]).getAllArtistStake()).length).to.equal(1);
+    });
 
+    it('When an artist is removed every stake should stop', async () => {
+        const user = users[0];
+        const user1 = users[1];
+        const user2 = users[2];
+        const artist = artists[0];
+        const artist1 = artists[1];
 
+        await ftas.connect(user).stake(artist.address, 50, 300);
+        const prev = parseDetailedStakes(await ftas.connect(artist).getAllArtistStake());
+        expect(prev.length).to.equal(1);
+        await ftas.connect(owner).removeArtist(artist.address, owner.address);
+        const post = parseDetailedStakes(await ftas.connect(artist).getAllArtistStake());
+        expect(post.length).to.equal(1);
+        expect(post[0].duration).to.be.lessThan(prev[0].duration);
+
+        await ftas.connect(user1).stake(artist1.address, 50, 300);
+        await ftas.connect(user2).stake(artist1.address, 50, 300);
+        const artist1stakes = parseDetailedStakes(await ftas.connect(artist1).getAllArtistStake());
+        console.log(artist1stakes);
+        const prev1 = artist1stakes.filter(a => a.user == user1.address)[0]
+        const prev2 = artist1stakes.filter(a => a.user == user2.address)[0]
+        await ftas.connect(owner).removeArtist(artist1.address, owner.address);
+        const post12 = parseDetailedStakes(await ftas.connect(artist1).getAllArtistStake());  
+        console.log(post12);
+        const post1 = post12.filter(a => a.user == user1.address)[0]
+        const post2 = post12.filter(a => a.user == user2.address)[0]
+        expect(post.length).to.equal(1);
+
+        expect(post1.duration).to.be.lessThan(prev1.duration);
+        expect(post2.duration).to.be.lessThan(prev2.duration);
     });
 
     describe('Stress Batch', () => {

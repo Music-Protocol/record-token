@@ -176,7 +176,11 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     }
 
     // @return the array of all Stake from the msg.sender
-    function getAllArtistStake() external view returns (DetailedStake[] memory) {
+    function getAllArtistStake()
+        external
+        view
+        returns (DetailedStake[] memory)
+    {
         uint count = 0;
         address[] memory array = _stakerOfArtist[_msgSender()];
         for (uint i = 0; i < array.length; i++) {
@@ -213,6 +217,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         if (_verifiedArtists[artist]) {
             _verifiedArtists[artist] = false;
             //stop all stake
+            address[] memory array = _stakerOfArtist[artist];
+            for (uint i = 0; i < array.length; i++) {
+                for (uint j = 0; j < _stake[artist][array[i]].length; j++)
+                    if (_stake[artist][array[i]][j].end > block.timestamp)
+                        _stake[artist][array[i]][j].end = uint128(
+                            block.timestamp
+                        );
+            }
             emit ArtistRemoved(artist, sender);
         }
     }
