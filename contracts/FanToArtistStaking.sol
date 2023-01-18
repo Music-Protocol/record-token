@@ -295,6 +295,47 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         _stake[artist][_msgSender()][uint(index)].end += newEnd;
     }
 
+    function changeArtistStaked(
+        address artist,
+        address newArtist,
+        uint128 end
+    ) external onlyVerifiedArtist(artist) onlyNotEnded(end) {
+        require(
+            artist != newArtist,
+            "FanToArtistStaking: the new artist is the same as the old one"
+        );
+        int index = _getStakeIndex(_msgSender(), artist, end);
+        require(
+            index > -1,
+            "FanToArtistStaking: no stake found with this end date"
+        );
+        // this check on redeemed is unecessary,
+        // redeem = true, When you call redeem() so stake time is ended and the modifier onlyNotEnded reverts the request
+        // redeem = true, also when you increase the amount and the end is set to block.timestamp, onlyNotEnded prevent also this case
+        // we could leave it as block.timestamp can be manipulated
+        // require(
+        //     !_stake[artist][_msgSender()][uint(index)].redeemed,
+        //     "FanToArtistStaking: this stake has already been redeemed"
+        // );
+        bool isStaking = _isStaking(_msgSender(), newArtist);
+        require(
+            !(isStaking && _isStakingNow(_msgSender(), newArtist)),
+            "FanToArtistStaking: already staking the new artist"
+        );
+        _stake[artist][_msgSender()][uint(index)].redeemed = true;
+        uint128 prev = _stake[artist][_msgSender()][uint(index)].end;
+        _stake[artist][_msgSender()][uint(index)].end = uint128(
+            block.timestamp
+        );
+        _addStake(
+            _msgSender(), //sender
+            newArtist, //artist
+            _stake[artist][_msgSender()][uint(index)].amount, //amount
+            prev - _stake[artist][_msgSender()][uint(index)].end, //end
+            isStaking //newEnd
+        );
+    }
+
     function redeem(address artist, uint128 end) external onlyEnded(end) {
         int index = _getStakeIndex(_msgSender(), artist, end);
         require(

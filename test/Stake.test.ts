@@ -208,11 +208,57 @@ describe('Stake Simulation', () => {
         activeStake = await ftas.connect(user).getAllStake();
         // console.log(parseDetailedStakes(activeStake))
         endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
-        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime +1 ))
+        await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime + 1))
             .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
         expect(await jtp.balanceOf(ftas.address)).to.equal(90);
         expect(await jtp.balanceOf(user.address)).to.equal(10);
         expect((await ftas.connect(user).getAllStake()).length).to.equal(3);
+
+    });
+
+    it('A user should be able to change the artist staked', async () => {
+        const user = users[0];
+
+        await ftas.connect(user).stake(artists[0].address, 50, 3000);
+        let activeStake = await ftas.connect(user).getAllStake();
+        let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+
+        await timeMachine(5);
+
+        await ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address, endTime);
+        expect(await jtp.balanceOf(ftas.address)).to.equal(50);
+        expect(await jtp.balanceOf(user.address)).to.equal(50);
+        const parsedActiveStake = parseDetailedStakes(await ftas.connect(user).getAllStake());
+        const stake0 = parsedActiveStake.filter(a => a.artist == artists[0].address)[0]
+        const stake1 = parsedActiveStake.filter(a => a.artist == artists[1].address)[0]
+        expect(stake0).to.not.be.undefined;
+        expect(stake1).to.not.be.undefined;
+        expect(parsedActiveStake.length).to.equal(2);
+        expect(parsedActiveStake.reduce((a, b) => a + b.duration, 0)).to.equal(3000);//sum of the time should be the initial value
+        expect(stake0.amount).to.equal(stake1.amount);
+        expect(stake0.redeemed).to.equal(true);
+        expect(stake1.redeemed).to.equal(false);
+    });
+
+    it('A user should not be able to change the artist staked when doesn meet the requirements', async () => {
+        const user = users[0];
+
+        await ftas.connect(user).stake(artists[0].address, 50, 3000);
+        let activeStake = await ftas.connect(user).getAllStake();
+        let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+
+        await expect(ftas.connect(user).changeArtistStaked(users[0].address, artists[1].address, endTime))
+            .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
+        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[2].address, 0))
+            .to.be.revertedWith('FanToArtistStaking: the stake is already ended');
+        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[0].address, endTime))
+            .to.be.revertedWith('FanToArtistStaking: the new artist is the same as the old one');
+        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address, endTime + 2))
+            .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
+
+        await ftas.connect(user).stake(artists[1].address, 50, 20);
+        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address, endTime))
+            .to.be.revertedWith('FanToArtistStaking: already staking the new artist');
 
     });
 
