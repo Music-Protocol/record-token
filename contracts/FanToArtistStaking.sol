@@ -256,6 +256,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         }
     }
 
+    // Note that this function is highly gas consuming,
+    // as many Stake structures are created as the number of active ones.
+    // A solution could be to stop all the active stakes instead of creating new one for each one of them.
     function changeArtistRewardRate(
         uint128 rate,
         address sender
