@@ -259,6 +259,12 @@ describe('FanToArtistStaking', () => {
                     .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
             });
 
+            it('Should revert when extend a not existing stake', async () => {
+                const date = Date.now();
+                await expect(fanToArtistStaking.connect(owner).getReward())
+                    .to.be.revertedWith('FanToArtistStaking: no stake found');
+            });
+
            
             it('No event should be emitted if the artist was already added or removed', async () => {
                 await expect(fanToArtistStaking.connect(owner).addArtist(artist1.address, artist1.address))

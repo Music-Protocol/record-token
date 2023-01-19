@@ -22,7 +22,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint256 amount;
         uint128 start; //block.timestamp
         uint128 end;
-        uint128 rewardArtist;
+        uint128 rewardArtist; // 0 = none is paid // amount * time / rewardArtist
         bool redeemed;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
@@ -198,6 +198,31 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             }
         }
         return result;
+    }
+
+    //no restricting this to onlyArtist because a removed artist can pull the reward
+    function getReward() external {
+        require(
+            _stakerOfArtist[_msgSender()].length > 0,
+            "FanToArtistStaking: no stake found"
+        );
+        address[] memory array = _stakerOfArtist[_msgSender()];
+        uint256 accumulator = 0;
+        for (uint i = 0; i < array.length; i++) {
+            for (uint j = 0; j < _stake[_msgSender()][array[i]].length; j++) {
+                uint128 end = _stake[_msgSender()][array[i]][j].end;
+                if (end > block.timestamp) end = uint128(block.timestamp);
+                accumulator += // time* coeff
+                    ((end - _stake[_msgSender()][array[i]][j].start) * //time = end - start
+                        _stake[_msgSender()][array[i]][j].amount) / // coeff = amount / reward
+                    _stake[_msgSender()][array[i]][j].rewardArtist;
+            }
+        }
+        accumulator -= _artistAlreadyPaid[_msgSender()];
+        _jtp.payArtist(_msgSender(), accumulator);
+        _artistAlreadyPaid[_msgSender()] += accumulator;
+
+        // TODO emit
     }
 
     function addArtist(

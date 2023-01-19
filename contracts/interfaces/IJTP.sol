@@ -3,9 +3,11 @@
 pragma solidity ^0.8.16;
 
 interface IJTP {
-    function lock(address from, uint256 amount) external returns(bool);
+    function lock(address from, uint256 amount) external returns (bool);
 
-    function unlock(address from, uint256 amount) external returns(bool);
+    function unlock(address from, uint256 amount) external returns (bool);
+
+    function payArtist(address to, uint256 amount) external;
 
     function mint(address to, uint256 amount) external;
 

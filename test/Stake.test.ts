@@ -58,11 +58,11 @@ describe('Stake Simulation', () => {
         await jtp.deployed();
         await ftas.setJTP(jtp.address);
 
-        await Promise.all([artists.forEach(async artist =>
-            await ftas.addArtist(artist.address, owner.address)
+        await Promise.allSettled([artists.forEach(artist =>
+            ftas.addArtist(artist.address, owner.address)
         )]);
-        await Promise.all([users.forEach(async user =>
-            await jtp.mint(user.address, 100)
+        await Promise.allSettled([users.forEach(user =>
+            jtp.mint(user.address, 100)
         )]);
     });
 
@@ -306,18 +306,45 @@ describe('Stake Simulation', () => {
         await ftas.connect(user1).stake(artist1.address, 50, 300);
         await ftas.connect(user2).stake(artist1.address, 50, 300);
         const artist1stakes = parseDetailedStakes(await ftas.connect(artist1).getAllArtistStake());
-        console.log(artist1stakes);
         const prev1 = artist1stakes.filter(a => a.user == user1.address)[0]
         const prev2 = artist1stakes.filter(a => a.user == user2.address)[0]
         await ftas.connect(owner).removeArtist(artist1.address, owner.address);
-        const post12 = parseDetailedStakes(await ftas.connect(artist1).getAllArtistStake());  
-        console.log(post12);
+        const post12 = parseDetailedStakes(await ftas.connect(artist1).getAllArtistStake());
         const post1 = post12.filter(a => a.user == user1.address)[0]
         const post2 = post12.filter(a => a.user == user2.address)[0]
         expect(post.length).to.equal(1);
 
         expect(post1.duration).to.be.lessThan(prev1.duration);
         expect(post2.duration).to.be.lessThan(prev2.duration);
+    });
+
+    it('An artist should be able to get his reward', async () => {
+        const user0 = users[0];
+        const user1 = users[1];
+        const user2 = users[2];
+        const artist0 = artists[0];
+
+        await jtp.mint(user0.address, 100);
+        await ftas.changeArtistRewardRate(1, owner.address);
+        await ftas.connect(user0).stake(artist0.address, 100, 100);
+        await timeMachine(4);
+        await ftas.connect(artist0).getReward();
+        expect(await jtp.balanceOf(artist0.address)).to.equal(100 * 100 / 1);
+
+        await ftas.connect(user1).stake(artist0.address, 50, 100);
+        await timeMachine(4);
+        await ftas.connect(artist0).getReward();
+        const balancePrev = await jtp.balanceOf(artist0.address);
+        expect(balancePrev).to.equal((100 * 100 / 1) + (50 * 100 / 1));
+
+        await ftas.connect(user2).stake(artist0.address, 50, 10000);
+        await timeMachine(5);
+        await ftas.connect(artist0).getReward();
+        const balanceMiddle = await jtp.balanceOf(artist0.address);
+        await timeMachine(5);
+        await ftas.connect(artist0).getReward();
+        expect(balanceMiddle).to.be.greaterThan(balancePrev);
+        expect(await jtp.balanceOf(artist0.address)).to.greaterThan(balanceMiddle);
     });
 
     describe('Stress Batch', () => {
