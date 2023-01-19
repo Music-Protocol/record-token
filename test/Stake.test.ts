@@ -208,14 +208,12 @@ describe('Stake Simulation', () => {
         expect((await ftas.connect(user).getAllStake()).length).to.equal(3);
 
         activeStake = await ftas.connect(user).getAllStake();
-        // console.log(parseDetailedStakes(activeStake))
         endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
         await expect(ftas.connect(user).extendStake(artists[0].address, endTime, maxStakeTime + 1))
             .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
         expect(await jtp.balanceOf(ftas.address)).to.equal(90);
         expect(await jtp.balanceOf(user.address)).to.equal(10);
         expect((await ftas.connect(user).getAllStake()).length).to.equal(3);
-
     });
 
     it('A user should be able to change the artist staked', async () => {
@@ -345,6 +343,24 @@ describe('Stake Simulation', () => {
         await ftas.connect(artist0).getReward();
         expect(balanceMiddle).to.be.greaterThan(balancePrev);
         expect(await jtp.balanceOf(artist0.address)).to.greaterThan(balanceMiddle);
+    });
+
+    it('Changing the ArtistRewardRate should split only the active stakes', async () => {
+        const user0 = users[0];
+        const user1 = users[1];
+        const user2 = users[2];
+        const artist0 = artists[0];
+        const artist1 = artists[1];
+
+        await ftas.connect(user0).stake(artist0.address, 100, 30);
+        await timeMachine(3);
+        await ftas.changeArtistRewardRate(20, user0.address);
+        expect((await ftas.connect(artist0).getAllArtistStake()).length).to.equal(1);
+        await ftas.connect(user1).stake(artist1.address, 100, 100);
+        await ftas.connect(user2).stake(artist1.address, 100, 100);
+        expect((await ftas.connect(artist1).getAllArtistStake()).length).to.equal(2);
+        await ftas.changeArtistRewardRate(30, user0.address);
+        expect((await ftas.connect(artist1).getAllArtistStake()).length).to.equal(4);
     });
 
     describe('Stress Batch', () => {

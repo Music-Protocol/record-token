@@ -46,6 +46,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     //_stakerOfArtist[artist] = Array of user that staked (past and present)
 
     mapping(address => bool) private _verifiedArtists;
+    address[] private _verifiedArtistsArr; //redundant info array
 
     mapping(address => uint256) private _artistAlreadyPaid;
 
@@ -175,7 +176,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         return result;
     }
 
-    // @return the array of all Stake from the msg.sender
+    // @return the array of all Stake to the msg.sender
     function getAllArtistStake()
         external
         view
@@ -231,6 +232,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     ) external override onlyOwner {
         if (!_verifiedArtists[artist]) {
             _verifiedArtists[artist] = true;
+            _verifiedArtistsArr.push(artist);
             emit ArtistAdded(artist, sender);
         }
     }
@@ -258,8 +260,34 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 rate,
         address sender
     ) external onlyOwner {
-        //stop all stakes and create change
         _artistJTPRewardRate = rate;
+        //stop all stakes and create change
+        for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
+            address artist = _verifiedArtistsArr[k];
+            address[] memory array = _stakerOfArtist[artist];
+            for (uint i = 0; i < array.length; i++) {
+                for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
+                    if (_stake[artist][array[i]][j].end > block.timestamp) {
+                        // _stake[artist][array[i]][j].end = uint128(
+                        //     block.timestamp
+                        // );
+                        _stake[artist][array[i]][j].redeemed = true;
+                        uint128 prev = _stake[artist][array[i]][j].end;
+                        _stake[artist][array[i]][j].end = uint128(
+                            block.timestamp
+                        );
+                        _addStake(
+                            array[i], //sender
+                            artist, //artist
+                            _stake[artist][array[i]][j].amount, //amount
+                            prev - _stake[artist][array[i]][j].end, //end
+                            true //newEnd
+                        );
+                        break;
+                    }
+                }
+            }
+        }
         emit ArtistJTPRewardChanged(rate, sender);
     }
 
