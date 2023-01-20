@@ -5,6 +5,7 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
+import "hardhat/console.sol";
 
 contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
@@ -433,27 +434,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         return _verifiedArtists[artist];
     }
 
-    function totalVotingPower() external view returns (uint256) {
-        uint256 accumulator = 0;
-        for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
-            address artist = _verifiedArtistsArr[k];
-            address[] memory array = _stakerOfArtist[artist];
-            for (uint i = 0; i < array.length; i++) {
-                for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
-                    uint time = _stake[artist][array[i]][j].end;
-                    if (time > block.timestamp) time = block.timestamp;
-                    accumulator =
-                        (time - _stake[artist][array[i]][j].start) *
-                        _stake[artist][array[i]][j].amount;
-                }
-            }
-        }
-        return accumulator / _veJTPRewardRate;
-    }
-
-    function totalVotingPowerAt(
-        uint256 timestamp
-    ) external view returns (uint256) {
+    function _totalVotingPower(uint256 timestamp) internal view returns (uint256) {
         uint256 accumulator = 0;
         for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
             address artist = _verifiedArtistsArr[k];
@@ -463,35 +444,27 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                     if (_stake[artist][array[i]][j].start > timestamp) break;
                     uint time = _stake[artist][array[i]][j].end;
                     if (time > timestamp) time = timestamp;
-                    accumulator =
+                    accumulator +=
                         (time - _stake[artist][array[i]][j].start) *
                         _stake[artist][array[i]][j].amount;
                 }
             }
         }
+        console.log("solll %s",accumulator / _veJTPRewardRate);
         return accumulator / _veJTPRewardRate;
     }
 
-    function votingPowerOf(address user) external view returns (uint256) {
-        uint256 accumulator = 0;
-        address[] memory array = _artistStaked[user];
-        for (uint i = 0; i < array.length; i++) {
-            for (uint j = 0; j < _stake[array[i]][user].length; j++) {
-                if (_stake[array[i]][user][j].start > block.timestamp) break;
-                uint time = _stake[array[i]][user][j].end;
-                if (time > block.timestamp) time = block.timestamp;
-                accumulator =
-                    (time - _stake[array[i]][user][j].start) *
-                    _stake[array[i]][user][j].amount;
-            }
-        }
-        return accumulator / _veJTPRewardRate;
+    function totalVotingPower() external view returns (uint256) {
+        return _totalVotingPower(block.timestamp);
     }
 
-    function votingPowerOfAt(
-        address user,
+    function totalVotingPowerAt(
         uint256 timestamp
     ) external view returns (uint256) {
+        return _totalVotingPower(timestamp);
+    }
+
+    function _votingPowerOf(address user, uint256 timestamp) internal view returns (uint256) {
         uint256 accumulator = 0;
         address[] memory array = _artistStaked[user];
         for (uint i = 0; i < array.length; i++) {
@@ -499,11 +472,23 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 if (_stake[array[i]][user][j].start > timestamp) break;
                 uint time = _stake[array[i]][user][j].end;
                 if (time > timestamp) time = timestamp;
-                accumulator =
+                accumulator +=
                     (time - _stake[array[i]][user][j].start) *
                     _stake[array[i]][user][j].amount;
             }
         }
         return accumulator / _veJTPRewardRate;
+    }
+
+    function votingPowerOf(address user) external view returns (uint256) {
+        return _votingPowerOf(user, block.timestamp);
+
+    }
+
+    function votingPowerOfAt(
+        address user,
+        uint256 timestamp
+    ) external view returns (uint256) {
+        return _votingPowerOf(user, timestamp);
     }
 }

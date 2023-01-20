@@ -11,6 +11,7 @@
     "test:management": "npx hardhat test ./test/JTPmanagement.test.ts",
     "test:ftas": "npx hardhat test ./test/FanToArtistStaking.test.ts",
     "test:stake": "npx hardhat test ./test/Stake.test.ts",
+    "test:ve": "npx hardhat test ./test/VotingPower.test.ts",
     "deploy:ganache": "npx hardhat run ./scripts/deploy.ts --network localganache"
   },
   "repository": {
