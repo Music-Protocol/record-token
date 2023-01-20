@@ -105,7 +105,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         super.transferOwnership(to);
     }
 
-
     function _isStakingNow(
         address sender,
         address artist
@@ -370,14 +369,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             newEnd <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
-        // this check on redeemed is unecessary,
-        // redeem = true, When you call redeem() so stake time is ended and the modifier onlyNotEnded reverts the request
-        // redeem = true, also when you increase the amount and the end is set to block.timestamp, onlyNotEnded prevent also this case
-        // we could leave it as block.timestamp can be manipulated
-        // require(
-        //     !_stake[artist][_msgSender()][uint(index)].redeemed,
-        //     "FanToArtistStaking: this stake has already been redeemed"
-        // );
         _stake[artist][_msgSender()][uint(index)].end += newEnd;
     }
 
@@ -442,77 +433,77 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         return _verifiedArtists[artist];
     }
 
-    // function totalVotingPower() external view returns (uint256) {
-    //     uint256 accumulator = 0;
-    //     for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
-    //         address artist = _verifiedArtistsArr[k];
-    //         address[] memory array = _stakerOfArtist[artist];
-    //         for (uint i = 0; i < array.length; i++) {
-    //             for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
-    //                 uint time = _stake[artist][array[i]][j].end;
-    //                 if (time > block.timestamp) time = block.timestamp;
-    //                 accumulator =
-    //                     (time - _stake[artist][array[i]][j].start) *
-    //                     _stake[artist][array[i]][j].amount;
-    //             }
-    //         }
-    //     }
-    //     return accumulator / _veJTPRewardRate;
-    // }
+    function totalVotingPower() external view returns (uint256) {
+        uint256 accumulator = 0;
+        for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
+            address artist = _verifiedArtistsArr[k];
+            address[] memory array = _stakerOfArtist[artist];
+            for (uint i = 0; i < array.length; i++) {
+                for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
+                    uint time = _stake[artist][array[i]][j].end;
+                    if (time > block.timestamp) time = block.timestamp;
+                    accumulator =
+                        (time - _stake[artist][array[i]][j].start) *
+                        _stake[artist][array[i]][j].amount;
+                }
+            }
+        }
+        return accumulator / _veJTPRewardRate;
+    }
 
-    // // function totalVotingPowerAt(
-    // //     uint256 timestamp
-    // // ) external view returns (uint256) {
-    // //     uint256 accumulator = 0;
-    // //     for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
-    // //         address artist = _verifiedArtistsArr[k];
-    // //         address[] memory array = _stakerOfArtist[artist];
-    // //         for (uint i = 0; i < array.length; i++) {
-    // //             for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
-    // //                 if (_stake[artist][array[i]][j].start > timestamp) break;
-    // //                 uint time = _stake[artist][array[i]][j].end;
-    // //                 if (time > timestamp) time = timestamp;
-    // //                 accumulator =
-    // //                     (time - _stake[artist][array[i]][j].start) *
-    // //                     _stake[artist][array[i]][j].amount;
-    // //             }
-    // //         }
-    // //     }
-    // //     return accumulator / _veJTPRewardRate;
-    // // }
+    function totalVotingPowerAt(
+        uint256 timestamp
+    ) external view returns (uint256) {
+        uint256 accumulator = 0;
+        for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
+            address artist = _verifiedArtistsArr[k];
+            address[] memory array = _stakerOfArtist[artist];
+            for (uint i = 0; i < array.length; i++) {
+                for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
+                    if (_stake[artist][array[i]][j].start > timestamp) break;
+                    uint time = _stake[artist][array[i]][j].end;
+                    if (time > timestamp) time = timestamp;
+                    accumulator =
+                        (time - _stake[artist][array[i]][j].start) *
+                        _stake[artist][array[i]][j].amount;
+                }
+            }
+        }
+        return accumulator / _veJTPRewardRate;
+    }
 
-    // function votingPowerOf(address user) external view returns (uint256) {
-    //     uint256 accumulator = 0;
-    //     address[] memory array = _artistStaked[user];
-    //     for (uint i = 0; i < array.length; i++) {
-    //         for (uint j = 0; j < _stake[array[i]][user].length; j++) {
-    //             if (_stake[array[i]][user][j].start > block.timestamp) break;
-    //             uint time = _stake[array[i]][user][j].end;
-    //             if (time > block.timestamp) time = block.timestamp;
-    //             accumulator =
-    //                 (time - _stake[array[i]][user][j].start) *
-    //                 _stake[array[i]][user][j].amount;
-    //         }
-    //     }
-    //     return accumulator / _veJTPRewardRate;
-    // }
+    function votingPowerOf(address user) external view returns (uint256) {
+        uint256 accumulator = 0;
+        address[] memory array = _artistStaked[user];
+        for (uint i = 0; i < array.length; i++) {
+            for (uint j = 0; j < _stake[array[i]][user].length; j++) {
+                if (_stake[array[i]][user][j].start > block.timestamp) break;
+                uint time = _stake[array[i]][user][j].end;
+                if (time > block.timestamp) time = block.timestamp;
+                accumulator =
+                    (time - _stake[array[i]][user][j].start) *
+                    _stake[array[i]][user][j].amount;
+            }
+        }
+        return accumulator / _veJTPRewardRate;
+    }
 
-    // function votingPowerOfAt(
-    //     address user,
-    //     uint256 timestamp
-    // ) external view returns (uint256) {
-    //     uint256 accumulator = 0;
-    //     address[] memory array = _artistStaked[user];
-    //     for (uint i = 0; i < array.length; i++) {
-    //         for (uint j = 0; j < _stake[array[i]][user].length; j++) {
-    //             if (_stake[array[i]][user][j].start > timestamp) break;
-    //             uint time = _stake[array[i]][user][j].end;
-    //             if (time > timestamp) time = timestamp;
-    //             accumulator =
-    //                 (time - _stake[array[i]][user][j].start) *
-    //                 _stake[array[i]][user][j].amount;
-    //         }
-    //     }
-    //     return accumulator / _veJTPRewardRate;
-    // }
+    function votingPowerOfAt(
+        address user,
+        uint256 timestamp
+    ) external view returns (uint256) {
+        uint256 accumulator = 0;
+        address[] memory array = _artistStaked[user];
+        for (uint i = 0; i < array.length; i++) {
+            for (uint j = 0; j < _stake[array[i]][user].length; j++) {
+                if (_stake[array[i]][user][j].start > timestamp) break;
+                uint time = _stake[array[i]][user][j].end;
+                if (time > timestamp) time = timestamp;
+                accumulator =
+                    (time - _stake[array[i]][user][j].start) *
+                    _stake[array[i]][user][j].amount;
+            }
+        }
+        return accumulator / _veJTPRewardRate;
+    }
 }

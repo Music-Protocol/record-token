@@ -9,7 +9,15 @@ import 'solidity-coverage'
 require("dotenv").config();
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.16",
+  solidity: {
+    version: "0.8.16",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1000,
+      },
+    },
+  },
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
