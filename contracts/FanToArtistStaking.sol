@@ -105,12 +105,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         super.transferOwnership(to);
     }
 
-    function _isStaking(
-        address sender,
-        address artist
-    ) internal view returns (bool) {
-        return _stake[artist][sender].length != 0;
-    }
 
     function _isStakingNow(
         address sender,
@@ -126,10 +120,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist,
         uint256 amount,
-        uint128 end,
-        bool isStaking
+        uint128 end
     ) internal {
-        if (!isStaking) {
+        if (_stake[artist][sender].length == 0) {
             _artistStaked[sender].push(artist);
             _stakerOfArtist[artist].push(sender);
         }
@@ -283,8 +276,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                             array[i], //sender
                             artist, //artist
                             _stake[artist][array[i]][j].amount, //amount
-                            prev - _stake[artist][array[i]][j].end, //end
-                            true //newEnd
+                            prev - _stake[artist][array[i]][j].end //end
                         );
                         break;
                     }
@@ -315,13 +307,13 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             end <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
-        bool isStaking = _isStaking(_msgSender(), artist);
+        // bool isStaking = _isStaking(_msgSender(), artist);
         require(
-            !(isStaking && _isStakingNow(_msgSender(), artist)),
+            !(_isStakingNow(_msgSender(), artist)),
             "FanToArtistStaking: already staking"
         );
         if (_jtp.lock(_msgSender(), amount)) {
-            _addStake(_msgSender(), artist, amount, end, isStaking);
+            _addStake(_msgSender(), artist, amount, end);
             emit ArtistStaked(
                 artist,
                 _msgSender(),
@@ -359,8 +351,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 _msgSender(), //sender
                 artist, //artist
                 _stake[artist][_msgSender()][uint(index)].amount + amount, //amount
-                prev - _stake[artist][_msgSender()][uint(index)].end, //end
-                true //newEnd
+                prev - _stake[artist][_msgSender()][uint(index)].end //end
             );
         }
     }
@@ -412,9 +403,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         //     !_stake[artist][_msgSender()][uint(index)].redeemed,
         //     "FanToArtistStaking: this stake has already been redeemed"
         // );
-        bool isStaking = _isStaking(_msgSender(), newArtist);
         require(
-            !(isStaking && _isStakingNow(_msgSender(), newArtist)),
+            !(_isStakingNow(_msgSender(), newArtist)),
             "FanToArtistStaking: already staking the new artist"
         );
         _stake[artist][_msgSender()][uint(index)].redeemed = true;
@@ -426,8 +416,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             _msgSender(), //sender
             newArtist, //artist
             _stake[artist][_msgSender()][uint(index)].amount, //amount
-            prev - _stake[artist][_msgSender()][uint(index)].end, //end
-            isStaking //newEnd
+            prev - _stake[artist][_msgSender()][uint(index)].end //end
         );
     }
 
@@ -452,4 +441,78 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     function isVerified(address artist) external view returns (bool) {
         return _verifiedArtists[artist];
     }
+
+    // function totalVotingPower() external view returns (uint256) {
+    //     uint256 accumulator = 0;
+    //     for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
+    //         address artist = _verifiedArtistsArr[k];
+    //         address[] memory array = _stakerOfArtist[artist];
+    //         for (uint i = 0; i < array.length; i++) {
+    //             for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
+    //                 uint time = _stake[artist][array[i]][j].end;
+    //                 if (time > block.timestamp) time = block.timestamp;
+    //                 accumulator =
+    //                     (time - _stake[artist][array[i]][j].start) *
+    //                     _stake[artist][array[i]][j].amount;
+    //             }
+    //         }
+    //     }
+    //     return accumulator / _veJTPRewardRate;
+    // }
+
+    // // function totalVotingPowerAt(
+    // //     uint256 timestamp
+    // // ) external view returns (uint256) {
+    // //     uint256 accumulator = 0;
+    // //     for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
+    // //         address artist = _verifiedArtistsArr[k];
+    // //         address[] memory array = _stakerOfArtist[artist];
+    // //         for (uint i = 0; i < array.length; i++) {
+    // //             for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
+    // //                 if (_stake[artist][array[i]][j].start > timestamp) break;
+    // //                 uint time = _stake[artist][array[i]][j].end;
+    // //                 if (time > timestamp) time = timestamp;
+    // //                 accumulator =
+    // //                     (time - _stake[artist][array[i]][j].start) *
+    // //                     _stake[artist][array[i]][j].amount;
+    // //             }
+    // //         }
+    // //     }
+    // //     return accumulator / _veJTPRewardRate;
+    // // }
+
+    // function votingPowerOf(address user) external view returns (uint256) {
+    //     uint256 accumulator = 0;
+    //     address[] memory array = _artistStaked[user];
+    //     for (uint i = 0; i < array.length; i++) {
+    //         for (uint j = 0; j < _stake[array[i]][user].length; j++) {
+    //             if (_stake[array[i]][user][j].start > block.timestamp) break;
+    //             uint time = _stake[array[i]][user][j].end;
+    //             if (time > block.timestamp) time = block.timestamp;
+    //             accumulator =
+    //                 (time - _stake[array[i]][user][j].start) *
+    //                 _stake[array[i]][user][j].amount;
+    //         }
+    //     }
+    //     return accumulator / _veJTPRewardRate;
+    // }
+
+    // function votingPowerOfAt(
+    //     address user,
+    //     uint256 timestamp
+    // ) external view returns (uint256) {
+    //     uint256 accumulator = 0;
+    //     address[] memory array = _artistStaked[user];
+    //     for (uint i = 0; i < array.length; i++) {
+    //         for (uint j = 0; j < _stake[array[i]][user].length; j++) {
+    //             if (_stake[array[i]][user][j].start > timestamp) break;
+    //             uint time = _stake[array[i]][user][j].end;
+    //             if (time > timestamp) time = timestamp;
+    //             accumulator =
+    //                 (time - _stake[array[i]][user][j].start) *
+    //                 _stake[array[i]][user][j].amount;
+    //         }
+    //     }
+    //     return accumulator / _veJTPRewardRate;
+    // }
 }
