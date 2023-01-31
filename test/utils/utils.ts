@@ -15,18 +15,16 @@ function parseDetailedStakes(elements: FanToArtistStaking.DetailedStakeStructOut
             user: o.user,
             amount: o.stake.amount.toNumber(),
             duration: o.stake.end.toNumber() - o.stake.start.toNumber(),
-            rewardArtist: o.stake.rewardArtist.toNumber(),
             redeemed: o.stake.redeemed
         };
     });
 }
 
-function matchDetailedStakes(element: any, artist: string, user: string, amount: number, time: any, rewardArtist: number, redeemed: boolean) {
+function matchDetailedStakes(element: any, artist: string, user: string, amount: number, time: any, redeemed: boolean) {
     expect(element.artist).to.equal(artist);
     expect(element.user).to.equal(user);
     expect(element.amount).to.equal(amount);
     expect(element.duration).to.equal(time);
-    expect(element.rewardArtist).to.equal(rewardArtist);
     expect(element.redeemed).to.equal(redeemed);
 }
 

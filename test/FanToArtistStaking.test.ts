@@ -103,7 +103,6 @@ describe('FanToArtistStaking', () => {
                 amount,
                 // start: anyValue,
                 // end: anyValue,
-                rewardArtist: defArtistReward,
                 redeemed: false
             };
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
@@ -136,7 +135,6 @@ describe('FanToArtistStaking', () => {
                     amount: o.stake.amount.toNumber(),
                     // start: o.stake.start.toNumber(),
                     // end: o.stake.end.toNumber(),
-                    rewardArtist: o.stake.rewardArtist.toNumber(),
                     redeemed: o.stake.redeemed
                 }
             });
@@ -145,7 +143,6 @@ describe('FanToArtistStaking', () => {
                 amount,
                 // start: anyValue,
                 // end: anyValue,
-                rewardArtist: defArtistReward,
                 redeemed: false
             };
             expect(all).to.have.deep.members([stake1, stake2]);

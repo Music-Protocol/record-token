@@ -23,7 +23,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint256 amount;
         uint128 start; //block.timestamp
         uint128 end;
-        uint128 rewardArtist; // 0 = none is paid // amount * time / rewardArtist
         bool redeemed;
     } //add a checkpoint inside the struct?? TBD costs/benefits?
 
@@ -32,6 +31,15 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address artist;
         address user;
     }
+
+    struct ArtistReward {
+        uint128 start;
+        uint128 end;
+        uint256 rate;
+    }
+
+    ArtistReward[] private _artistReward;
+    // to track all the
 
     IJTP private _jtp;
 
@@ -52,7 +60,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     mapping(address => uint256) private _artistAlreadyPaid;
 
     uint128 private immutable _veJTPRewardRate; //change onylOwner
-    uint128 private _artistJTPRewardRate; //change onylOwner
     uint128 private immutable _minStakePeriod; //change onylOwner
     uint128 private immutable _maxStakePeriod; //change onylOwner
 
@@ -63,7 +70,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 max
     ) {
         _veJTPRewardRate = veJTPRewardRate;
-        _artistJTPRewardRate = artistJTPRewardRate;
+        _artistReward.push(
+            ArtistReward({start: 0, end: 0, rate: artistJTPRewardRate})
+        );
         _minStakePeriod = min;
         _maxStakePeriod = max;
     }
@@ -131,7 +140,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 amount: amount,
                 start: uint128(block.timestamp),
                 end: uint128(block.timestamp) + end,
-                rewardArtist: _artistJTPRewardRate,
                 redeemed: false
             })
         );
@@ -200,16 +208,48 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             _stakerOfArtist[_msgSender()].length > 0,
             "FanToArtistStaking: no stake found"
         );
-        address[] memory array = _stakerOfArtist[_msgSender()];
+        address[] memory user = _stakerOfArtist[_msgSender()];
         uint256 accumulator = 0;
-        for (uint i = 0; i < array.length; i++) {
-            for (uint j = 0; j < _stake[_msgSender()][array[i]].length; j++) {
-                uint128 end = _stake[_msgSender()][array[i]][j].end;
-                if (end > block.timestamp) end = uint128(block.timestamp);
-                accumulator += // time* coeff
-                    ((end - _stake[_msgSender()][array[i]][j].start) * //time = end - start
-                        _stake[_msgSender()][array[i]][j].amount) / // coeff = amount / reward
-                    _stake[_msgSender()][array[i]][j].rewardArtist;
+        for (uint i = 0; i < user.length; i++) {
+            uint z = 0;
+            for (uint j = 0; j < _artistReward.length; j++) {
+                for (; z < _stake[_msgSender()][user[i]].length; z++) {
+                    uint128 start = _stake[_msgSender()][user[i]][z].start;
+                    uint128 end = _stake[_msgSender()][user[i]][z].end;
+                    if (end > block.timestamp) end = uint128(block.timestamp);
+                    if (
+                        start >= _artistReward[j].start &&
+                        (end <= _artistReward[j].end ||
+                            _artistReward[j].end == 0)
+                    ) {
+                        accumulator +=
+                            ((end - start) *
+                                _stake[_msgSender()][user[i]][z].amount) /
+                            _artistReward[j].rate;
+                    } else if (
+                        start >= _artistReward[j].start &&
+                        start <= _artistReward[j].end &&
+                        end > _artistReward[j].end
+                    ) {
+                        accumulator +=
+                            ((_artistReward[j].end - start) *
+                                _stake[_msgSender()][user[i]][z].amount) /
+                            _artistReward[j].rate;
+                        break;
+                    } else if (
+                        start < _artistReward[j].start &&
+                        end >= _artistReward[j].start &&
+                        (end <= _artistReward[j].end ||
+                            _artistReward[j].end == 0)
+                    ) {
+                        accumulator +=
+                            ((end - _artistReward[j].start) *
+                                _stake[_msgSender()][user[i]][z].amount) /
+                            _artistReward[j].rate;
+                    } else {
+                        break;
+                    }
+                }
             }
         }
         accumulator -= _artistAlreadyPaid[_msgSender()];
@@ -256,33 +296,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 rate,
         address sender
     ) external onlyOwner {
-        _artistJTPRewardRate = rate;
-        //stop all stakes and create change
-        for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
-            address artist = _verifiedArtistsArr[k];
-            address[] memory array = _stakerOfArtist[artist];
-            for (uint i = 0; i < array.length; i++) {
-                for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
-                    if (_stake[artist][array[i]][j].end > block.timestamp) {
-                        // _stake[artist][array[i]][j].end = uint128(
-                        //     block.timestamp
-                        // );
-                        _stake[artist][array[i]][j].redeemed = true;
-                        uint128 prev = _stake[artist][array[i]][j].end;
-                        _stake[artist][array[i]][j].end = uint128(
-                            block.timestamp
-                        );
-                        _addStake(
-                            array[i], //sender
-                            artist, //artist
-                            _stake[artist][array[i]][j].amount, //amount
-                            prev - _stake[artist][array[i]][j].end //end
-                        );
-                        break;
-                    }
-                }
-            }
-        }
+        _artistReward[_artistReward.length - 1].end = uint128(block.timestamp);
+        _artistReward.push(
+            ArtistReward({start: uint128(block.timestamp), end: 0, rate: rate})
+        );
         emit ArtistJTPRewardChanged(rate, sender);
     }
 
@@ -290,8 +307,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         return _veJTPRewardRate;
     }
 
-    function getArtistRewardRate() external view returns (uint128) {
-        return _artistJTPRewardRate;
+    function getArtistRewardRate() external view returns (uint256) {
+        return _artistReward[_artistReward.length - 1].rate;
     }
 
     function stake(
@@ -434,7 +451,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         return _verifiedArtists[artist];
     }
 
-    function _totalVotingPower(uint256 timestamp) internal view returns (uint256) {
+    function _totalVotingPower(
+        uint256 timestamp
+    ) internal view returns (uint256) {
         uint256 accumulator = 0;
         for (uint k = 0; k < _verifiedArtistsArr.length; k++) {
             address artist = _verifiedArtistsArr[k];
@@ -450,7 +469,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 }
             }
         }
-        console.log("solll %s",accumulator / _veJTPRewardRate);
         return accumulator / _veJTPRewardRate;
     }
 
@@ -464,7 +482,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         return _totalVotingPower(timestamp);
     }
 
-    function _votingPowerOf(address user, uint256 timestamp) internal view returns (uint256) {
+    function _votingPowerOf(
+        address user,
+        uint256 timestamp
+    ) internal view returns (uint256) {
         uint256 accumulator = 0;
         address[] memory array = _artistStaked[user];
         for (uint i = 0; i < array.length; i++) {
@@ -482,7 +503,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
 
     function votingPowerOf(address user) external view returns (uint256) {
         return _votingPowerOf(user, block.timestamp);
-
     }
 
     function votingPowerOfAt(
