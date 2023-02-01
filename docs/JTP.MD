@@ -1,7 +1,7 @@
 # JTP Smart Contract
 This code is the implementation of a smart contract for the JTP token on the Ethereum platform. The contract uses the Solidity programming language and is compatible with version 0.8.16 or later.
 
-## Libraries
+## Imports
 The contract is based on several external libraries, including:
 - `Ownable`
 - `Pausable`
