@@ -10,21 +10,33 @@ import "hardhat/console.sol";
 contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
-    event ArtistStaked(
+    event ArtistPaid(address indexed artist, uint256 amount);
+
+    event ArtistJTPRewardChanged(uint128 newRate, uint256 timestamp, address indexed sender);
+    event StakeCreated(
         address indexed artist,
         address indexed sender,
         uint256 amount,
         uint128 end
     );
-    event VeJTPRewardChanged(uint128 newRate, address indexed sender);
-    event ArtistJTPRewardChanged(uint128 newRate, address indexed sender);
+    event StakeEndChanged(
+        address indexed artist,
+        address indexed sender,
+        uint128 end,
+        uint128 newEnd
+    );
+    event StakeRedeemed(
+        address indexed artist,
+        address indexed sender,
+        uint128 end
+    );
 
     struct Stake {
         uint256 amount;
         uint128 start; //block.timestamp
         uint128 end;
         bool redeemed;
-    } //add a checkpoint inside the struct?? TBD costs/benefits?
+    }
 
     struct DetailedStake {
         Stake stake;
@@ -254,9 +266,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         }
         accumulator -= _artistAlreadyPaid[_msgSender()];
         _jtp.payArtist(_msgSender(), accumulator);
+        emit ArtistPaid(_msgSender(), accumulator);
         _artistAlreadyPaid[_msgSender()] += accumulator;
-
-        // TODO emit
     }
 
     function addArtist(
@@ -280,10 +291,17 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             address[] memory array = _stakerOfArtist[artist];
             for (uint i = 0; i < array.length; i++) {
                 for (uint j = 0; j < _stake[artist][array[i]].length; j++)
-                    if (_stake[artist][array[i]][j].end > block.timestamp)
+                    if (_stake[artist][array[i]][j].end > block.timestamp) {
+                        emit StakeEndChanged(
+                            artist,
+                            _msgSender(),
+                            _stake[artist][array[i]][j].end,
+                            uint128(block.timestamp)
+                        );
                         _stake[artist][array[i]][j].end = uint128(
                             block.timestamp
                         );
+                    }
             }
             emit ArtistRemoved(artist, sender);
         }
@@ -300,7 +318,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         _artistReward.push(
             ArtistReward({start: uint128(block.timestamp), end: 0, rate: rate})
         );
-        emit ArtistJTPRewardChanged(rate, sender);
+        emit ArtistJTPRewardChanged(rate, block.timestamp, sender);
     }
 
     function getStakingVeRate() external view returns (uint128) {
@@ -331,7 +349,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         );
         if (_jtp.lock(_msgSender(), amount)) {
             _addStake(_msgSender(), artist, amount, end);
-            emit ArtistStaked(
+            emit StakeCreated(
                 artist,
                 _msgSender(),
                 amount,
@@ -370,6 +388,24 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 _stake[artist][_msgSender()][uint(index)].amount + amount, //amount
                 prev - _stake[artist][_msgSender()][uint(index)].end //end
             );
+            //These 3 events could end up in a conflict maybe we should merge into one
+            emit StakeEndChanged(
+                artist,
+                _msgSender(),
+                prev,
+                _stake[artist][_msgSender()][uint(index)].end
+            );
+            emit StakeRedeemed(
+                artist,
+                _msgSender(),
+                _stake[artist][_msgSender()][uint(index)].end
+            );
+            emit StakeCreated(
+                artist,
+                _msgSender(),
+                _stake[artist][_msgSender()][uint(index)].amount,
+                prev
+            );
         }
     }
 
@@ -388,6 +424,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             "FanToArtistStaking: the stake period exceed the maximum"
         );
         _stake[artist][_msgSender()][uint(index)].end += newEnd;
+        emit StakeEndChanged(artist, _msgSender(), end, end + newEnd);
     }
 
     function changeArtistStaked(
@@ -427,6 +464,24 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             _stake[artist][_msgSender()][uint(index)].amount, //amount
             prev - _stake[artist][_msgSender()][uint(index)].end //end
         );
+        //These 3 events could end up in a conflict maybe we should merge into one
+        emit StakeEndChanged(
+            artist,
+            _msgSender(),
+            prev,
+            _stake[artist][_msgSender()][uint(index)].end
+        );
+        emit StakeRedeemed(
+            artist,
+            _msgSender(),
+            _stake[artist][_msgSender()][uint(index)].end
+        );
+        emit StakeCreated(
+            artist,
+            _msgSender(),
+            _stake[artist][_msgSender()][uint(index)].amount,
+            prev
+        );
     }
 
     function redeem(address artist, uint128 end) external onlyEnded(end) {
@@ -445,6 +500,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 _stake[artist][_msgSender()][uint(index)].amount
             )
         ) _stake[artist][_msgSender()][uint(index)].redeemed = true;
+        emit StakeRedeemed(artist, _msgSender(), end);
     }
 
     function isVerified(address artist) external view returns (bool) {
