@@ -427,7 +427,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         emit StakeEndChanged(artist, _msgSender(), end, end + newEnd);
     }
 
-    function changeStakeCreated(
+    function changeArtistStaked(
         address artist,
         address newArtist,
         uint128 end
