@@ -26,36 +26,31 @@ The contract manages fan-to-artist staking, including adding and removing artist
 - `_maxStakePeriod` is a private constant to store the maximum period of time that a fan can stake for.
 
 ## Events
-- `ArtistAdded`: fired when a new artist is added to the contract. It includes the following indexed parameters:
-    - `artist`: the address of the newly added artist
-    - `sender`: the address of the user who added the artist
-  
-- `ArtistRemoved`: fired when an artist is removed from the contract. It includes the following indexed parameters:
-   - `artist`: the address of the removed artist
-   - `sender`: the address of the user who removed the artist
+- `ArtistAdded`: triggered when a new artist is added to the contract.
+  - `artist`: The address of the artist added to the contract.
+  - `sender`: The address of the user who added the artist.
 
-- `ArtistPaid`: fired when an artist is paid by the contract. It includes the following indexed parameters:
-  - `artist`: the address of the artist who received the payment
-  - `amount`: the amount of payment received by the artist
-
-- `ArtistJTPRewardChanged`: fired when the JTP reward for artists is changed. It includes the following indexed parameters:
-  - `newRate`: the new JTP reward rate for artists
-  - `timestamp`: the timestamp of the change
-  - `sender`: the address of the user who made the change
-
-- `StakeCreated`: fired when a stake is created in the contract. It includes the following indexed parameters:
-  - `artist`: the address of the artist that the stake is made for
-  - `sender`: the address of the user who created the stake
-  - `amount`: the amount of the stake
-  - `end`: the end time of the stake
-
-- `StakeEndChanged`: fired when the end time of a stake is changed. It includes the following indexed parameters:
-  - `artist`: the address of the artist that the stake is made for
-  - `sender`: the address of the user who changed the end time of the stake
-  - `end`: the original end time of the stake
-  - `newEnd`: the new end time of the stake
-
-- `StakeRedeemed`: fired when a stake is redeemed. It includes the following indexed parameters:
-  - `artist`: the address of the artist that the stake is made for
-  - `sender`: the address of the user who redeemed the stake
-  - `end`: the end time of the redeemed stake.
+- `ArtistRemoved`: triggered when an artist is removed from the contract.
+  - `artist`: The address of the artist removed from the contract.
+  - `sender`: The address of the user who removed the artist.
+- `ArtistPaid`: triggered when an artist is paid.
+  - `artist`: The address of the artist who is paid.
+  - `amount`: The amount paid to the artist.
+- `ArtistJTPRewardChanged`: triggered when the JTP reward rate for an artist is changed.
+  - `newRate`: The new JTP reward rate for the artist.
+  - `timestamp`: The timestamp of the change.
+  - `sender`: The address of the user who changed the JTP reward rate.
+- `StakeCreated`: triggered when a stake is created for an artist.
+  - `artist`: The address of the artist the stake is created for.
+  - `sender`: The address of the user who created the stake.
+  - `amount`: The amount of the stake.
+  - `end`: The end date of the stake.
+- `StakeEndChanged`: triggered when the end date of a stake is changed.
+  - `artist`: The address of the artist the stake belongs to.
+  - `sender`: The address of the user who changed the end date.
+  - `end`: The original end date of the stake.
+  - `newEnd`: The new end date of the stake.
+- `StakeRedeemed`: triggered when a stake is redeemed.
+  - `artist`: The address of the artist the stake belongs to.
+  - `sender`: The address of the user who redeemed the stake.
+  - `end`: The end date of the redeemed stake.

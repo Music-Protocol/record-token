@@ -55,7 +55,7 @@ These warnings refer to [this](https://github.com/crytic/slither/wiki/Detector-D
 >    - _jtp.lock(_msgSender(),amount) (contracts/FanToArtistStaking.sol#124)
 > 
 >    Event emitted after the call(s):
->    - ArtistStaked(artist,_msgSender(),amount,end) (contracts/FanToArtistStaking.sol#125)
+>    - StakeCreated(artist,_msgSender(),amount,end) (contracts/FanToArtistStaking.sol#125)
 
 These warnings refer to [this](https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3) exact type of attack. The [JTP](./contracts/JTP.sol) contract, being written by us and being callback-free, we are sure that it will not create inconsistencies in event generation.
 
