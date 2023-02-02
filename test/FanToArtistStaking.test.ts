@@ -75,7 +75,7 @@ describe('FanToArtistStaking', () => {
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(10);
             await expect(fanToArtistStaking.changeArtistRewardRate(50, owner.address))
                 .to.emit(fanToArtistStaking, 'ArtistJTPRewardChanged')
-                .withArgs(50, owner.address);
+                .withArgs(50, anyValue, owner.address);
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(50);
         });
     });
@@ -96,7 +96,7 @@ describe('FanToArtistStaking', () => {
             const time = 50;
             times.push(time);
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
-                .to.emit(fanToArtistStaking, 'ArtistStaked')
+                .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, 100, anyValue);
             stake1 = {
                 artist: artist1.address,
@@ -168,7 +168,7 @@ describe('FanToArtistStaking', () => {
             const amount = 50;
             const time = 86400;
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
-                .to.emit(fanToArtistStaking, 'ArtistStaked')
+                .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
             expect(await jtp.balanceOf(addr1.address)).to.equal(0);
@@ -262,7 +262,7 @@ describe('FanToArtistStaking', () => {
                     .to.be.revertedWith('FanToArtistStaking: no stake found');
             });
 
-           
+
             it('No event should be emitted if the artist was already added or removed', async () => {
                 await expect(fanToArtistStaking.connect(owner).addArtist(artist1.address, artist1.address))
                     .not.to.emit(fanToArtistStaking, 'ArtistAdded');

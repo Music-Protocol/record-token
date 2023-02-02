@@ -12,7 +12,7 @@ The contract manages fan-to-artist staking, including adding and removing artist
 - The `DetailedStake` struct extends the Stake struct by also tracking the artist and user associated with the stake.
 - The `ArtistReward` struct tracks information about rewards for artists, including the start and end times for each reward period and the reward rate.
 ## Mappings
-- The `_stake` mapping tracks all stakes made by fans to artists, using the artist's address as the first key and the fan's address as the second key, to store an array of Stake structs.
+- The `_stake` mapping tracks all stakes made by fans to artists, using the artist's address as the first key and the fan's address as the second key, to store an array of `Stake` structs.
 - The `_artistStaked` mapping tracks all artists staked by each fan, using the fan's address as the key to store an array of artist addresses.
 - The `_stakerOfArtist` mapping tracks all fans who have staked each artist, using the artist's address as the key to store an array of fan addresses.
 - The `_verifiedArtists` mapping keeps track of which artists have been verified, using the artist's address as the key and a boolean value indicating whether they have been verified or not.

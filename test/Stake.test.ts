@@ -198,7 +198,7 @@ describe('Stake Simulation', () => {
 
         await timeMachine(5);
 
-        await ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address, endTime);
+        await ftas.connect(user).changeStakeCreated(artists[0].address, artists[1].address, endTime);
         expect(await jtp.balanceOf(ftas.address)).to.equal(50);
         expect(await jtp.balanceOf(user.address)).to.equal(50);
         const parsedActiveStake = parseDetailedStakes(await ftas.connect(user).getAllStake());
@@ -220,17 +220,17 @@ describe('Stake Simulation', () => {
         let activeStake = await ftas.connect(user).getAllStake();
         let endTime = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
 
-        await expect(ftas.connect(user).changeArtistStaked(users[0].address, artists[1].address, endTime))
+        await expect(ftas.connect(user).changeStakeCreated(users[0].address, artists[1].address, endTime))
             .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
-        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[2].address, 0))
+        await expect(ftas.connect(user).changeStakeCreated(artists[0].address, artists[2].address, 0))
             .to.be.revertedWith('FanToArtistStaking: the stake is already ended');
-        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[0].address, endTime))
+        await expect(ftas.connect(user).changeStakeCreated(artists[0].address, artists[0].address, endTime))
             .to.be.revertedWith('FanToArtistStaking: the new artist is the same as the old one');
-        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address, endTime + 2))
+        await expect(ftas.connect(user).changeStakeCreated(artists[0].address, artists[1].address, endTime + 2))
             .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
 
         await ftas.connect(user).stake(artists[1].address, 50, 20);
-        await expect(ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address, endTime))
+        await expect(ftas.connect(user).changeStakeCreated(artists[0].address, artists[1].address, endTime))
             .to.be.revertedWith('FanToArtistStaking: already staking the new artist');
     });
 
@@ -254,7 +254,7 @@ describe('Stake Simulation', () => {
 
         await ftas.connect(users[1]).increaseAmountStaked(artist.address, 10, endTime + 10);
         expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(4);
-        await ftas.connect(users[1]).changeArtistStaked(artist.address, artists[1].address, endTime + 10);
+        await ftas.connect(users[1]).changeStakeCreated(artist.address, artists[1].address, endTime + 10);
         expect((await ftas.connect(artist).getAllArtistStake()).length).to.equal(4);
         expect((await ftas.connect(artists[1]).getAllArtistStake()).length).to.equal(1);
     });
