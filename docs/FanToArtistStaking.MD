@@ -203,3 +203,103 @@ The end time of the stake must not have ended
 - `StakeEndChanged` event is emitted
 - `StakeRedeemed` event is emitted
 - `StakeCreated` event is emitted
+
+### **`extendStake`**
+This function allows a fan to extend the end time of their stake to an artist.
+#### **Input**
+- `artist`: The address of the artist to extend the stake for.
+- `end`: The current end date of the stake.
+- `newEnd`: The new end date of the stake after extension.
+#### **Pre-Conditions**
+The caller must be a verified artist.
+The stake for the given artist must not have ended.
+The function requires that the newEnd date is not greater than the maximum stake period.
+#### **Output**
+- `StakeEndChanged` event is emitted
+#### **Behaviour**
+The function extends the end date of the stake for the given artist by newEnd, requires that the stake is found with the given end date.
+The function emits the StakeEndChanged event with the new end date.
+
+### **`changeArtistStaked`**
+#### **Input**
+- `artist`: The current address of the artist for which the stake is being held.
+- `newArtist`: The new address of the artist for which the stake will be held.
+- `end`: The end date of the current stake.
+#### **Pre-Conditions**
+- The caller must be a verified artist.
+- The stake for the given artist must not have ended.
+- The new artist must not be the same as the old artist.
+- The caller must not be staking for the new artist.
+#### **Output**
+- `StakeEndChanged` event is emitted with the new end date of the stake for the old artist.
+- `StakeRedeemed` event is emitted for the old artist.
+- `StakeCreated` event is emitted for the new artist.
+#### **Behaviour**
+The function marks the stake as redeemed and anticipate its end.
+Then creates a new stake for the new artist.
+
+### **`redeem`**
+#### **Input**
+- `artist`: The address of the artist for which the stake is being held.
+- `end`: The end date of the stake.
+#### **Pre-Conditions**
+- The stake for the given artist must have ended.
+- Requires that the stake is found with the given end date.
+- Requires that the stake has not already been redeemed
+#### **Output**
+- `StakeRedeemed` event is emitted.
+#### **Behaviour**
+The function unlocks the JTP amount held in the stake and then emits the StakeRedeemed event.
+
+### **`isVerified`**
+#### **Input**
+- `artist`: The address of the artist.
+#### **Output**
+- `bool` true if the artist is verified.
+
+### **`_totalVotingPower`**
+This internal view function calculates the total voting power of all staked JTP for a given timestamp.
+It returns the total voting power of JTPs, calculated as the **sum** of all staked JTP **divided** by the _veJTPRewardRate.
+#### **Input**
+- `timestamp`: The time to which the voting power of JTPs is to be calculated.
+#### **Output**
+- A `uint256` value representing the total voting power of JTPs at the specified timestamp.
+### **`totalVotingPower`**
+This view function returns the total voting power of JTPs at the current block's timestamp.
+It uses the internal `_totalVotingPower` function to calculate the total voting power.
+#### **Output**
+- A `uint256` value representing the total voting power of JTPs at the current block's timestamp.
+
+### **`totalVotingPowerAt`**
+This view function calculates the total voting power of JTPs at a specified timestamp.
+It uses the internal _totalVotingPower function to calculate the total voting power.
+#### **Input**
+- `timestamp`: The time to which the voting power of JTPs is to be calculated.
+#### **Output**
+- A `uint256` value representing the total voting power of JTPs at the specified timestamp.
+
+### **`_votingPowerOf`**
+This internal view function calculates the voting power of JTPs staked by a given user for a given timestamp.
+It returns the voting power of JTPs staked by the user, calculated as the **sum** of JTP staked by the user **divided** by the _veJTPRewardRate.
+#### **Input**
+- `user`: The address of the user whose staked JTPs voting power is to be calculated.
+- `timestamp`: The time to which the voting power of JTPs is to be calculated.
+#### **Output**
+- A `uint256` value representing the voting power of JTPs staked by the user at the specified timestamp.
+
+### **`votingPowerOf`**
+This view function returns the voting power of JTPs staked by a given user at the current block's timestamp.
+It uses the internal `_votingPowerOf` function to calculate the voting power of JTPs staked by the user.
+#### **Input**
+- `user`: The address of the user whose staked JTPs voting power is to be calculated.
+#### **Output**
+- A `uint256` value representing the voting power of JTPs staked by the user at the current block's timestamp.
+
+### **`votingPowerOfAt`**
+This view function calculates the voting power of JTPs staked by a given user for a given timestamp.
+It uses the internal `_votingPowerOf` function to calculate the voting power of JTPs staked by the user.
+#### **Input**
+- `user`: The address of the user whose staked JTPs voting power is to be calculated.
+- `timestamp`: The time to which the voting power of JTPs is to be calculated.
+#### **Output**
+- A `uint256` value representing the voting power of JTPs staked by the user at the specified timestamp.
