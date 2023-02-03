@@ -97,6 +97,9 @@ describe('Stake Simulation', () => {
         await StakeAndRedeem();
         await StakeAndRedeem();
         expect((await ftas.connect(user).getAllStake()).length).to.equal(3);
+        //TODO
+        await ftas.connect(artists[0]).getReward();
+        expect(await jtp.balanceOf(artists[0].address)).to.equal((100*30*3)/defArtistReward);
     });
 
     it('A user should be able to increase the amount staked', async () => {
@@ -211,6 +214,22 @@ describe('Stake Simulation', () => {
         expect(stake0.amount).to.equal(stake1.amount);
         expect(stake0.redeemed).to.equal(true);
         expect(stake1.redeemed).to.equal(false);
+    });
+
+    it('A stake already ended should not be affected if the Artist is removed', async () => {
+        const user = users[0];
+        const artist = artists[0];
+
+        await ftas.connect(user).stake(artist.address, 50, 600);
+        let activeStake = await ftas.connect(user).getAllStake();
+        let endTimePrev = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+
+        await timeMachine(15);
+        await ftas.removeArtist(artist.address, owner.address);
+
+        activeStake = await ftas.connect(user).getAllStake();
+        let endTimePost = Math.max(...activeStake.map(s => s.stake.end.toNumber()));   
+        expect(endTimePost).to.equal(endTimePrev);     
     });
 
     it('A user should not be able to change the artist staked when doesn meet the requirements', async () => {

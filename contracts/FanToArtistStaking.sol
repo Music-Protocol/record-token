@@ -12,7 +12,11 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
 
-    event ArtistJTPRewardChanged(uint128 newRate, uint256 timestamp, address indexed sender);
+    event ArtistJTPRewardChanged(
+        uint128 newRate,
+        uint256 timestamp,
+        address indexed sender
+    );
     event StakeCreated(
         address indexed artist,
         address indexed sender,
@@ -131,10 +135,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist
     ) internal view returns (bool) {
-        for (uint256 i = 0; i < _stake[artist][sender].length; i++) {
-            if (_stake[artist][sender][i].end > block.timestamp) return true;
-        }
-        return false;
+        uint len = _stake[artist][sender].length;
+        return (len > 0 &&
+            _stake[artist][sender][len - 1].end > block.timestamp);
     }
 
     function _addStake(
@@ -290,18 +293,16 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             //stop all stake
             address[] memory array = _stakerOfArtist[artist];
             for (uint i = 0; i < array.length; i++) {
-                for (uint j = 0; j < _stake[artist][array[i]].length; j++)
-                    if (_stake[artist][array[i]][j].end > block.timestamp) {
-                        emit StakeEndChanged(
-                            artist,
-                            _msgSender(),
-                            _stake[artist][array[i]][j].end,
-                            uint128(block.timestamp)
-                        );
-                        _stake[artist][array[i]][j].end = uint128(
-                            block.timestamp
-                        );
-                    }
+                uint j = _stake[artist][array[i]].length - 1;
+                if (_stake[artist][array[i]][j].end > block.timestamp) {
+                    emit StakeEndChanged(
+                        artist,
+                        _msgSender(),
+                        _stake[artist][array[i]][j].end,
+                        uint128(block.timestamp)
+                    );
+                    _stake[artist][array[i]][j].end = uint128(block.timestamp);
+                }
             }
             emit ArtistRemoved(artist, sender);
         }
@@ -388,7 +389,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
                 _stake[artist][_msgSender()][uint(index)].amount + amount, //amount
                 prev - _stake[artist][_msgSender()][uint(index)].end //end
             );
-            //These 3 events could end up in a conflict maybe we should merge into one
             emit StakeEndChanged(
                 artist,
                 _msgSender(),
@@ -464,7 +464,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             _stake[artist][_msgSender()][uint(index)].amount, //amount
             prev - _stake[artist][_msgSender()][uint(index)].end //end
         );
-        //These 3 events could end up in a conflict maybe we should merge into one
         emit StakeEndChanged(
             artist,
             _msgSender(),
