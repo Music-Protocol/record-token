@@ -85,6 +85,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 min,
         uint128 max
     ) {
+        require(
+            artistJTPRewardRate != 0,
+            "FanToArtistStaking: the artist reward rate can not be 0"
+        );
+        require(
+            veJTPRewardRate != 0,
+            "FanToArtistStaking: the voting reward rate can not be 0"
+        );
         _veJTPRewardRate = veJTPRewardRate;
         _artistReward.push(
             ArtistReward({start: 0, end: 0, rate: artistJTPRewardRate})
@@ -315,6 +323,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 rate,
         address sender
     ) external onlyOwner {
+        require(
+            rate != 0,
+            "FanToArtistStaking: the artist reward rate can not be 0"
+        );
         _artistReward[_artistReward.length - 1].end = uint128(block.timestamp);
         _artistReward.push(
             ArtistReward({start: uint128(block.timestamp), end: 0, rate: rate})

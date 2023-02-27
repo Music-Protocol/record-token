@@ -93,8 +93,6 @@ contract PublicPressureDAO {
                     _proposals[proposalId].votesAgainst),
             "DAO: proposal already exists"
         );
-        // remove this and replace with if to check if is expired, then delete and create a new one
-        //"DAO: proposal already exists"
 
         _proposals[proposalId] = Proposal({
             timeStart: uint128(block.timestamp),
@@ -140,7 +138,7 @@ contract PublicPressureDAO {
             !_votes[hashVote][msg.sender],
             "DAO: already voted"
         );
-        
+
         uint256 amount = _ftas.votingPowerOfAt(
             msg.sender,
             _proposals[proposalId].timeStart
