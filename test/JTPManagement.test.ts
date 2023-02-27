@@ -2,23 +2,21 @@ import { expect } from 'chai';
 import { BytesLike } from 'ethers';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
+import { DEXLFactory, FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
+import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
+import { PoolStruct } from '../typechain-types/contracts/DEXLFactory';
 
 describe('JTPManagement', () => {
     let jtp: JTP;
     let jtpManagement: JTPManagement;
     let fanToArtistStaking: FanToArtistStaking;
+    let DEXLP: DEXLFactory;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let artist1: SignerWithAddress, artist2: SignerWithAddress;
     let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike;
 
     before(async () => { //same as deploy
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
-
-        // const ORDERED_ARRAY = await ethers.getContractFactory('OrderedArray');
-        // const oa = await ORDERED_ARRAY.deploy();
-        // await oa.deployed();
-        // const FTAS = await ethers.getContractFactory('FanToArtistStaking', { libraries: { OrderedArray: oa.address } });
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         fanToArtistStaking = await FTAS.deploy(10, 10, 60, 86400);
@@ -29,11 +27,16 @@ describe('JTPManagement', () => {
         await jtp.deployed();
         fanToArtistStaking.setJTP(jtp.address);
 
+        const dProp = await ethers.getContractFactory('DEXLFactory');
+        DEXLP = await dProp.deploy() as DEXLFactory;
+        await DEXLP.deployed();
+
         const cJTPManagement = await ethers.getContractFactory('JTPManagement');
-        jtpManagement = await cJTPManagement.deploy(jtp.address, fanToArtistStaking.address);
+        jtpManagement = await cJTPManagement.deploy(jtp.address, fanToArtistStaking.address, DEXLP.address);
         await jtpManagement.deployed();
         await jtp.transferOwnership(jtpManagement.address);
         await fanToArtistStaking.transferOwnership(jtpManagement.address);
+        await DEXLP.transferOwnership(jtpManagement.address);
 
         adminRole = await jtpManagement.DEFAULT_ADMIN_ROLE();
         minterRole = await jtpManagement.MINTER_ROLE();
@@ -200,6 +203,90 @@ describe('JTPManagement', () => {
                 await fanToArtistStaking.connect(fakeDAO).transferOwnership(jtpManagement.address);
             });
 
+        });
+    });
+
+    describe('DEXLFactory', () => {
+        it('Should be able to approve a proposal', async () => {
+            const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
+            const stableCoin = await StableCoin.deploy() as any;
+            await stableCoin.deployed();
+            await stableCoin.initialize(
+                "USD Coin",
+                "USDC",
+                "USD",
+                6,
+                owner.address,
+                owner.address,
+                owner.address,
+                owner.address
+            );
+            await stableCoin.configureMinter(owner.address, 1000000e6);
+            await stableCoin.mint(addr1.address, 1000);
+            await stableCoin.connect(addr1).approve(DEXLP.address, 50);
+            let poolS: PoolStruct = {
+                leader: addr1.address,
+                fundingTokenContract: stableCoin.address,
+                softCap: 100,
+                hardCap: 200,
+                initialDeposit: 50,
+                raiseEndDate: 120, //2 min
+                terminationDate: 900, // 15 min 
+                votingTime: 600, // 10 min
+                leaderCommission: 10e8,
+                couponAmount: 20e8, // 20%
+                quorum: 30e8, // 30%
+                majority: 50e8, // 50%
+                deployable: false,
+                transferrable: false
+            };
+            await DEXLP.connect(addr1).proposePool(poolS);
+
+            await jtpManagement.approveProposal(0);
+        });
+
+        it('Should be able to decline a proposal', async () => {
+            const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
+            const stableCoin = await StableCoin.deploy() as any;
+            await stableCoin.deployed();
+            await stableCoin.initialize(
+                "USD Coin",
+                "USDC",
+                "USD",
+                6,
+                owner.address,
+                owner.address,
+                owner.address,
+                owner.address
+            );
+            await stableCoin.configureMinter(owner.address, 1000000e6);
+            await stableCoin.mint(addr1.address, 1000);
+            await stableCoin.connect(addr1).approve(DEXLP.address, 50);
+            let poolS: PoolStruct = {
+                leader: addr1.address,
+                fundingTokenContract: stableCoin.address,
+                softCap: 100,
+                hardCap: 200,
+                initialDeposit: 50,
+                raiseEndDate: 120, //2 min
+                terminationDate: 900, // 15 min 
+                votingTime: 600, // 10 min
+                leaderCommission: 10e8,
+                couponAmount: 20e8, // 20%
+                quorum: 30e8, // 30%
+                majority: 50e8, // 50%
+                deployable: false,
+                transferrable: false
+            };
+            await DEXLP.connect(addr1).proposePool(poolS);
+            await jtpManagement.declineProposal(1);
+        });
+
+        describe('Transfer Ownership', () => {
+            it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of DEXLFactory contract', async () => {
+                await jtpManagement.connect(owner).transferDEXLFactory(fakeDAO.address);
+                expect(await DEXLP.owner()).to.equal(fakeDAO.address);
+            });
         });
     });
 

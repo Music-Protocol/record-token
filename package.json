@@ -12,6 +12,9 @@
     "test:ftas": "npx hardhat test ./test/FanToArtistStaking.test.ts",
     "test:stake": "npx hardhat test ./test/Stake.test.ts",
     "test:ve": "npx hardhat test ./test/VotingPower.test.ts",
+    "test:prop": "npx hardhat test ./test/DEXLFactory.test.ts",
+    "test:pool": "npx hardhat test ./test/DEXLPool.test.ts",
+    "test:dao": "npx hardhat test ./test/DAO.test.ts",
     "deploy:ganache": "npx hardhat run ./scripts/deploy.ts --network localganache"
   },
   "repository": {
@@ -49,5 +52,9 @@
   },
   "resolutions": {
     "minimatch": "^3.0.5"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "web3": "^1.8.2"
   }
 }

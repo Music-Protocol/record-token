@@ -5,6 +5,7 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
+import "./interfaces/IDEXLFactory.sol";
 
 contract JTPManagement is AccessControl {
     event Mint(address indexed to, uint256 amount, address indexed sender);
@@ -12,13 +13,16 @@ contract JTPManagement is AccessControl {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant POOL_APPROVER_ROLE =
+        keccak256("POOL_APPROVER_ROLE");
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
 
     IJTP private immutable _jtp;
     IFanToArtistStaking private immutable _ftas;
+    IDEXLFactory private immutable _dexl;
 
-    constructor(address jtp, address ftas) {
+    constructor(address jtp, address ftas, address dexl) {
         //set jtp
         _jtp = IJTP(jtp);
         // Grant the minter role to a specified account
@@ -30,6 +34,10 @@ contract JTPManagement is AccessControl {
         _ftas = IFanToArtistStaking(ftas);
         //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
         _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
+
+        //set DEXLFactory
+        _dexl = IDEXLFactory(dexl);
+        _grantRole(POOL_APPROVER_ROLE, msg.sender);
     }
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
@@ -61,6 +69,12 @@ contract JTPManagement is AccessControl {
         _ftas.transferOwnership(to);
     }
 
+    function transferDEXLFactory(
+        address to
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _dexl.transferOwnership(to);
+    }
+
     function addArtist(address artist) external onlyRole(VERIFY_ARTIST_ROLE) {
         _ftas.addArtist(artist, _msgSender());
     }
@@ -77,5 +91,17 @@ contract JTPManagement is AccessControl {
 
     function unpauseJTP() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _jtp.unpause();
+    }
+
+    function approveProposal(
+        uint256 index
+    ) external onlyRole(POOL_APPROVER_ROLE) returns (address) {
+        return _dexl.approveProposal(index);
+    }
+
+    function declineProposal(
+        uint256 index
+    ) external onlyRole(POOL_APPROVER_ROLE) {
+        _dexl.declineProposal(index);
     }
 }

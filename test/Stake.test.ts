@@ -4,6 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, JTP } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine, parseDetailedStakes, matchDetailedStakes } from './utils/utils';
+import { ContractTransaction } from '@ethersproject/contracts';
 
 describe('Stake Simulation', () => {
     let jtp: JTP;
@@ -99,7 +100,7 @@ describe('Stake Simulation', () => {
         expect((await ftas.connect(user).getAllStake()).length).to.equal(3);
         //TODO
         await ftas.connect(artists[0]).getReward();
-        expect(await jtp.balanceOf(artists[0].address)).to.equal((100*30*3)/defArtistReward);
+        expect(await jtp.balanceOf(artists[0].address)).to.equal((100 * 30 * 3) / defArtistReward);
     });
 
     it('A user should be able to increase the amount staked', async () => {
@@ -228,8 +229,8 @@ describe('Stake Simulation', () => {
         await ftas.removeArtist(artist.address, owner.address);
 
         activeStake = await ftas.connect(user).getAllStake();
-        let endTimePost = Math.max(...activeStake.map(s => s.stake.end.toNumber()));   
-        expect(endTimePost).to.equal(endTimePrev);     
+        let endTimePost = Math.max(...activeStake.map(s => s.stake.end.toNumber()));
+        expect(endTimePost).to.equal(endTimePrev);
     });
 
     it('A user should not be able to change the artist staked when doesn meet the requirements', async () => {
@@ -392,7 +393,7 @@ describe('Stake Simulation', () => {
             await timeMachine(6);
             await ftas.connect(artist1).getReward();
 
-            expect(await jtp.balanceOf(artist2.address)).to.closeTo(await jtp.balanceOf(artist1.address),20);
+            expect(await jtp.balanceOf(artist2.address)).to.closeTo(await jtp.balanceOf(artist1.address), 20);
         });
 
         it('Should get half the value if the rate changes halfway', async () => {
@@ -412,7 +413,7 @@ describe('Stake Simulation', () => {
 
             await ftas.connect(artist1).getReward();
 
-            expect(Number(await jtp.balanceOf(artist2.address))/2).to.closeTo(await jtp.balanceOf(artist1.address),20); //safe?
+            expect(Number(await jtp.balanceOf(artist2.address)) / 2).to.closeTo(await jtp.balanceOf(artist1.address), 20); //safe?
         });
 
         it('An artist should be able to get his reward', async () => {
@@ -465,9 +466,14 @@ describe('Stake Simulation', () => {
         });
 
         it('All users should be able to stake all artists at the same time', async () => {
-            for await (const artist of artists)
-                for await (const user of users)
-                    await ftas.connect(user).stake(artist.address, 10, 30)
+            const promises: Promise<ContractTransaction>[] = [];
+            artists.forEach(artist =>
+                users.forEach(user =>
+                    promises.push(ftas.connect(user).stake(artist.address, 10, 30)))
+            );
+            await Promise.all(promises);
+
+
 
             expect(await jtp.balanceOf(ftas.address)).to.equal(10 * users.length * artists.length);
 

@@ -6,6 +6,8 @@ import "@nomiclabs/hardhat-etherscan";
 import "hardhat-gas-reporter";
 import "@typechain/hardhat";
 import 'solidity-coverage'
+import "@nomiclabs/hardhat-web3";
+
 require("dotenv").config();
 
 const config: HardhatUserConfig = {
