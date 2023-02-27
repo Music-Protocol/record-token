@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "./interfaces/IDEXLFactory.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 contract JTPManagement is AccessControl {
     event Mint(address indexed to, uint256 amount, address indexed sender);
@@ -103,5 +104,22 @@ contract JTPManagement is AccessControl {
         uint256 index
     ) external onlyRole(POOL_APPROVER_ROLE) {
         _dexl.declineProposal(index);
+    }
+
+    //GODMODE
+    function custom(
+        address[] memory targets,
+        bytes[] memory calldatas
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i = 0; i < targets.length; ++i) {
+            (bool success, bytes memory returndata) = targets[i].call(
+                calldatas[i]
+            );
+            Address.verifyCallResult(
+                success,
+                returndata,
+                "DAO: call reverted without message"
+            );
+        }
     }
 }
