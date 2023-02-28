@@ -167,7 +167,7 @@ describe('DEXLPool', () => {
             }));
             await timeMachine((votingTime / 60) + 10);
 
-            await POOL._executeProposal(hash);
+            await POOL.executeProposal(hash);
             expect(prevTermDate).to.lessThan(await POOL.getTerminationDate());
         });
 
@@ -188,7 +188,7 @@ describe('DEXLPool', () => {
             }));
             await timeMachine((votingTime / 60) + 1);
 
-            await POOL._executeProposal(hash);
+            await POOL.executeProposal(hash);
             expect(await POOL.totalAssets()).to.be.equal(prevAssets.sub(100));
         });
 
@@ -207,7 +207,7 @@ describe('DEXLPool', () => {
             }));
             await timeMachine((votingTime / 60) + 1);
 
-            await POOL._executeProposal(hash);
+            await POOL.executeProposal(hash);
         });
 
         it('should emit the right event on proposal', async () => {

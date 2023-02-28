@@ -31,7 +31,14 @@ contract DEXLPool is ERC4626, Ownable {
         uint256 endTime,
         string description
     );
+    event ProposalVoted(
+        uint256 indexed hash,
+        address indexed voter,
+        uint256 amount,
+        bool isFor
+    );
     event ProposalExecuted(uint256 indexed hash, address indexed executor);
+    event RevenueRedistributed(address indexed executor, uint256 amount);
 
     address private _leader;
     address private _fundingTokenContract;
@@ -169,6 +176,7 @@ contract DEXLPool is ERC4626, Ownable {
             );
             IERC20(_fundingTokenContract).transfer(_shareholders[i], toPay);
         }
+        emit RevenueRedistributed(_msgSender(), amount);
     }
 
     function withdraw(
@@ -199,8 +207,7 @@ contract DEXLPool is ERC4626, Ownable {
         return super.redeem(shares, receiver, owner);
     }
 
-    //temp external, will be internal
-    function _executeProposal(uint256 index) external {
+    function executeProposal(uint256 index) external {
         require(
             block.timestamp > _proposals[index].endTime,
             "DEXLPool: the end time of the proposal is not reached"
@@ -240,7 +247,7 @@ contract DEXLPool is ERC4626, Ownable {
 
         _votes[index][_msgSender()] = true;
 
-        // emit event vote
+        emit ProposalVoted(index, msg.sender, balanceOf(_msgSender()), isFor);
     }
 
     function proposeReferendum(
