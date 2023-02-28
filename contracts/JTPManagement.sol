@@ -19,9 +19,9 @@ contract JTPManagement is AccessControl {
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
 
-    IJTP private immutable _jtp;
-    IFanToArtistStaking private immutable _ftas;
-    IDEXLFactory private immutable _dexl;
+    IJTP private _jtp;
+    IFanToArtistStaking private _ftas;
+    IDEXLFactory private _dexl;
 
     constructor(address jtp, address ftas, address dexl) {
         //set jtp
@@ -106,6 +106,24 @@ contract JTPManagement is AccessControl {
         _dexl.declineProposal(index);
     }
 
+    function changeJTP(
+        address jtp
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _jtp =  IJTP(jtp);
+    }
+
+    function changeFTAS(
+        address ftas
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _ftas = IFanToArtistStaking(ftas);
+    }
+
+    function changeDEXLFactory(
+        address dexl
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _dexl = IDEXLFactory(dexl);
+    }
+
     //GODMODE
     function custom(
         address[] memory targets,
@@ -118,7 +136,7 @@ contract JTPManagement is AccessControl {
             Address.verifyCallResult(
                 success,
                 returndata,
-                "DAO: call reverted without message"
+                "JTPManagement: call reverted without message"
             );
         }
     }

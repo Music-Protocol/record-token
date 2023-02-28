@@ -126,7 +126,7 @@ contract DEXLPool is ERC4626, Ownable {
         return _leader;
     }
 
-    function setLeader(address leader_) external {
+    function setLeader(address leader_)  external onlyOwner {
         _leader = leader_;
     }
 

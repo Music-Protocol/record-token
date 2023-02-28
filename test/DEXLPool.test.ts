@@ -75,10 +75,10 @@ describe('DEXLPool', () => {
         const quorum = 30e8; // 30%
         const majority = 50e8; // 50%
         const votingTime = 600; // 10 min
-
+        let poolS: PoolStruct;
         beforeEach(async () => {
             await stableCoin.connect(leader).approve(DEXLP.address, initialDeposit);
-            let poolS: PoolStruct = {
+            poolS = {
                 leader: leader.address,
                 fundingTokenContract: stableCoin.address,
                 softCap,
@@ -208,6 +208,12 @@ describe('DEXLPool', () => {
             await timeMachine((votingTime / 60) + 1);
 
             await POOL._executeProposal(hash);
+        });
+
+        it('should emit the right event on proposal', async () => {
+            poolS.initialDeposit = 0;
+            const hash = await getIndexFromProposal(await DEXLP.connect(leader).proposePool(poolS, "description"));
+            await DEXLP.approveProposal(hash);
         });
     });
 

@@ -1,17 +1,17 @@
 import { expect } from 'chai';
 import { BytesLike } from 'ethers';
-import { ethers } from 'hardhat';
+import { ethers, web3 } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { DEXLFactory, FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { PoolStruct } from '../typechain-types/contracts/DEXLFactory';
-import { getIndexFromProposal } from './utils/utils';
+import { getIndexFromProposal, getPoolFromEvent } from './utils/utils';
 
 describe('JTPManagement', () => {
     let jtp: JTP;
     let jtpManagement: JTPManagement;
     let fanToArtistStaking: FanToArtistStaking;
-    let DEXLP: DEXLFactory;
+    let DEXLF: DEXLFactory;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let artist1: SignerWithAddress, artist2: SignerWithAddress;
     let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike;
@@ -29,15 +29,15 @@ describe('JTPManagement', () => {
         fanToArtistStaking.setJTP(jtp.address);
 
         const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLP = await dProp.deploy() as DEXLFactory;
-        await DEXLP.deployed();
+        DEXLF = await dProp.deploy() as DEXLFactory;
+        await DEXLF.deployed();
 
         const cJTPManagement = await ethers.getContractFactory('JTPManagement');
-        jtpManagement = await cJTPManagement.deploy(jtp.address, fanToArtistStaking.address, DEXLP.address);
+        jtpManagement = await cJTPManagement.deploy(jtp.address, fanToArtistStaking.address, DEXLF.address);
         await jtpManagement.deployed();
         await jtp.transferOwnership(jtpManagement.address);
         await fanToArtistStaking.transferOwnership(jtpManagement.address);
-        await DEXLP.transferOwnership(jtpManagement.address);
+        await DEXLF.transferOwnership(jtpManagement.address);
 
         adminRole = await jtpManagement.DEFAULT_ADMIN_ROLE();
         minterRole = await jtpManagement.MINTER_ROLE();
@@ -224,7 +224,7 @@ describe('JTPManagement', () => {
             );
             await stableCoin.configureMinter(owner.address, 1000000e6);
             await stableCoin.mint(addr1.address, 1000);
-            await stableCoin.connect(addr1).approve(DEXLP.address, 50);
+            await stableCoin.connect(addr1).approve(DEXLF.address, 50);
             let poolS: PoolStruct = {
                 leader: addr1.address,
                 fundingTokenContract: stableCoin.address,
@@ -240,7 +240,7 @@ describe('JTPManagement', () => {
                 majority: 50e8, // 50%
                 transferrable: false
             };
-            const hash = await getIndexFromProposal(await DEXLP.connect(addr1).proposePool(poolS, "description"));
+            const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
 
             await jtpManagement.approveProposal(hash);
         });
@@ -261,7 +261,7 @@ describe('JTPManagement', () => {
             );
             await stableCoin.configureMinter(owner.address, 1000000e6);
             await stableCoin.mint(addr1.address, 1000);
-            await stableCoin.connect(addr1).approve(DEXLP.address, 50);
+            await stableCoin.connect(addr1).approve(DEXLF.address, 50);
             let poolS: PoolStruct = {
                 leader: addr1.address,
                 fundingTokenContract: stableCoin.address,
@@ -277,15 +277,66 @@ describe('JTPManagement', () => {
                 majority: 50e8, // 50%
                 transferrable: false
             };
-            const hash = await getIndexFromProposal(await DEXLP.connect(addr1).proposePool(poolS, "description"));
+            const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
             await jtpManagement.declineProposal(hash);
         });
 
         describe('Transfer Ownership', () => {
             it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of DEXLFactory contract', async () => {
                 await jtpManagement.connect(owner).transferDEXLFactory(fakeDAO.address);
-                expect(await DEXLP.owner()).to.equal(fakeDAO.address);
+                expect(await DEXLF.owner()).to.equal(fakeDAO.address);
             });
+        });
+
+        it('Should be able to call a custom function', async () => {
+            const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
+            const stableCoin = await StableCoin.deploy() as any;
+            await stableCoin.deployed();
+            await stableCoin.initialize(
+                "USD Coin",
+                "USDC",
+                "USD",
+                6,
+                owner.address,
+                owner.address,
+                owner.address,
+                owner.address
+            );
+            await stableCoin.configureMinter(owner.address, 1000000e6);
+            await stableCoin.mint(addr1.address, 1000);
+            await stableCoin.connect(addr1).approve(DEXLF.address, 50);
+            let poolS: PoolStruct = {
+                leader: addr1.address,
+                fundingTokenContract: stableCoin.address,
+                softCap: 100,
+                hardCap: 200,
+                initialDeposit: 50,
+                raiseEndDate: 120, //2 min
+                terminationDate: 900, // 15 min 
+                votingTime: 600, // 10 min
+                leaderCommission: 10e8,
+                couponAmount: 20e8, // 20%
+                quorum: 30e8, // 30%
+                majority: 50e8, // 50%
+                transferrable: false
+            };
+            const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
+            const eventi = ((await (await jtpManagement.approveProposal(hash)).wait()).events)?.filter(e => e.address == DEXLF.address).at(0)!;
+            let abi = [" event PoolCreated (address indexed leader, address indexed pool, uint256 index)"];
+            let iface = new ethers.utils.Interface(abi)
+            const pool = (iface.parseLog(eventi)).args['pool'];
+            const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
+            const calldata = web3.eth.abi.encodeFunctionCall({
+                name: 'setLeader',
+                type: 'function',
+                inputs: [{
+                    type: 'address',
+                    name: 'leader_'
+                }]
+            }, [owner.address]);
+           expect(await DEXLPool.getLeader()).to.equal(addr1.address);
+            await jtpManagement.custom([DEXLPool.address], [calldata]);
+            expect(await DEXLPool.getLeader()).to.equal(owner.address);
         });
     });
 
