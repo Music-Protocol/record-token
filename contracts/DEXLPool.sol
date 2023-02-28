@@ -5,10 +5,11 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import "./interfaces/SDEXLPool.sol";
 
-contract DEXLPool is ERC4626 {
+contract DEXLPool is ERC4626, Ownable {
     using Math for uint256;
     event ReferendumProposed(
         address indexed proposer,
@@ -55,12 +56,13 @@ contract DEXLPool is ERC4626 {
         address target;
         bytes encodedRequest;
     }
-    mapping(uint256 => mapping(address => bool)) _votes;//hash collision of keccack256 
+    mapping(uint256 => mapping(address => bool)) _votes; //hash collision of keccack256
     //votes[index of_proposals][address of voters] = true if voted, false if not
     mapping(uint256 => Proposal) private _proposals;
 
     constructor(
-        Pool memory pool
+        Pool memory pool,
+        address newOwner
     ) ERC4626(IERC20(pool.fundingTokenContract)) ERC20("Shares", "SHR") {
         _leader = pool.leader;
         _softCap = pool.softCap;
@@ -77,6 +79,7 @@ contract DEXLPool is ERC4626 {
         _quorum = pool.quorum;
         _majority = pool.majority;
         super._mint(pool.leader, pool.initialDeposit);
+        _transferOwnership(newOwner);
     }
 
     modifier onlyLeader() {
@@ -121,6 +124,10 @@ contract DEXLPool is ERC4626 {
 
     function getLeader() external view returns (address) {
         return _leader;
+    }
+
+    function setLeader(address leader_) external {
+        _leader = leader_;
     }
 
     function deposit(

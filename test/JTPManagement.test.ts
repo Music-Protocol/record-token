@@ -5,6 +5,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { DEXLFactory, FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { PoolStruct } from '../typechain-types/contracts/DEXLFactory';
+import { getIndexFromProposal } from './utils/utils';
 
 describe('JTPManagement', () => {
     let jtp: JTP;
@@ -237,12 +238,11 @@ describe('JTPManagement', () => {
                 couponAmount: 20e8, // 20%
                 quorum: 30e8, // 30%
                 majority: 50e8, // 50%
-                deployable: false,
                 transferrable: false
             };
-            await DEXLP.connect(addr1).proposePool(poolS);
+            const hash = await getIndexFromProposal(await DEXLP.connect(addr1).proposePool(poolS, "description"));
 
-            await jtpManagement.approveProposal(0);
+            await jtpManagement.approveProposal(hash);
         });
 
         it('Should be able to decline a proposal', async () => {
@@ -275,11 +275,10 @@ describe('JTPManagement', () => {
                 couponAmount: 20e8, // 20%
                 quorum: 30e8, // 30%
                 majority: 50e8, // 50%
-                deployable: false,
                 transferrable: false
             };
-            await DEXLP.connect(addr1).proposePool(poolS);
-            await jtpManagement.declineProposal(1);
+            const hash = await getIndexFromProposal(await DEXLP.connect(addr1).proposePool(poolS, "description"));
+            await jtpManagement.declineProposal(hash);
         });
 
         describe('Transfer Ownership', () => {

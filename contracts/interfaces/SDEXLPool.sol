@@ -15,6 +15,5 @@ struct Pool {
     uint64 couponAmount;
     uint64 quorum;
     uint64 majority;
-    bool deployable;
     bool transferrable;
 }

@@ -51,6 +51,9 @@ async function getTimestamp() {
 async function getPoolFromEvent(receipt: ContractTransaction) {
     return (await receipt.wait()).events?.filter(e => e.event == 'PoolCreated').at(0)?.args?.pool;
 }
+async function getIndexFromProposal(receipt: ContractTransaction) {
+    return (await receipt.wait()).events?.filter(e => e.event == 'PoolProposed').at(0)?.args?.index;
+}
 
 async function getProposalHash(receipt: ContractTransaction) {
     return (await receipt.wait()).events!.filter(e => ['ReferendumProposed', 'EarlyClosureProposed','FoundingProposed'].includes(e.event!)).at(0)!.args!.hash;
@@ -74,5 +77,6 @@ export {
     getTimestamp,
     getPoolFromEvent,
     getProposalHash,
-    calcPoolRevenues
+    calcPoolRevenues,
+    getIndexFromProposal
 };

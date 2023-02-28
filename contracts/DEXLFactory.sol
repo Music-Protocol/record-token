@@ -17,31 +17,11 @@ contract DEXLFactory is Ownable, IDEXLFactory {
     event PoolDeclined(address indexed leader, uint256 indexed index);
     event PoolProposed(
         uint256 indexed index,
-        address indexed leader,
-        address fundingTokenContract,
-        uint256 softCap,
-        uint256 hardCap,
-        uint256 initialDeposit,
-        uint128 raiseEndDate,
-        uint128 terminationDate,
-        uint128 votingTime,
-        uint64 leaderCommission,
-        uint64 couponAmount,
-        uint64 quorum,
-        uint64 majority,
-        bool transferrable
+        Pool pool,
+        string description
     );
 
-
-    Pool[] private proposals;
-
-    modifier notDeployed(uint256 index) {
-        require(
-            proposals[index].deployable,
-            "DEXLFactory: Proposal can not be deployed"
-        );
-        _;
-    }
+    mapping(uint256 => Pool) private proposals;
 
     function transferOwnership(
         address to
@@ -49,9 +29,7 @@ contract DEXLFactory is Ownable, IDEXLFactory {
         super.transferOwnership(to);
     }
 
-    function proposePool(
-        Pool memory pool
-    ) external {
+    function proposePool(Pool memory pool, string memory description) external {
         require(
             pool.softCap <= pool.hardCap,
             "DEXLFactory: softcap must be less or equal than the hardcap"
@@ -89,39 +67,26 @@ contract DEXLFactory is Ownable, IDEXLFactory {
             address(this),
             pool.initialDeposit
         );
-        proposals.push(
-            Pool({
-                leader: pool.leader,
-                fundingTokenContract: pool.fundingTokenContract,
-                leaderCommission: pool.leaderCommission,
-                softCap: pool.softCap,
-                hardCap: pool.hardCap,
-                raiseEndDate: uint128(block.timestamp) + pool.raiseEndDate,
-                couponAmount: pool.couponAmount,
-                initialDeposit: pool.initialDeposit,
-                terminationDate: uint128(block.timestamp) + pool.terminationDate,
-                votingTime: pool.votingTime,
-                deployable: true,
-                transferrable: pool.transferrable,
-                quorum: pool.quorum,
-                majority: pool.majority
-            })
-        );
+        uint256 hashProp = uint256(keccak256(abi.encode(msg.sender, pool, block.timestamp)));
+        proposals[hashProp] = Pool({
+            leader: pool.leader,
+            fundingTokenContract: pool.fundingTokenContract,
+            leaderCommission: pool.leaderCommission,
+            softCap: pool.softCap,
+            hardCap: pool.hardCap,
+            raiseEndDate: uint128(block.timestamp) + pool.raiseEndDate,
+            couponAmount: pool.couponAmount,
+            initialDeposit: pool.initialDeposit,
+            terminationDate: uint128(block.timestamp) + pool.terminationDate,
+            votingTime: pool.votingTime,
+            transferrable: pool.transferrable,
+            quorum: pool.quorum,
+            majority: pool.majority
+        });
         emit PoolProposed(
-            proposals.length - 1,
-            pool.leader,
-            pool.fundingTokenContract,
-            pool.softCap,
-            pool.hardCap,
-            pool.initialDeposit,
-            pool.raiseEndDate,
-            pool.terminationDate,
-            pool.votingTime,
-            pool.leaderCommission,
-            pool.couponAmount,
-            pool.quorum,
-            pool.majority,
-            pool.transferrable
+            hashProp,
+            pool,
+            description
         );
     }
 
@@ -131,30 +96,27 @@ contract DEXLFactory is Ownable, IDEXLFactory {
 
     function approveProposal(
         uint256 index
-    ) external onlyOwner notDeployed(index) returns (address) {
-        address pool = address(
-            new DEXLPool(
-                proposals[index]
-            )
-        );
+    ) external onlyOwner returns (address) {
+        require(proposals[index].leader != address(0),"DEXLFactory: Proposal can not be deployed");
+        address pool = address(new DEXLPool(proposals[index], _msgSender()));
         IERC20(proposals[index].fundingTokenContract).transfer(
             pool,
             proposals[index].initialDeposit
         );
-        proposals[index].deployable = false;
         emit PoolCreated(proposals[index].leader, pool, index);
+        delete proposals[index];
         return pool;
     }
 
-    function declineProposal(
-        uint256 index
-    ) external onlyOwner notDeployed(index) {
-        proposals[index].deployable = false;
+    function declineProposal(uint256 index) external onlyOwner {
         //sendback the money to the leader
+        require(proposals[index].leader != address(0),"DEXLFactory: Proposal can not be deployed");
+
         IERC20(proposals[index].fundingTokenContract).transfer(
             proposals[index].leader,
             proposals[index].initialDeposit
         );
+        delete proposals[index];
         emit PoolDeclined(proposals[index].leader, index);
     }
 }
