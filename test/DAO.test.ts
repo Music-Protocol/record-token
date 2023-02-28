@@ -100,10 +100,26 @@ describe('DAO', () => {
         });
         it('Propose again an already executed one', async () => {
             await dao.connect(users[2]).propose([jtp.address], [calldata], "Gift previous owner");
-            const proposal = await dao.getProposal(hash);
+            const proposal = await dao.getProposal([jtp.address], [calldata], "Gift previous owner");
             expect(proposal.votesFor).to.equal(0);
             expect(proposal.votesAgainst).to.equal(0);
             expect(proposal.votesAgainst).to.equal(0);
+        });
+        it('Should not execute a vote if does not pass', async () => {
+            const yesUser = users.slice(0, 6);
+            const noUser = users.slice(- 7);
+            await Promise.all(yesUser.map(u =>
+                dao.connect(u).vote([jtp.address], [calldata], "Gift previous owner", true))
+            )
+            await Promise.all(noUser.map(u =>
+                dao.connect(u).vote([jtp.address], [calldata], "Gift previous owner", false))
+            )
+            await timeMachine(15);
+            const prop = await dao.getProposal([jtp.address], [calldata], "Gift previous owner");
+            expect(prop.votesFor).to.be.lessThan(prop.votesAgainst);
+            const prevJTP = await jtp.balanceOf(owner.address);
+            await dao.execute([jtp.address], [calldata], "Gift previous owner");
+            expect(await jtp.balanceOf(owner.address)).to.be.equal(prevJTP);
         });
     });
 });

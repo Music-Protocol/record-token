@@ -17,7 +17,11 @@ contract PublicPressureDAO {
         uint256 endTime,
         string description
     );
-    event ProposalExecuted(uint256 indexed hash, address indexed executor);
+    event ProposalExecuted(
+        uint256 indexed hash,
+        address indexed executor,
+        bool executed
+    );
     event ProposalVoted(
         uint256 indexed hash,
         address indexed voter,
@@ -62,11 +66,7 @@ contract PublicPressureDAO {
         bytes32 descriptionHash
     ) public pure virtual returns (uint256) {
         return
-            uint256(
-                keccak256(
-                    abi.encode(targets, calldatas, descriptionHash)
-                )
-            );
+            uint256(keccak256(abi.encode(targets, calldatas, descriptionHash)));
     }
 
     function propose(
@@ -125,7 +125,10 @@ contract PublicPressureDAO {
             keccak256(bytes(description))
         );
 
-        require(_proposals[proposalId].timeStart != 0, "DAO: proposal not found");
+        require(
+            _proposals[proposalId].timeStart != 0,
+            "DAO: proposal not found"
+        );
         require(
             block.timestamp < _proposals[proposalId].timeEnd,
             "DAO: proposal expired"
@@ -134,10 +137,7 @@ contract PublicPressureDAO {
         uint256 hashVote = uint256(
             keccak256(abi.encode(proposalId, _proposals[proposalId].timeStart))
         );
-        require(
-            !_votes[hashVote][msg.sender],
-            "DAO: already voted"
-        );
+        require(!_votes[hashVote][msg.sender], "DAO: already voted");
 
         uint256 amount = _ftas.votingPowerOfAt(
             msg.sender,
@@ -162,7 +162,10 @@ contract PublicPressureDAO {
             keccak256(bytes(description))
         );
 
-        require(_proposals[proposalId].timeStart != 0, "DAO: proposal not found");
+        require(
+            _proposals[proposalId].timeStart != 0,
+            "DAO: proposal not found"
+        );
         require(
             block.timestamp > _proposals[proposalId].timeEnd,
             "DAO: proposal not ended"
@@ -173,8 +176,9 @@ contract PublicPressureDAO {
             _proposals[proposalId].votesAgainst
         ) {
             for (uint256 i = 0; i < targets.length; ++i) {
-                (bool success, bytes memory returndata) = targets[i].call
-                (calldatas[i]);
+                (bool success, bytes memory returndata) = targets[i].call(
+                    calldatas[i]
+                );
                 Address.verifyCallResult(
                     success,
                     returndata,
@@ -183,13 +187,28 @@ contract PublicPressureDAO {
             }
         }
         delete _proposals[proposalId];
-        emit ProposalExecuted(proposalId, msg.sender);
+        emit ProposalExecuted(
+            proposalId,
+            msg.sender,
+            _proposals[proposalId].votesFor >
+                _proposals[proposalId].votesAgainst
+        );
     }
 
     function getProposal(
-        uint256 proposalId
-    ) external view  returns(Proposal memory){
-        require(_proposals[proposalId].timeStart != 0, "DAO: proposal not found");
+        address[] memory targets,
+        bytes[] memory calldatas,
+        string memory description
+    ) external view returns (Proposal memory) {
+        uint256 proposalId = hashProposal(
+            targets,
+            calldatas,
+            keccak256(bytes(description))
+        );
+        require(
+            _proposals[proposalId].timeStart != 0,
+            "DAO: proposal not found"
+        );
         return _proposals[proposalId];
     }
 }

@@ -215,6 +215,33 @@ describe('DEXLPool', () => {
             const hash = await getIndexFromProposal(await DEXLP.connect(leader).proposePool(poolS, "description"));
             await DEXLP.approveProposal(hash);
         });
+
+        it('should test a transferrable proposal', async () => {
+            poolS.transferrable = true;
+            poolS.initialDeposit = 100;
+            await stableCoin.connect(leader).approve(DEXLP.address, poolS.initialDeposit);
+            const hash = await getIndexFromProposal(await DEXLP.connect(leader).proposePool(poolS, "description"));
+            const temPool = await getPoolFromEvent(await DEXLP.connect(owner).approveProposal(hash));
+            POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
+
+            await stableCoin.connect(users[0]).approve(POOL.address, 100);
+            await stableCoin.connect(users[1]).approve(POOL.address, 100);
+            await POOL.connect(users[0]).deposit(100, users[0].address);
+            await POOL.connect(users[1]).deposit(100, users[1].address);
+
+            await POOL.connect(users[0]).transfer(users[1].address, 100);
+            expect(await POOL.balanceOf(users[1].address)).to.equal(200);
+
+            await timeMachine((Number(poolS.raiseEndDate) / 60) + 1);
+            await stableCoin.mint(artists[0].address, 1000);
+            await stableCoin.connect(artists[0]).approve(POOL.address, 300);
+            const prevAddr0 = await stableCoin.balanceOf(users[0].address);
+            const prevAddr1 = await stableCoin.balanceOf(users[1].address);
+
+            await POOL.connect(artists[0]).redistributeRevenue(300);
+            expect(await stableCoin.balanceOf(users[0].address)).to.be.equal(prevAddr0);
+            expect(await stableCoin.balanceOf(users[1].address)).to.be.greaterThan(prevAddr1);
+        });
     });
 
 
