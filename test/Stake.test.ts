@@ -445,6 +445,34 @@ describe('Stake Simulation', () => {
             expect(balanceMiddle).to.be.greaterThan(balancePrev);
             expect(await jtp.balanceOf(artist0.address)).to.greaterThan(balanceMiddle);
         });
+
+        it('An artist should get no reward if already redeemed it', async () => {
+            const user0 = users[0];
+            const artist0 = artists[0];
+
+            await jtp.mint(user0.address, 100);
+            await ftas.changeArtistRewardRate(1, owner.address);
+            await ftas.connect(user0).stake(artist0.address, 100, 600); //staking 100 for 10 minutes
+            await timeMachine(15);
+
+            await ftas.connect(artist0).getReward();
+            expect(await jtp.balanceOf(artist0.address)).to.be.equal(100 * 600 / 1); //amount * seconds / artistRate
+            await timeMachine(15);
+            await ftas.changeArtistRewardRate(10, owner.address);
+            await timeMachine(5);
+
+            await ftas.connect(artist0).getReward();
+            await timeMachine(5);
+
+            expect(await jtp.balanceOf(artist0.address)).to.be.equal(100 * 600 / 1); //amount * seconds / artistRate
+            await ftas.changeArtistRewardRate(1, owner.address);
+            await timeMachine(5);
+
+            await ftas.connect(user0).stake(artist0.address, 100, 600); //staking 100 for 10 minutes
+            await timeMachine(15);
+            await ftas.connect(artist0).getReward();
+            expect(await jtp.balanceOf(artist0.address)).to.be.equal((100 * 600 / 1)*2); //amount * seconds / artistRate
+        });
     });
 
     describe('Stress Batch', () => {

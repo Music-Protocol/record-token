@@ -73,14 +73,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     mapping(address => bool) private _verifiedArtists;
     address[] private _verifiedArtistsArr; //redundant info array
 
-    mapping(address => uint256) private _artistAlreadyPaid;
+    mapping(address => uint128) private _artistLastPayment;
 
-    uint128 private immutable _veJTPRewardRate; //change onylOwner
+    uint256 private immutable _veJTPRewardRate; //change onylOwner
     uint128 private immutable _minStakePeriod; //change onylOwner
     uint128 private immutable _maxStakePeriod; //change onylOwner
 
     constructor(
-        uint128 veJTPRewardRate,
+        uint256 veJTPRewardRate,
         uint128 artistJTPRewardRate,
         uint128 min,
         uint128 max
@@ -173,8 +173,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address artist,
         uint128 end
     ) internal view returns (int256) {
-        for (uint i = 0; i < _stake[artist][sender].length; i++) {
-            if (_stake[artist][sender][i].end == end) return int(i);
+        for (uint i = _stake[artist][sender].length; i > 0; i--) {
+            if (_stake[artist][sender][i - 1].end == end) return int(i - 1);
         }
         return -1;
     }
@@ -237,48 +237,55 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             uint z = 0;
             for (uint j = 0; j < _artistReward.length; j++) {
                 for (; z < _stake[_msgSender()][user[i]].length; z++) {
-                    uint128 start = _stake[_msgSender()][user[i]][z].start;
-                    uint128 end = _stake[_msgSender()][user[i]][z].end;
-                    if (end > block.timestamp) end = uint128(block.timestamp);
                     if (
-                        start >= _artistReward[j].start &&
-                        (end <= _artistReward[j].end ||
-                            _artistReward[j].end == 0)
+                        _stake[_msgSender()][user[i]][z].end >
+                        _artistLastPayment[_msgSender()]
                     ) {
-                        accumulator +=
-                            ((end - start) *
-                                _stake[_msgSender()][user[i]][z].amount) /
-                            _artistReward[j].rate;
-                    } else if (
-                        start >= _artistReward[j].start &&
-                        start <= _artistReward[j].end &&
-                        end > _artistReward[j].end
-                    ) {
-                        accumulator +=
-                            ((_artistReward[j].end - start) *
-                                _stake[_msgSender()][user[i]][z].amount) /
-                            _artistReward[j].rate;
-                        break;
-                    } else if (
-                        start < _artistReward[j].start &&
-                        end >= _artistReward[j].start &&
-                        (end <= _artistReward[j].end ||
-                            _artistReward[j].end == 0)
-                    ) {
-                        accumulator +=
-                            ((end - _artistReward[j].start) *
-                                _stake[_msgSender()][user[i]][z].amount) /
-                            _artistReward[j].rate;
-                    } else {
-                        break;
+                        uint128 start = _stake[_msgSender()][user[i]][z].start;
+                        uint128 end = _stake[_msgSender()][user[i]][z].end;
+                        if (end > block.timestamp)
+                            end = uint128(block.timestamp);
+                        if (start < _artistLastPayment[_msgSender()])
+                            start = _artistLastPayment[_msgSender()];
+                        if (
+                            start >= _artistReward[j].start &&
+                            (end <= _artistReward[j].end ||
+                                _artistReward[j].end == 0)
+                        ) {
+                            accumulator +=
+                                ((end - start) *
+                                    _stake[_msgSender()][user[i]][z].amount) /
+                                _artistReward[j].rate;
+                        } else if (
+                            start >= _artistReward[j].start &&
+                            start <= _artistReward[j].end &&
+                            end > _artistReward[j].end
+                        ) {
+                            accumulator +=
+                                ((_artistReward[j].end - start) *
+                                    _stake[_msgSender()][user[i]][z].amount) /
+                                _artistReward[j].rate;
+                            break;
+                        } else if (
+                            start < _artistReward[j].start &&
+                            end >= _artistReward[j].start &&
+                            (end <= _artistReward[j].end ||
+                                _artistReward[j].end == 0)
+                        ) {
+                            accumulator +=
+                                ((end - _artistReward[j].start) *
+                                    _stake[_msgSender()][user[i]][z].amount) /
+                                _artistReward[j].rate;
+                        } else {
+                            break;
+                        }
                     }
                 }
             }
         }
-        accumulator -= _artistAlreadyPaid[_msgSender()];
         _jtp.payArtist(_msgSender(), accumulator);
         emit ArtistPaid(_msgSender(), accumulator);
-        _artistAlreadyPaid[_msgSender()] += accumulator;
+        _artistLastPayment[_msgSender()] = uint128(block.timestamp);
     }
 
     function addArtist(
@@ -334,7 +341,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         emit ArtistJTPRewardChanged(rate, block.timestamp, sender);
     }
 
-    function getStakingVeRate() external view returns (uint128) {
+    function getStakingVeRate() external view returns (uint256) {
         return _veJTPRewardRate;
     }
 
