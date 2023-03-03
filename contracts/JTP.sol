@@ -74,13 +74,6 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
         return true;
     }
 
-    function unlock(
-        address from,
-        uint256 amount
-    ) external override onlyStaking returns (bool) {
-        return transfer(from, amount);
-    }
-
     function payArtist(
         address to,
         uint256 amount

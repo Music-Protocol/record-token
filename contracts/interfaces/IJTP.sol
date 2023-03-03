@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.16;
 
-interface IJTP {
-    function lock(address from, uint256 amount) external returns (bool);
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-    function unlock(address from, uint256 amount) external returns (bool);
+interface IJTP is IERC20 {
+    function lock(address from, uint256 amount) external returns (bool);
 
     function payArtist(address to, uint256 amount) external;
 

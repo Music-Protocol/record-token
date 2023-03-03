@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import "./interfaces/SDEXLPool.sol";
 
 contract DEXLPool is ERC4626, Ownable {
@@ -39,20 +39,21 @@ contract DEXLPool is ERC4626, Ownable {
     );
     event ProposalExecuted(uint256 indexed hash, address indexed executor);
     event RevenueRedistributed(address indexed executor, uint256 amount);
+    event LeaderChanged(address indexed voter);
 
     address private _leader;
-    address private _fundingTokenContract;
-    uint256 private _softCap;
-    uint256 private _hardCap;
-    uint256 private _initialDeposit;
-    uint128 private _raiseEndDate;
+    address private immutable _fundingTokenContract;
+    uint256 private immutable _softCap;
+    uint256 private immutable _hardCap;
+    uint256 private immutable _initialDeposit;
+    uint128 private immutable _raiseEndDate;
     uint128 private _terminationDate;
-    uint128 private _votingTime;
-    uint64 private _leaderCommission;
-    uint64 private _couponAmount;
-    uint64 private _quorum;
-    uint64 private _majority;
-    bool private _transferrable;
+    uint128 private immutable _votingTime;
+    uint64 private immutable _leaderCommission;
+    uint64 private immutable _couponAmount;
+    uint64 private immutable _quorum;
+    uint64 private immutable _majority;
+    bool private immutable _transferrable;
 
     address[] private _shareholders;
 
@@ -63,7 +64,7 @@ contract DEXLPool is ERC4626, Ownable {
         address target;
         bytes encodedRequest;
     }
-    mapping(uint256 => mapping(address => bool)) _votes; //hash collision of keccack256
+    mapping(uint256 => mapping(address => bool)) private _votes; //hash collision of keccack256
     //votes[index of_proposals][address of voters] = true if voted, false if not
     mapping(uint256 => Proposal) private _proposals;
 
@@ -134,7 +135,9 @@ contract DEXLPool is ERC4626, Ownable {
     }
 
     function setLeader(address leader_) external onlyOwner {
+        require(leader_!= address(0),"DEXLPool: the new leader's address can not be 0");
         _leader = leader_;
+        emit LeaderChanged(leader_);
     }
 
     function deposit(
@@ -155,17 +158,23 @@ contract DEXLPool is ERC4626, Ownable {
 
     function redistributeRevenue(uint256 amount) external {
         require(amount != 0, "DEXLPool: the amount can not be 0");
-        IERC20(_fundingTokenContract).transferFrom(
-            _msgSender(),
-            address(this),
-            amount
+        require(
+            IERC20(_fundingTokenContract).transferFrom(
+                _msgSender(),
+                address(this),
+                amount
+            ),
+            "ERC20 operation did not succeed"
         );
         uint256 leaderReward = uint256(_leaderCommission).mulDiv(
             amount,
             10e9,
             Math.Rounding.Down
         );
-        IERC20(_fundingTokenContract).transfer(_leader, leaderReward);
+        require(
+            IERC20(_fundingTokenContract).transfer(_leader, leaderReward),
+            "ERC20 operation did not succeed"
+        );
         amount = amount.mulDiv(_couponAmount, 10e9, Math.Rounding.Down);
 
         for (uint256 i = 0; i < _shareholders.length; i++) {
@@ -174,7 +183,10 @@ contract DEXLPool is ERC4626, Ownable {
                 totalSupply(),
                 Math.Rounding.Down
             );
-            IERC20(_fundingTokenContract).transfer(_shareholders[i], toPay);
+            require(
+                IERC20(_fundingTokenContract).transfer(_shareholders[i], toPay),
+                "ERC20 operation did not succeed"
+            );
         }
         emit RevenueRedistributed(_msgSender(), amount);
     }
@@ -229,7 +241,7 @@ contract DEXLPool is ERC4626, Ownable {
         bytes memory request = _proposals[index].encodedRequest;
         if (keccak256(request) != keccak256(abi.encodePacked(""))) {
             (bool success, ) = (_proposals[index].target).call(request);
-            require(success, "something went wrong");
+            require(success, "DEXLPool::executeProposal: something went wrong");
         }
         delete _proposals[index];
         emit ProposalExecuted(index, _msgSender());
@@ -274,7 +286,7 @@ contract DEXLPool is ERC4626, Ownable {
         string memory description
     ) external onlyShareholder activePool {
         bytes memory request = abi.encodeWithSignature(
-            "_changeTerminationDate()"
+            "changeTerminationDate()"
         );
         uint256 hashProp = _hashProp(keccak256(bytes(description)));
 
@@ -322,10 +334,10 @@ contract DEXLPool is ERC4626, Ownable {
         );
     }
 
-    function _changeTerminationDate() external {
+    function changeTerminationDate() external {
         require(
             _msgSender() == address(this),
-            "DEXLPool::_changeTerminationDate: can only be called by the contract itself"
+            "DEXLPool::changeTerminationDate: can only be called by the contract itself"
         );
         _terminationDate = uint128(block.timestamp);
     }

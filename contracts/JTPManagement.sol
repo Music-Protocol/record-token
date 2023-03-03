@@ -124,7 +124,6 @@ contract JTPManagement is AccessControl {
         _dexl = IDEXLFactory(dexl);
     }
 
-    //GODMODE
     function custom(
         address[] memory targets,
         bytes[] memory calldatas

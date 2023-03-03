@@ -37,20 +37,22 @@ contract PublicPressureDAO {
         uint256 votesAgainst;
     }
 
-    IFanToArtistStaking _ftas;
-    mapping(uint256 => Proposal) _proposals;
-    mapping(uint256 => mapping(address => bool)) _votes; //hash collision of keccack256
+    mapping(uint256 => Proposal) private _proposals;
+    mapping(uint256 => mapping(address => bool)) private _votes; //hash collision of keccack256
 
-    uint128 private _quorum; // 0 to 10e9
-    uint128 private _majority; // 0 to 10e9
+    uint128 private immutable _quorum; // 0 to 10e9
+    uint128 private immutable _majority; // 0 to 10e9
+    IFanToArtistStaking private immutable _ftas;
 
-    constructor(address ftas_) {
+    constructor(address ftas_, uint128 quorum_, uint128 majority_) {
         _ftas = IFanToArtistStaking(ftas_);
+        _quorum = quorum_;
+        _majority = majority_;
     }
 
     function _reachedQuorum(
         uint256 proposalId
-    ) public view virtual returns (bool) {
+    ) internal view virtual returns (bool) {
         return
             (_proposals[proposalId].votesFor +
                 _proposals[proposalId].votesAgainst) >
@@ -133,7 +135,7 @@ contract PublicPressureDAO {
             block.timestamp < _proposals[proposalId].timeEnd,
             "DAO: proposal expired"
         );
-        
+
         uint256 hashVote = uint256(
             keccak256(abi.encode(proposalId, _proposals[proposalId].timeStart))
         );

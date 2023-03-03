@@ -8,7 +8,7 @@ import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { timeMachine, getPoolFromEvent, calcPoolRevenues, getProposalHash, getIndexFromProposal } from './utils/utils';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { BigNumber } from 'ethers';
-import { PoolStruct } from '../typechain-types/contracts/DEXLFactory';
+import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
 
 
 
@@ -75,11 +75,10 @@ describe('DEXLPool', () => {
         const quorum = 30e8; // 30%
         const majority = 50e8; // 50%
         const votingTime = 600; // 10 min
-        let poolS: PoolStruct;
+        let poolS: PoolReducedStruct;
         beforeEach(async () => {
             await stableCoin.connect(leader).approve(DEXLP.address, initialDeposit);
             poolS = {
-                leader: leader.address,
                 fundingTokenContract: stableCoin.address,
                 softCap,
                 hardCap,
@@ -248,8 +247,7 @@ describe('DEXLPool', () => {
 
     it('should revert', async () => {
         await stableCoin.connect(leader).approve(DEXLP.address, 50);
-        let poolS: PoolStruct = {
-            leader: leader.address,
+        let poolS: PoolReducedStruct = {
             fundingTokenContract: stableCoin.address,
             softCap: 100,
             hardCap: 200,

@@ -35,7 +35,7 @@ describe('DAO', () => {
         await fanToArtistStaking.setJTP(jtp.address);
 
         const cDAO = await ethers.getContractFactory('PublicPressureDAO');
-        dao = await cDAO.deploy(fanToArtistStaking.address) as PublicPressureDAO;
+        dao = await cDAO.deploy(fanToArtistStaking.address, 10e8, 50e8+1) as PublicPressureDAO;
         await dao.deployed();
 
         await Promise.allSettled(artists.map(artist =>

@@ -5,7 +5,7 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     event ArtistAdded(address indexed artist, address indexed sender);
@@ -506,7 +506,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             "FanToArtistStaking: this stake has already been redeemed"
         );
         if (
-            _jtp.unlock(
+            _jtp.transfer(
                 _msgSender(),
                 _stake[artist][_msgSender()][uint(index)].amount
             )

@@ -4,7 +4,7 @@ import { ethers, web3 } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { DEXLFactory, FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
-import { PoolStruct } from '../typechain-types/contracts/DEXLFactory';
+import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
 import { getIndexFromProposal, getPoolFromEvent } from './utils/utils';
 
 describe('JTPManagement', () => {
@@ -225,8 +225,7 @@ describe('JTPManagement', () => {
             await stableCoin.configureMinter(owner.address, 1000000e6);
             await stableCoin.mint(addr1.address, 1000);
             await stableCoin.connect(addr1).approve(DEXLF.address, 50);
-            let poolS: PoolStruct = {
-                leader: addr1.address,
+            let poolS: PoolReducedStruct = {
                 fundingTokenContract: stableCoin.address,
                 softCap: 100,
                 hardCap: 200,
@@ -262,8 +261,7 @@ describe('JTPManagement', () => {
             await stableCoin.configureMinter(owner.address, 1000000e6);
             await stableCoin.mint(addr1.address, 1000);
             await stableCoin.connect(addr1).approve(DEXLF.address, 50);
-            let poolS: PoolStruct = {
-                leader: addr1.address,
+            let poolS: PoolReducedStruct = {
                 fundingTokenContract: stableCoin.address,
                 softCap: 100,
                 hardCap: 200,
@@ -305,8 +303,7 @@ describe('JTPManagement', () => {
             await stableCoin.configureMinter(owner.address, 1000000e6);
             await stableCoin.mint(addr1.address, 1000);
             await stableCoin.connect(addr1).approve(DEXLF.address, 50);
-            let poolS: PoolStruct = {
-                leader: addr1.address,
+            let poolS: PoolReducedStruct = {
                 fundingTokenContract: stableCoin.address,
                 softCap: 100,
                 hardCap: 200,

@@ -6,7 +6,7 @@ import { DEXLPool, DEXLFactory } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { timeMachine, getPoolFromEvent, matchPool, getIndexFromProposal } from './utils/utils';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { PoolStruct } from '../typechain-types/contracts/DEXLFactory';
+import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
 
 describe('DEXLFactory', () => {
     let DEXLP: DEXLFactory;
@@ -15,8 +15,7 @@ describe('DEXLFactory', () => {
 
     let artists: SignerWithAddress[]; //6
     let users: SignerWithAddress[]; //13
-    let poolS: PoolStruct = {
-        leader: '0x00000000',
+    let poolS: PoolReducedStruct = {
         fundingTokenContract: '0x00000000',
         softCap: 100,
         hardCap: 200,
@@ -36,7 +35,6 @@ describe('DEXLFactory', () => {
         owner = signers[0];
         artists = signers.slice(1, 7);
         users = signers.slice(7, 20);
-        poolS.leader = owner.address;
 
         const dProp = await ethers.getContractFactory('DEXLFactory');
         DEXLP = await dProp.deploy() as DEXLFactory;
@@ -79,15 +77,13 @@ describe('DEXLFactory', () => {
             terminationDate: 800,
         }
 
-        poolS.leader = users[0].address;
-        
-        const hash = await getIndexFromProposal(await DEXLP.proposePool(poolS, "description"));
+        const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description"));
         const parsedPool = await DEXLP.getProposal(hash);
         matchPool(parsedPool, pool0);
         expect(await stableCoin.balanceOf(DEXLP.address)).to.equal(50);
         expect(await stableCoin.balanceOf(users[0].address)).to.equal(950);
         const receipt = await DEXLP.approveProposal(hash);
-        
+
         await expect(DEXLP.approveProposal(hash)).to.be.revertedWith("DEXLFactory: Proposal can not be deployed");
         await expect(DEXLP.declineProposal(hash)).to.be.revertedWith("DEXLFactory: Proposal can not be deployed");
         const pool = await getPoolFromEvent(receipt);
@@ -98,8 +94,7 @@ describe('DEXLFactory', () => {
 
     it('should return the token if is declined', async () => {
         await stableCoin.connect(users[0]).approve(DEXLP.address, 50);
-        poolS.leader = users[0].address;
-        const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description")); 
+        const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description"));
         expect(await stableCoin.balanceOf(DEXLP.address)).to.equal(50);
         expect(await stableCoin.balanceOf(users[0].address)).to.equal(950);
         await DEXLP.declineProposal(hash);
@@ -112,7 +107,6 @@ describe('DEXLFactory', () => {
         const user1 = users[1];
         const user2 = users[2];
         await stableCoin.connect(user0).approve(DEXLP.address, 50);
-        poolS.leader = users[0].address;
         poolS.softCap = 10000;
         poolS.hardCap = 20000;
         poolS.raiseEndDate = 60;
@@ -147,7 +141,6 @@ describe('DEXLFactory', () => {
         const user2 = users[2];
         const user3 = users[3];
         await stableCoin.connect(user0).approve(DEXLP.address, 1000);
-        poolS.leader = users[0].address;
         const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description"));
         const pool = await getPoolFromEvent(await DEXLP.approveProposal(hash));
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
@@ -168,7 +161,6 @@ describe('DEXLFactory', () => {
     it('should allow to propose more than one pool', async () => {
         const user0 = users[0];
         await stableCoin.connect(user0).approve(DEXLP.address, 1000);
-        poolS.leader = users[0].address;
         await DEXLP.connect(users[0]).proposePool(poolS, "description");
         await DEXLP.connect(users[0]).proposePool(poolS, "description");
     });
@@ -177,12 +169,11 @@ describe('DEXLFactory', () => {
         const user0 = users[0];
         await expect(DEXLP.connect(user0).transferOwnership(stableCoin.address))
             .to.be.revertedWith("Ownable: caller is not the owner");
-        
-            poolS.leader = user0.address;
+
         poolS.softCap = 201;
         poolS.hardCap = 200;
         await expect(DEXLP.connect(user0).proposePool(poolS, "description")).to.be.revertedWith("DEXLFactory: softcap must be less or equal than the hardcap");
-        
+
         poolS.softCap = 190;
         poolS.hardCap = 200;
         poolS.raiseEndDate = 801;
@@ -195,14 +186,14 @@ describe('DEXLFactory', () => {
         poolS.fundingTokenContract = '0x0000000000000000000000000000000000000000';
         await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
             .to.be.revertedWith("DEXLFactory: the funding token contract's address can not be 0");
-        
-            poolS.fundingTokenContract = owner.address;
+
+        poolS.fundingTokenContract = owner.address;
         poolS.leaderCommission = 10e8;
         poolS.couponAmount = 10e9 + 1;
         await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
             .to.be.revertedWith("DEXLFactory: couponAmount value must be between 0 and 10e9");
-        
-            poolS.couponAmount = 10e8;
+
+        poolS.couponAmount = 10e8;
         poolS.leaderCommission = 10e9 + 1;
         await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
             .to.be.revertedWith("DEXLFactory: leaderCommission value must be between 0 and 10e9");

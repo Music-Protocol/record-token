@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.16;
 import "./DEXLPool.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IDEXLFactory.sol";
@@ -15,13 +15,12 @@ contract DEXLFactory is Ownable, IDEXLFactory {
         uint256 index
     );
     event PoolDeclined(address indexed leader, uint256 indexed index);
-    event PoolProposed(
-        uint256 indexed index,
-        Pool pool,
-        string description
-    );
+    event PoolProposed(uint256 indexed index, Pool pool, string description);
 
     mapping(uint256 => Pool) private proposals;
+
+    constructor() {
+    }
 
     function transferOwnership(
         address to
@@ -29,7 +28,10 @@ contract DEXLFactory is Ownable, IDEXLFactory {
         super.transferOwnership(to);
     }
 
-    function proposePool(Pool memory pool, string memory description) external {
+    function proposePool(
+        PoolReduced memory pool,
+        string memory description
+    ) external {
         require(
             pool.softCap <= pool.hardCap,
             "DEXLFactory: softcap must be less or equal than the hardcap"
@@ -62,14 +64,19 @@ contract DEXLFactory is Ownable, IDEXLFactory {
             pool.majority <= 10e9,
             "DEXLFactory: majority value must be between 0 and 10e9"
         );
-        IERC20(pool.fundingTokenContract).transferFrom(
-            pool.leader,
-            address(this),
-            pool.initialDeposit
+        require(
+            IERC20(pool.fundingTokenContract).transferFrom(
+                msg.sender,
+                address(this),
+                pool.initialDeposit
+            ),
+            "DEXLFactory: ERC20 operation did not succeed"
         );
-        uint256 hashProp = uint256(keccak256(abi.encode(msg.sender, pool, block.timestamp)));
+        uint256 hashProp = uint256(
+            keccak256(abi.encode(msg.sender, pool, block.timestamp))
+        );
         proposals[hashProp] = Pool({
-            leader: pool.leader,
+            leader: msg.sender,
             fundingTokenContract: pool.fundingTokenContract,
             leaderCommission: pool.leaderCommission,
             softCap: pool.softCap,
@@ -83,11 +90,7 @@ contract DEXLFactory is Ownable, IDEXLFactory {
             quorum: pool.quorum,
             majority: pool.majority
         });
-        emit PoolProposed(
-            hashProp,
-            pool,
-            description
-        );
+        emit PoolProposed(hashProp, proposals[hashProp], description);
     }
 
     function getProposal(uint256 index) public view returns (Pool memory) {
@@ -97,11 +100,17 @@ contract DEXLFactory is Ownable, IDEXLFactory {
     function approveProposal(
         uint256 index
     ) external onlyOwner returns (address) {
-        require(proposals[index].leader != address(0),"DEXLFactory: Proposal can not be deployed");
+        require(
+            proposals[index].leader != address(0),
+            "DEXLFactory: Proposal can not be deployed"
+        );
         address pool = address(new DEXLPool(proposals[index], _msgSender()));
-        IERC20(proposals[index].fundingTokenContract).transfer(
-            pool,
-            proposals[index].initialDeposit
+        require(
+            IERC20(proposals[index].fundingTokenContract).transfer(
+                pool,
+                proposals[index].initialDeposit
+            ),
+            "ERC20 operation did not succeed"
         );
         emit PoolCreated(proposals[index].leader, pool, index);
         delete proposals[index];
@@ -110,11 +119,17 @@ contract DEXLFactory is Ownable, IDEXLFactory {
 
     function declineProposal(uint256 index) external onlyOwner {
         //sendback the money to the leader
-        require(proposals[index].leader != address(0),"DEXLFactory: Proposal can not be deployed");
+        require(
+            proposals[index].leader != address(0),
+            "DEXLFactory: Proposal can not be deployed"
+        );
 
-        IERC20(proposals[index].fundingTokenContract).transfer(
-            proposals[index].leader,
-            proposals[index].initialDeposit
+        require(
+            IERC20(proposals[index].fundingTokenContract).transfer(
+                proposals[index].leader,
+                proposals[index].initialDeposit
+            ),
+            "ERC20 operation did not succeed"
         );
         delete proposals[index];
         emit PoolDeclined(proposals[index].leader, index);
