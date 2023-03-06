@@ -37,7 +37,7 @@ describe('DEXLFactory', () => {
         users = signers.slice(7, 20);
 
         const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLP = await dProp.deploy() as DEXLFactory;
+        DEXLP = await dProp.deploy(owner.address) as DEXLFactory;
         await DEXLP.deployed();
 
         const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);

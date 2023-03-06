@@ -37,7 +37,7 @@ describe('DEXLPool', () => {
         users = signers.slice(7, 20);
 
         const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLP = await dProp.deploy() as DEXLFactory;
+        DEXLP = await dProp.deploy(owner.address) as DEXLFactory;
         await DEXLP.deployed();
 
         const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
@@ -164,10 +164,10 @@ describe('DEXLPool', () => {
             await Promise.all(users.map(u => {
                 return POOL.connect(u).voteProposal(hash, true);
             }));
-            await timeMachine((votingTime / 60) + 10);
+            await timeMachine(votingTime / 60);
 
             await POOL.executeProposal(hash);
-            expect(prevTermDate).to.lessThan(await POOL.getTerminationDate());
+            expect(prevTermDate).to.be.greaterThan(await POOL.getTerminationDate());
         });
 
         it('should test artist founding', async () => {
@@ -241,6 +241,63 @@ describe('DEXLPool', () => {
             expect(await stableCoin.balanceOf(users[0].address)).to.be.equal(prevAddr0);
             expect(await stableCoin.balanceOf(users[1].address)).to.be.greaterThan(prevAddr1);
         });
+
+        it('should not execute if quorum is not reached', async () => {
+            await Promise.all(users.map(u => {
+                return stableCoin.connect(u).approve(POOL.address, 100);
+            }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(u).deposit(100, u.address);
+            }));
+            await timeMachine((raiseEndDate / 60) + 1);
+            const prevTermDate = await POOL.getTerminationDate();
+            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Incassiamo e andiamo a t...'));
+
+            await timeMachine((votingTime / 60) + 1);
+            await POOL.executeProposal(hash);
+            expect(prevTermDate).to.be.equal(await POOL.getTerminationDate());
+        });
+
+        it('should not execute if majority is not reached', async () => {
+            await Promise.all(users.map(u => {
+                return stableCoin.connect(u).approve(POOL.address, 100);
+            }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(u).deposit(100, u.address);
+            }));
+            await timeMachine((raiseEndDate / 60) + 1);
+            const prevTermDate = await POOL.getTerminationDate();
+            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Incassiamo e andiamo a t...'));
+
+            const yesUser = users.slice(0, 6);
+            const noUser = users.slice(- 7);
+            await Promise.all(yesUser.map(u => {
+                return POOL.connect(u).voteProposal(hash, true);
+            }));
+            await Promise.all(noUser.map(u => {
+                return POOL.connect(u).voteProposal(hash, false);
+            }));
+
+            await timeMachine((votingTime / 60) + 1);
+            await POOL.executeProposal(hash);
+            expect(prevTermDate).to.be.equal(await POOL.getTerminationDate());
+        });
+
+        it('should revert if someone tries to vote twice', async () => {
+            await Promise.all(users.map(u => {
+                return stableCoin.connect(u).approve(POOL.address, 100);
+            }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(u).deposit(100, u.address);
+            }));
+            await timeMachine((raiseEndDate / 60) + 1);
+            const prevTermDate = await POOL.getTerminationDate();
+            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Incassiamo e andiamo a t...'));
+
+            await POOL.connect(users[0]).voteProposal(hash, true);
+            await expect(POOL.connect(users[0]).voteProposal(hash, true))
+                .to.be.revertedWith("DEXLPool: caller already voted");
+        });
     });
 
 
@@ -284,6 +341,7 @@ describe('DEXLPool', () => {
 
         await expect(POOL.connect(leader).withdraw(10, leader.address, leader.address))
             .to.be.revertedWith("DEXLPool: you can not withdraw if the soft cap is reached");
+
         //disabled function
         await expect(POOL.transfer(leader.address, 100))
             .to.be.revertedWith("DEXLPool: function disabled");

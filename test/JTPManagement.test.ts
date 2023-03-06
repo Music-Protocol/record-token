@@ -29,7 +29,7 @@ describe('JTPManagement', () => {
         fanToArtistStaking.setJTP(jtp.address);
 
         const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLF = await dProp.deploy() as DEXLFactory;
+        DEXLF = await dProp.deploy(fanToArtistStaking.address) as DEXLFactory;
         await DEXLF.deployed();
 
         const cJTPManagement = await ethers.getContractFactory('JTPManagement');

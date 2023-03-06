@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 // import "hardhat/console.sol";
 import "./interfaces/SDEXLPool.sol";
+import "./interfaces/IFanToArtistStaking.sol";
 
 contract DEXLPool is ERC4626, Ownable {
     using Math for uint256;
@@ -41,6 +42,7 @@ contract DEXLPool is ERC4626, Ownable {
     event RevenueRedistributed(address indexed executor, uint256 amount);
     event LeaderChanged(address indexed voter);
 
+    IFanToArtistStaking private _ftas;
     address private _leader;
     address private immutable _fundingTokenContract;
     uint256 private immutable _softCap;
@@ -70,7 +72,8 @@ contract DEXLPool is ERC4626, Ownable {
 
     constructor(
         Pool memory pool,
-        address newOwner
+        address newOwner,
+        address ftas_
     ) ERC4626(IERC20(pool.fundingTokenContract)) ERC20("Shares", "SHR") {
         _leader = pool.leader;
         _softCap = pool.softCap;
@@ -88,6 +91,7 @@ contract DEXLPool is ERC4626, Ownable {
         _majority = pool.majority;
         super._mint(pool.leader, pool.initialDeposit);
         _transferOwnership(newOwner);
+        _ftas = IFanToArtistStaking(ftas_);
     }
 
     modifier onlyLeader() {
@@ -135,7 +139,10 @@ contract DEXLPool is ERC4626, Ownable {
     }
 
     function setLeader(address leader_) external onlyOwner {
-        require(leader_!= address(0),"DEXLPool: the new leader's address can not be 0");
+        require(
+            leader_ != address(0),
+            "DEXLPool: the new leader's address can not be 0"
+        );
         _leader = leader_;
         emit LeaderChanged(leader_);
     }
@@ -219,35 +226,35 @@ contract DEXLPool is ERC4626, Ownable {
         return super.redeem(shares, receiver, owner);
     }
 
-    function executeProposal(uint256 index) external {
+    function executeProposal(uint256 index) external activePool {
         require(
             block.timestamp > _proposals[index].endTime,
             "DEXLPool: the end time of the proposal is not reached"
         );
-        require(
+        if (
             _proposals[index].votesFor + _proposals[index].votesAgainst >
-                uint256(_quorum).mulDiv(totalSupply(), 10e9),
-            "DEXLPool: quorum not reached"
-        );
-        require(
+            uint256(_quorum).mulDiv(totalSupply(), 10e9) &&
             _proposals[index].votesFor >
-                uint256(_majority).mulDiv(
-                    (_proposals[index].votesFor +
-                        _proposals[index].votesAgainst),
-                    10e9
-                ),
-            "DEXLPool: votes For not reached the majority"
-        );
-        bytes memory request = _proposals[index].encodedRequest;
-        if (keccak256(request) != keccak256(abi.encodePacked(""))) {
-            (bool success, ) = (_proposals[index].target).call(request);
-            require(success, "DEXLPool::executeProposal: something went wrong");
+            uint256(_majority).mulDiv(
+                (_proposals[index].votesFor + _proposals[index].votesAgainst),
+                10e9
+            )
+        ) {
+            bytes memory request = _proposals[index].encodedRequest;
+            if (keccak256(request) != keccak256(abi.encodePacked(""))) {
+                (bool success, ) = (_proposals[index].target).call(request);
+                require(success, "something went wrong");
+            }
         }
+
         delete _proposals[index];
         emit ProposalExecuted(index, _msgSender());
     }
 
-    function voteProposal(uint256 index, bool isFor) external onlyShareholder {
+    function voteProposal(
+        uint256 index,
+        bool isFor
+    ) external onlyShareholder activePool {
         require(
             block.timestamp <= _proposals[index].endTime,
             "DEXLPool: the time is ended"

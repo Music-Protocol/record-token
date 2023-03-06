@@ -19,7 +19,10 @@ contract DEXLFactory is Ownable, IDEXLFactory {
 
     mapping(uint256 => Pool) private proposals;
 
-    constructor() {
+    address private immutable _ftas;
+
+    constructor(address ftas_) {
+        _ftas = ftas_;
     }
 
     function transferOwnership(
@@ -100,17 +103,11 @@ contract DEXLFactory is Ownable, IDEXLFactory {
     function approveProposal(
         uint256 index
     ) external onlyOwner returns (address) {
-        require(
-            proposals[index].leader != address(0),
-            "DEXLFactory: Proposal can not be deployed"
-        );
-        address pool = address(new DEXLPool(proposals[index], _msgSender()));
-        require(
-            IERC20(proposals[index].fundingTokenContract).transfer(
-                pool,
-                proposals[index].initialDeposit
-            ),
-            "ERC20 operation did not succeed"
+        require(proposals[index].leader != address(0),"DEXLFactory: Proposal can not be deployed");
+        address pool = address(new DEXLPool(proposals[index], _msgSender(), _ftas));
+        IERC20(proposals[index].fundingTokenContract).transfer(
+            pool,
+            proposals[index].initialDeposit
         );
         emit PoolCreated(proposals[index].leader, pool, index);
         delete proposals[index];
