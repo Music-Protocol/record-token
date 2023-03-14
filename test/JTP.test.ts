@@ -11,7 +11,7 @@ describe('JTP', () => {
         [owner, addr1, fakeStaking, fakeDAO] = await ethers.getSigners();
 
         const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(fakeStaking.address) as JTP;
+        jtp = await cJTP.deploy(fakeStaking.address, fakeStaking.address) as JTP;
         await jtp.deployed();
     });
 
@@ -26,7 +26,7 @@ describe('JTP', () => {
 
         it('Should revert if the FanToArtistStaking address is 0', async () => {
             const cJTP = await ethers.getContractFactory('JTP');
-            await expect(cJTP.deploy('0x0000000000000000000000000000000000000000'))
+            await expect(cJTP.deploy('0x0000000000000000000000000000000000000000', fakeStaking.address))
                 .to.be.rejectedWith('JTP: the address of FanToArtistStaking is 0');
         });
     });

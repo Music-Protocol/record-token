@@ -79,7 +79,7 @@ This function sets the `_jtp` address to the passed argument `jtp`. The function
 ### `transferOwnership`
 This function transfers the ownership of the contract to the `to` address. It can only be called by the contract owner.
 
-### **`getAllStake`**
+### **`getAllUserStake`**
 This function returns an array of all the stakes made by the message sender.
 #### **Inputs**
 None.

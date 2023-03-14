@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.16;
-import "./interfaces/IFanToArtistStaking.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "./interfaces/IFanToArtistStaking.sol";
 
 contract PublicPressureDAO {
     using Math for uint256;
@@ -40,8 +40,8 @@ contract PublicPressureDAO {
     mapping(uint256 => Proposal) private _proposals;
     mapping(uint256 => mapping(address => bool)) private _votes; //hash collision of keccack256
 
-    uint128 private immutable _quorum; // 0 to 10e9
-    uint128 private immutable _majority; // 0 to 10e9
+    uint128 private immutable _quorum; // 0 to 10e8
+    uint128 private immutable _majority; // 0 to 10e8
     IFanToArtistStaking private immutable _ftas;
 
     constructor(address ftas_, uint128 quorum_, uint128 majority_) {
@@ -58,7 +58,7 @@ contract PublicPressureDAO {
                 _proposals[proposalId].votesAgainst) >
             uint256(_quorum).mulDiv(
                 _proposals[proposalId].maxVotingPower,
-                10e9
+                10e8
             );
     }
 

@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect, use } from 'chai';
+import { expect } from 'chai';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { ethers, web3 } from 'hardhat';
 import { PublicPressureDAO, JTP, FanToArtistStaking } from '../typechain-types/index';
@@ -26,16 +26,16 @@ describe('DAO', () => {
         users = signers.slice(7, 20);
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy(defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        fanToArtistStaking = await FTAS.deploy();
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(fanToArtistStaking.address);
+        jtp = await cJTP.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await jtp.deployed();
-        await fanToArtistStaking.setJTP(jtp.address);
+        await fanToArtistStaking.initialize(jtp.address,defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         const cDAO = await ethers.getContractFactory('PublicPressureDAO');
-        dao = await cDAO.deploy(fanToArtistStaking.address, 10e8, 50e8+1) as PublicPressureDAO;
+        dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7+1) as PublicPressureDAO;
         await dao.deployed();
 
         await Promise.allSettled(artists.map(artist =>

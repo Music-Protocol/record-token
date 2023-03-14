@@ -9,6 +9,7 @@ import "./interfaces/IJTP.sol";
 
 contract JTP is IJTP, ERC20, Ownable, Pausable {
     address private immutable _fanToArtistStaking;
+    address private immutable _dexlFactory;
 
     //for the function callable only by FanToArtistStaking.sol
     modifier onlyStaking() {
@@ -19,12 +20,28 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
         _;
     }
 
-    constructor(address _Staking) ERC20("JoinThePressure", "JTP") {
+    modifier onlyTP() {
         require(
-            _Staking != address(0),
+            _fanToArtistStaking == _msgSender() || _dexlFactory == _msgSender(),
+            "JTP: caller is not the FanToArtistStaking contract"
+        );
+        _;
+    }
+
+    constructor(
+        address staking_,
+        address dexlFactory_
+    ) ERC20("JoinThePressure", "JTP") {
+        require(
+            staking_ != address(0),
             "JTP: the address of FanToArtistStaking is 0"
         );
-        _fanToArtistStaking = _Staking;
+        require(
+            dexlFactory_ != address(0),
+            "JTP: the address of DEXLFactory is 0"
+        );
+        _fanToArtistStaking = staking_;
+        _dexlFactory = dexlFactory_;
     }
 
     function transferOwnership(
@@ -74,10 +91,7 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
         return true;
     }
 
-    function payArtist(
-        address to,
-        uint256 amount
-    ) external override onlyStaking {
+    function payArtist(address to, uint256 amount) external override onlyTP {
         _mint(to, amount);
     }
 }

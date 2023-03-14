@@ -8,4 +8,6 @@ interface IDEXLFactory {
     function approveProposal(uint256 index) external returns (address);
 
     function declineProposal(uint256 index) external;
+
+    function changeRewardRate(uint256 rate) external;
 }

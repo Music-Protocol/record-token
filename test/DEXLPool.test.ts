@@ -1,12 +1,10 @@
-import { ContractTransaction } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect, use } from 'chai';
+import { expect } from 'chai';
 import { ethers } from 'hardhat';
 require("@nomiclabs/hardhat-web3");
 import { DEXLPool, DEXLFactory, ERC20 } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { timeMachine, getPoolFromEvent, calcPoolRevenues, getProposalHash, getIndexFromProposal } from './utils/utils';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { BigNumber } from 'ethers';
 import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
 
@@ -20,13 +18,21 @@ type StableCoin = {
 
 };
 describe('DEXLPool', () => {
-    let DEXLP: DEXLFactory;
+    let DEXLF: DEXLFactory;
+    let POOLADDRESS: DEXLPool;
+
     let owner: SignerWithAddress;
     let leader: SignerWithAddress;
     let stableCoin: ERC20 & StableCoin;
 
     let artists: SignerWithAddress[]; //6
     let users: SignerWithAddress[]; //13
+
+    before(async () => {
+        const Pool = await ethers.getContractFactory('DEXLPool');
+        POOLADDRESS = await Pool.deploy() as DEXLPool;
+        await POOLADDRESS.deployed();
+    });
 
     beforeEach(async () => {
         const signers = await ethers.getSigners();
@@ -37,8 +43,9 @@ describe('DEXLPool', () => {
         users = signers.slice(7, 20);
 
         const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLP = await dProp.deploy(owner.address) as DEXLFactory;
-        await DEXLP.deployed();
+        DEXLF = await dProp.deploy() as DEXLFactory;
+        await DEXLF.deployed();
+        await DEXLF.initialize(owner.address, POOLADDRESS.address, owner.address, 1);
 
         const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
         // @ts-ignore
@@ -65,19 +72,19 @@ describe('DEXLPool', () => {
 
     describe('funding', () => {
         let POOL: DEXLPool;
-        const leaderCommission = 10e8; //10%
+        const leaderCommission = 10e7; //10%
         const softCap = 200;
         const hardCap = 3000;
         const raiseEndDate = 120; //2 min
-        const couponAmount = 20e8; // 20%
+        const couponAmount = 20e7; // 20%
         const initialDeposit = 50;
         const terminationDate = 900; // 15 min 
-        const quorum = 30e8; // 30%
-        const majority = 50e8; // 50%
+        const quorum = 30e7; // 30%
+        const majority = 50e7; // 50%
         const votingTime = 600; // 10 min
         let poolS: PoolReducedStruct;
         beforeEach(async () => {
-            await stableCoin.connect(leader).approve(DEXLP.address, initialDeposit);
+            await stableCoin.connect(leader).approve(DEXLF.address, initialDeposit);
             poolS = {
                 fundingTokenContract: stableCoin.address,
                 softCap,
@@ -92,8 +99,8 @@ describe('DEXLPool', () => {
                 majority,
                 transferrable: false
             };
-            const hash = await getIndexFromProposal(await DEXLP.connect(leader).proposePool(poolS, "description"));
-            const temPool = await getPoolFromEvent(await DEXLP.connect(owner).approveProposal(hash));
+            const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
+            const temPool = await getPoolFromEvent(await DEXLF.connect(owner).approveProposal(hash));
             POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
         });
 
@@ -159,7 +166,7 @@ describe('DEXLPool', () => {
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
-            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Incassiamo e andiamo a t...'));
+            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Porto io?'));
 
             await Promise.all(users.map(u => {
                 return POOL.connect(u).voteProposal(hash, true);
@@ -211,16 +218,16 @@ describe('DEXLPool', () => {
 
         it('should emit the right event on proposal', async () => {
             poolS.initialDeposit = 0;
-            const hash = await getIndexFromProposal(await DEXLP.connect(leader).proposePool(poolS, "description"));
-            await DEXLP.approveProposal(hash);
+            const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
+            await DEXLF.approveProposal(hash);
         });
 
         it('should test a transferrable proposal', async () => {
             poolS.transferrable = true;
             poolS.initialDeposit = 100;
-            await stableCoin.connect(leader).approve(DEXLP.address, poolS.initialDeposit);
-            const hash = await getIndexFromProposal(await DEXLP.connect(leader).proposePool(poolS, "description"));
-            const temPool = await getPoolFromEvent(await DEXLP.connect(owner).approveProposal(hash));
+            await stableCoin.connect(leader).approve(DEXLF.address, poolS.initialDeposit);
+            const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
+            const temPool = await getPoolFromEvent(await DEXLF.connect(owner).approveProposal(hash));
             POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
 
             await stableCoin.connect(users[0]).approve(POOL.address, 100);
@@ -251,7 +258,7 @@ describe('DEXLPool', () => {
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
-            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Incassiamo e andiamo a t...'));
+            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Porto io?'));
 
             await timeMachine((votingTime / 60) + 1);
             await POOL.executeProposal(hash);
@@ -267,7 +274,7 @@ describe('DEXLPool', () => {
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
-            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Incassiamo e andiamo a t...'));
+            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Porto io?'));
 
             const yesUser = users.slice(0, 6);
             const noUser = users.slice(- 7);
@@ -291,8 +298,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
-            const prevTermDate = await POOL.getTerminationDate();
-            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Incassiamo e andiamo a t...'));
+            const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Porto io?'));
 
             await POOL.connect(users[0]).voteProposal(hash, true);
             await expect(POOL.connect(users[0]).voteProposal(hash, true))
@@ -303,7 +309,7 @@ describe('DEXLPool', () => {
 
 
     it('should revert', async () => {
-        await stableCoin.connect(leader).approve(DEXLP.address, 50);
+        await stableCoin.connect(leader).approve(DEXLF.address, 50);
         let poolS: PoolReducedStruct = {
             fundingTokenContract: stableCoin.address,
             softCap: 100,
@@ -312,15 +318,15 @@ describe('DEXLPool', () => {
             raiseEndDate: 120, //2 min
             terminationDate: 900, // 15 min 
             votingTime: 600, // 10 min
-            leaderCommission: 10e8,
-            couponAmount: 20e8, // 20%
-            quorum: 30e8, // 30%
-            majority: 50e8, // 50%
+            leaderCommission: 10e7,
+            couponAmount: 20e7, // 20%
+            quorum: 30e7, // 30%
+            majority: 50e7, // 50%
             transferrable: false
         };
 
-        const hash = await getIndexFromProposal(await DEXLP.connect(leader).proposePool(poolS, "description"));
-        const temPool = await getPoolFromEvent(await DEXLP.approveProposal(hash));
+        const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
+        const temPool = await getPoolFromEvent(await DEXLF.approveProposal(hash));
         const POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
         await stableCoin.connect(users[0]).approve(POOL.address, 50);
         await POOL.connect(users[0]).deposit(50, users[0].address);

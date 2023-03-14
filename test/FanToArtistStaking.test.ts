@@ -16,23 +16,18 @@ describe('FanToArtistStaking', () => {
         [owner, addr1, addr2, addr3, artist1, artist2, artist3] = await ethers.getSigners();
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy(defVeReward, defArtistReward, 10, 86400,);
+        fanToArtistStaking = await FTAS.deploy();
         await fanToArtistStaking.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(fanToArtistStaking.address);
+        jtp = await cJTP.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await jtp.deployed();
-        await fanToArtistStaking.setJTP(jtp.address);
+        await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, 10, 86400);
     });
 
     describe('Deployment', () => {
         it('Should set the right owner', async () => {
             expect(await jtp.owner()).to.equal(owner.address);
-        });
-
-        it('Should not allow to change the address of JTP contract', async () => {
-            await expect(fanToArtistStaking.setJTP(addr3.address))
-                .to.be.revertedWith('FanToArtistStaking: JTP contract already linked');
         });
     });
 
@@ -114,7 +109,7 @@ describe('FanToArtistStaking', () => {
             const blockNumBefore = await ethers.provider.getBlockNumber();
             const blockBefore = await ethers.provider.getBlock(blockNumBefore);
             await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
-            const activeStake = await fanToArtistStaking.connect(addr1).getAllStake();
+            const activeStake = await fanToArtistStaking.connect(addr1).getAllUserStake();
             const endTime = activeStake[0].stake.end.toNumber();
             await fanToArtistStaking.connect(addr1).redeem(artist1.address, endTime);
             stake1.redeemed = true;
@@ -128,7 +123,7 @@ describe('FanToArtistStaking', () => {
             const time = 70;
             times.push(time);
             await fanToArtistStaking.connect(addr1).stake(artist2.address, amount, time);
-            const as = await fanToArtistStaking.connect(addr1).getAllStake();
+            const as = await fanToArtistStaking.connect(addr1).getAllUserStake();
             const all = as.map(o => {
                 return {
                     artist: o.artist,
@@ -199,11 +194,6 @@ describe('FanToArtistStaking', () => {
             it('Should not be able to redeem a non existent stake', async () => {
                 await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, 123))
                     .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
-            });
-
-            it('Should not be able to setJTP address if not the Owner', async () => {
-                await expect(fanToArtistStaking.connect(addr2).setJTP(artist3.address))
-                    .to.be.revertedWith('Ownable: caller is not the owner');
             });
 
             it('Should not be able to transferOwnership if not the Owner', async () => {

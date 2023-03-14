@@ -3,10 +3,10 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
+import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "./interfaces/IDEXLFactory.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 contract JTPManagement is AccessControl {
     event Mint(address indexed to, uint256 amount, address indexed sender);
@@ -14,8 +14,8 @@ contract JTPManagement is AccessControl {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-    bytes32 public constant POOL_APPROVER_ROLE =
-        keccak256("POOL_APPROVER_ROLE");
+    bytes32 public constant FACTORY_MANAGER =
+        keccak256("FACTORY_MANAGER");
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
 
@@ -38,7 +38,7 @@ contract JTPManagement is AccessControl {
 
         //set DEXLFactory
         _dexl = IDEXLFactory(dexl);
-        _grantRole(POOL_APPROVER_ROLE, msg.sender);
+        _grantRole(FACTORY_MANAGER, msg.sender);
     }
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
@@ -96,25 +96,27 @@ contract JTPManagement is AccessControl {
 
     function approveProposal(
         uint256 index
-    ) external onlyRole(POOL_APPROVER_ROLE) returns (address) {
+    ) external onlyRole(FACTORY_MANAGER) returns (address) {
         return _dexl.approveProposal(index);
     }
 
     function declineProposal(
         uint256 index
-    ) external onlyRole(POOL_APPROVER_ROLE) {
+    ) external onlyRole(FACTORY_MANAGER) {
         _dexl.declineProposal(index);
     }
 
-    function changeJTP(
-        address jtp
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _jtp =  IJTP(jtp);
+    function changeDEXLRewardRate(
+        uint256 rate
+    ) external onlyRole(FACTORY_MANAGER) {
+        _dexl.changeRewardRate(rate);
     }
 
-    function changeFTAS(
-        address ftas
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function changeJTP(address jtp) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _jtp = IJTP(jtp);
+    }
+
+    function changeFTAS(address ftas) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _ftas = IFanToArtistStaking(ftas);
     }
 

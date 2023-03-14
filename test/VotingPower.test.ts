@@ -23,13 +23,13 @@ describe('Voting Power Simulation', () => {
         users = signers.slice(7, 20);
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        ftas = await FTAS.deploy(defVeReward, defArtistReward, minStakeTime, maxStakeTime,);
+        ftas = await FTAS.deploy();
         await ftas.deployed();
 
         const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(ftas.address);
+        jtp = await cJTP.deploy(ftas.address, ftas.address);
         await jtp.deployed();
-        await ftas.setJTP(jtp.address);
+        await ftas.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         await Promise.allSettled([artists.forEach(artist =>
             ftas.addArtist(artist.address, owner.address)
@@ -91,14 +91,14 @@ describe('Voting Power Simulation', () => {
 
         await ftas.connect(user0).stake(artist0.address, 50, 600);
         await timeMachine(10);
-        const end = (await ftas.connect(user0).getAllStake())[0].stake.end;
+        const end = (await ftas.connect(user0).getAllUserStake())[0].stake.end;
         await ftas.connect(user0).stake(artist0.address, 50, 600);
         await timeMachine(10);
         const midTVP = await ftas.totalVotingPowerAt(end);
         const midVP = await ftas.votingPowerOfAt(user0.address, end);
         expect(midTVP).to.equal(midVP);
         expect(await ftas.totalVotingPower()).to.equal(await ftas.votingPowerOf(user0.address));
-        expect(Number(midTVP)*2).to.equal(await ftas.totalVotingPower());
-        expect(Number(midVP)*2).to.equal(await ftas.votingPowerOf(user0.address));
+        expect(Number(midTVP) * 2).to.equal(await ftas.totalVotingPower());
+        expect(Number(midVP) * 2).to.equal(await ftas.votingPowerOf(user0.address));
     });
 });

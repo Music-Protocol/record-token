@@ -1,15 +1,15 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect, use } from 'chai';
+import { expect } from 'chai';
 import { ethers } from 'hardhat';
 require("@nomiclabs/hardhat-web3");
 import { DEXLPool, DEXLFactory } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { timeMachine, getPoolFromEvent, matchPool, getIndexFromProposal } from './utils/utils';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
 
 describe('DEXLFactory', () => {
-    let DEXLP: DEXLFactory;
+    let DEXLF: DEXLFactory;
+    let POOLADDRESS: DEXLPool;
     let owner: SignerWithAddress;
     let stableCoin: any;
 
@@ -23,12 +23,18 @@ describe('DEXLFactory', () => {
         raiseEndDate: 0,
         terminationDate: 800,
         votingTime: 800,
-        leaderCommission: 10e8,
-        couponAmount: 20e8,
-        quorum: 10e8,
-        majority: 10e8,
+        leaderCommission: 10e7,
+        couponAmount: 20e7,
+        quorum: 10e7,
+        majority: 10e7,
         transferrable: false
     };
+
+    before(async () => {
+        const Pool = await ethers.getContractFactory('DEXLPool');
+        POOLADDRESS = await Pool.deploy() as DEXLPool;
+        await POOLADDRESS.deployed();
+    });
 
     beforeEach(async () => {
         const signers = await ethers.getSigners();
@@ -36,9 +42,12 @@ describe('DEXLFactory', () => {
         artists = signers.slice(1, 7);
         users = signers.slice(7, 20);
 
+
+
         const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLP = await dProp.deploy(owner.address) as DEXLFactory;
-        await DEXLP.deployed();
+        DEXLF = await dProp.deploy() as DEXLFactory;
+        await DEXLF.deployed();
+        await DEXLF.initialize(owner.address, POOLADDRESS.address, owner.address, 1);
 
         const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
         stableCoin = await StableCoin.deploy() as any;
@@ -63,29 +72,29 @@ describe('DEXLFactory', () => {
     });
 
     it('should deploy correctly a DEXLPool with the right Leader and transfer the initial deposit', async () => {
-        await stableCoin.connect(users[0]).approve(DEXLP.address, 50);
+        await stableCoin.connect(users[0]).approve(DEXLF.address, 50);
 
         const pool0 = {
             leader: users[0].address,
             fundingTokenContract: stableCoin.address,
-            leaderCommission: 10e8,
+            leaderCommission: 10e7,
             softCap: 100,
             hardCap: 200,
             raiseEndDate: 0,
-            couponAmount: 20e8,
+            couponAmount: 20e7,
             initialDeposit: 50,
             terminationDate: 800,
         }
 
-        const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description"));
-        const parsedPool = await DEXLP.getProposal(hash);
+        const hash = await getIndexFromProposal(await DEXLF.connect(users[0]).proposePool(poolS, "description"));
+        const parsedPool = await DEXLF.getProposal(hash);
         matchPool(parsedPool, pool0);
-        expect(await stableCoin.balanceOf(DEXLP.address)).to.equal(50);
+        expect(await stableCoin.balanceOf(DEXLF.address)).to.equal(50);
         expect(await stableCoin.balanceOf(users[0].address)).to.equal(950);
-        const receipt = await DEXLP.approveProposal(hash);
+        const receipt = await DEXLF.approveProposal(hash);
 
-        await expect(DEXLP.approveProposal(hash)).to.be.revertedWith("DEXLFactory: Proposal can not be deployed");
-        await expect(DEXLP.declineProposal(hash)).to.be.revertedWith("DEXLFactory: Proposal can not be deployed");
+        await expect(DEXLF.approveProposal(hash)).to.be.revertedWith("DEXLFactory: Proposal can not be deployed");
+        await expect(DEXLF.declineProposal(hash)).to.be.revertedWith("DEXLFactory: Proposal can not be deployed");
         const pool = await getPoolFromEvent(receipt);
 
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
@@ -93,12 +102,12 @@ describe('DEXLFactory', () => {
     });
 
     it('should return the token if is declined', async () => {
-        await stableCoin.connect(users[0]).approve(DEXLP.address, 50);
-        const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description"));
-        expect(await stableCoin.balanceOf(DEXLP.address)).to.equal(50);
+        await stableCoin.connect(users[0]).approve(DEXLF.address, 50);
+        const hash = await getIndexFromProposal(await DEXLF.connect(users[0]).proposePool(poolS, "description"));
+        expect(await stableCoin.balanceOf(DEXLF.address)).to.equal(50);
         expect(await stableCoin.balanceOf(users[0].address)).to.equal(950);
-        await DEXLP.declineProposal(hash);
-        expect(await stableCoin.balanceOf(DEXLP.address)).to.equal(0);
+        await DEXLF.declineProposal(hash);
+        expect(await stableCoin.balanceOf(DEXLF.address)).to.equal(0);
         expect(await stableCoin.balanceOf(users[0].address)).to.equal(1000);
     });
 
@@ -106,12 +115,12 @@ describe('DEXLFactory', () => {
         const user0 = users[0];
         const user1 = users[1];
         const user2 = users[2];
-        await stableCoin.connect(user0).approve(DEXLP.address, 50);
+        await stableCoin.connect(user0).approve(DEXLF.address, 50);
         poolS.softCap = 10000;
         poolS.hardCap = 20000;
         poolS.raiseEndDate = 60;
-        const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description"));
-        const pool = await getPoolFromEvent(await DEXLP.approveProposal(hash));
+        const hash = await getIndexFromProposal(await DEXLF.connect(users[0]).proposePool(poolS, "description"));
+        const pool = await getPoolFromEvent(await DEXLF.approveProposal(hash));
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
         await stableCoin.connect(user1).approve(DEXLPool.address, 100);
         await DEXLPool.connect(user1).deposit(100, user1.address);
@@ -140,9 +149,9 @@ describe('DEXLFactory', () => {
         const user1 = users[1];
         const user2 = users[2];
         const user3 = users[3];
-        await stableCoin.connect(user0).approve(DEXLP.address, 1000);
-        const hash = await getIndexFromProposal(await DEXLP.connect(users[0]).proposePool(poolS, "description"));
-        const pool = await getPoolFromEvent(await DEXLP.approveProposal(hash));
+        await stableCoin.connect(user0).approve(DEXLF.address, 1000);
+        const hash = await getIndexFromProposal(await DEXLF.connect(users[0]).proposePool(poolS, "description"));
+        const pool = await getPoolFromEvent(await DEXLF.approveProposal(hash));
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
 
         await stableCoin.connect(user1).approve(DEXLPool.address, 1000);
@@ -160,48 +169,48 @@ describe('DEXLFactory', () => {
 
     it('should allow to propose more than one pool', async () => {
         const user0 = users[0];
-        await stableCoin.connect(user0).approve(DEXLP.address, 1000);
-        await DEXLP.connect(users[0]).proposePool(poolS, "description");
-        await DEXLP.connect(users[0]).proposePool(poolS, "description");
+        await stableCoin.connect(user0).approve(DEXLF.address, 1000);
+        await DEXLF.connect(users[0]).proposePool(poolS, "description");
+        await DEXLF.connect(users[0]).proposePool(poolS, "description");
     });
 
     it('should revert', async () => {
         const user0 = users[0];
-        await expect(DEXLP.connect(user0).transferOwnership(stableCoin.address))
+        await expect(DEXLF.connect(user0).transferOwnership(stableCoin.address))
             .to.be.revertedWith("Ownable: caller is not the owner");
 
         poolS.softCap = 201;
         poolS.hardCap = 200;
-        await expect(DEXLP.connect(user0).proposePool(poolS, "description")).to.be.revertedWith("DEXLFactory: softcap must be less or equal than the hardcap");
+        await expect(DEXLF.connect(user0).proposePool(poolS, "description")).to.be.revertedWith("DEXLFactory: softcap must be less or equal than the hardcap");
 
         poolS.softCap = 190;
         poolS.hardCap = 200;
         poolS.raiseEndDate = 801;
         poolS.terminationDate = 800;
-        await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
+        await expect(DEXLF.connect(user0).proposePool(poolS, "description"))
             .to.be.revertedWith("DEXLFactory: raiseEndDate must be less than the terminationDate");
 
         poolS.raiseEndDate = 790;
         poolS.terminationDate = 800;
         poolS.fundingTokenContract = '0x0000000000000000000000000000000000000000';
-        await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
+        await expect(DEXLF.connect(user0).proposePool(poolS, "description"))
             .to.be.revertedWith("DEXLFactory: the funding token contract's address can not be 0");
 
         poolS.fundingTokenContract = owner.address;
-        poolS.leaderCommission = 10e8;
-        poolS.couponAmount = 10e9 + 1;
-        await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
-            .to.be.revertedWith("DEXLFactory: couponAmount value must be between 0 and 10e9");
+        poolS.leaderCommission = 10e7;
+        poolS.couponAmount = 10e8 + 1;
+        await expect(DEXLF.connect(user0).proposePool(poolS, "description"))
+            .to.be.revertedWith("DEXLFactory: couponAmount value must be between 0 and 10e8");
 
-        poolS.couponAmount = 10e8;
-        poolS.leaderCommission = 10e9 + 1;
-        await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
-            .to.be.revertedWith("DEXLFactory: leaderCommission value must be between 0 and 10e9");
-        poolS.leaderCommission = 50e8;
-        poolS.couponAmount = 50e8 + 1;
-        await expect(DEXLP.connect(user0).proposePool(poolS, "description"))
-            .to.be.revertedWith("DEXLFactory: the sum of leaderCommission and couponAmount must be lower than 10e9");
-        await expect(DEXLP.connect(user0).approveProposal(10)).to.be.revertedWith('Ownable: caller is not the owner');
-        await expect(DEXLP.connect(user0).declineProposal(10)).to.be.revertedWith('Ownable: caller is not the owner');
+        poolS.couponAmount = 10e7;
+        poolS.leaderCommission = 10e8 + 1;
+        await expect(DEXLF.connect(user0).proposePool(poolS, "description"))
+            .to.be.revertedWith("DEXLFactory: leaderCommission value must be between 0 and 10e8");
+        poolS.leaderCommission = 50e7;
+        poolS.couponAmount = 50e7 + 1;
+        await expect(DEXLF.connect(user0).proposePool(poolS, "description"))
+            .to.be.revertedWith("DEXLFactory: the sum of leaderCommission and couponAmount must be lower than 10e8");
+        await expect(DEXLF.connect(user0).approveProposal(10)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(DEXLF.connect(user0).declineProposal(10)).to.be.revertedWith('Ownable: caller is not the owner');
     });
 });

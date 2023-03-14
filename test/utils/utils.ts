@@ -22,6 +22,16 @@ function parseDetailedStakes(elements: FanToArtistStaking.DetailedStakeStructOut
     });
 }
 
+function parseDatesStakes(elements: FanToArtistStaking.DetailedStakeStructOutput[]) {
+    return elements.map(o => {
+        return {
+            amount: o.stake.amount.toNumber(),
+            start: o.stake.start.toNumber(),
+            end: o.stake.end.toNumber()
+        };
+    });
+}
+
 function matchDetailedStakes(element: any, artist: string, user: string, amount: number, time: any, redeemed: boolean) {
     expect(element.artist).to.equal(artist);
     expect(element.user).to.equal(user);
@@ -49,10 +59,10 @@ async function getTimestamp() {
 }
 
 async function getPoolFromEvent(receipt: ContractTransaction) {
-    return (await receipt.wait()).events?.filter(e => e.event == 'PoolCreated').at(0)?.args?.pool;
+    return (await receipt.wait()).events?.find(e => e.event == 'PoolCreated')?.args?.pool;
 }
 async function getIndexFromProposal(receipt: ContractTransaction) {
-    return (await receipt.wait()).events?.filter(e => e.event == 'PoolProposed').at(0)?.args?.index;
+    return (await receipt.wait()).events?.find(e => e.event == 'PoolProposed')?.args?.index;
 }
 
 async function getProposalHash(receipt: ContractTransaction) {
@@ -60,8 +70,8 @@ async function getProposalHash(receipt: ContractTransaction) {
 }
 
 function calcPoolRevenues(input: number, leaderFee: number, couponFee: number) {
-    const leader = (input * leaderFee) / 10e9;
-    const shareholders = (input * couponFee) / 10e9;
+    const leader = (input * leaderFee) / 10e8;
+    const shareholders = (input * couponFee) / 10e8;
     return {
         pool: (input - leader) - shareholders,
         leader,
@@ -77,6 +87,7 @@ export {
     getTimestamp,
     getPoolFromEvent,
     getProposalHash,
+    parseDatesStakes,
     calcPoolRevenues,
     getIndexFromProposal
 };

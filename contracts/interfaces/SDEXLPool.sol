@@ -8,13 +8,13 @@ struct Pool {
     uint256 softCap;
     uint256 hardCap;
     uint256 initialDeposit;
-    uint128 raiseEndDate;
-    uint128 terminationDate;
-    uint128 votingTime;
-    uint64 leaderCommission;
-    uint64 couponAmount;
-    uint64 quorum;
-    uint64 majority;
+    uint40 raiseEndDate;
+    uint40 terminationDate;
+    uint40 votingTime;
+    uint32 leaderCommission;
+    uint32 couponAmount;
+    uint32 quorum;
+    uint32 majority;
     bool transferrable;
 }
 
@@ -23,12 +23,12 @@ struct PoolReduced {
     uint256 softCap;
     uint256 hardCap;
     uint256 initialDeposit;
-    uint128 raiseEndDate;
-    uint128 terminationDate;
-    uint128 votingTime;
-    uint64 leaderCommission;
-    uint64 couponAmount;
-    uint64 quorum;
-    uint64 majority;
+    uint40 raiseEndDate;
+    uint40 terminationDate;
+    uint40 votingTime;
+    uint32 leaderCommission;
+    uint32 couponAmount;
+    uint32 quorum;
+    uint32 majority;
     bool transferrable;
 }

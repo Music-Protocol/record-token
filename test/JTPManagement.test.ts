@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { BytesLike } from 'ethers';
 import { ethers, web3 } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { DEXLFactory, FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
+import { DEXLFactory, DEXLPool, FanToArtistStaking, JTP, JTPManagement } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
 import { getIndexFromProposal, getPoolFromEvent } from './utils/utils';
@@ -19,18 +19,22 @@ describe('JTPManagement', () => {
     before(async () => { //same as deploy
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
+        const Pool = await ethers.getContractFactory('DEXLPool');
+        const POOLADDRESS = await Pool.deploy() as DEXLPool;
+        await POOLADDRESS.deployed();
+
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy(10, 10, 60, 86400);
+        fanToArtistStaking = await FTAS.deploy();
         await fanToArtistStaking.deployed();
 
-        const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(fakeStaking.address);
-        await jtp.deployed();
-        fanToArtistStaking.setJTP(jtp.address);
-
         const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLF = await dProp.deploy(fanToArtistStaking.address) as DEXLFactory;
+        DEXLF = await dProp.deploy() as DEXLFactory;
         await DEXLF.deployed();
+
+        const cJTP = await ethers.getContractFactory('JTP');
+        jtp = await cJTP.deploy(fakeStaking.address, DEXLF.address);
+        await jtp.deployed();
+        fanToArtistStaking.initialize(jtp.address, 10, 10, 60, 86400);
 
         const cJTPManagement = await ethers.getContractFactory('JTPManagement');
         jtpManagement = await cJTPManagement.deploy(jtp.address, fanToArtistStaking.address, DEXLF.address);
@@ -38,6 +42,8 @@ describe('JTPManagement', () => {
         await jtp.transferOwnership(jtpManagement.address);
         await fanToArtistStaking.transferOwnership(jtpManagement.address);
         await DEXLF.transferOwnership(jtpManagement.address);
+        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, jtp.address, 1);
+
 
         adminRole = await jtpManagement.DEFAULT_ADMIN_ROLE();
         minterRole = await jtpManagement.MINTER_ROLE();
@@ -233,10 +239,10 @@ describe('JTPManagement', () => {
                 raiseEndDate: 120, //2 min
                 terminationDate: 900, // 15 min 
                 votingTime: 600, // 10 min
-                leaderCommission: 10e8,
-                couponAmount: 20e8, // 20%
-                quorum: 30e8, // 30%
-                majority: 50e8, // 50%
+                leaderCommission: 10e7,
+                couponAmount: 20e7, // 20%
+                quorum: 30e7, // 30%
+                majority: 50e7, // 50%
                 transferrable: false
             };
             const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
@@ -269,10 +275,10 @@ describe('JTPManagement', () => {
                 raiseEndDate: 120, //2 min
                 terminationDate: 900, // 15 min 
                 votingTime: 600, // 10 min
-                leaderCommission: 10e8,
-                couponAmount: 20e8, // 20%
-                quorum: 30e8, // 30%
-                majority: 50e8, // 50%
+                leaderCommission: 10e7,
+                couponAmount: 20e7, // 20%
+                quorum: 30e7, // 30%
+                majority: 50e7, // 50%
                 transferrable: false
             };
             const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
@@ -311,10 +317,10 @@ describe('JTPManagement', () => {
                 raiseEndDate: 120, //2 min
                 terminationDate: 900, // 15 min 
                 votingTime: 600, // 10 min
-                leaderCommission: 10e8,
-                couponAmount: 20e8, // 20%
-                quorum: 30e8, // 30%
-                majority: 50e8, // 50%
+                leaderCommission: 10e7,
+                couponAmount: 20e7, // 20%
+                quorum: 30e7, // 30%
+                majority: 50e7, // 50%
                 transferrable: false
             };
             const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
@@ -331,7 +337,7 @@ describe('JTPManagement', () => {
                     name: 'leader_'
                 }]
             }, [owner.address]);
-           expect(await DEXLPool.getLeader()).to.equal(addr1.address);
+            expect(await DEXLPool.getLeader()).to.equal(addr1.address);
             await jtpManagement.custom([DEXLPool.address], [calldata]);
             expect(await DEXLPool.getLeader()).to.equal(owner.address);
         });

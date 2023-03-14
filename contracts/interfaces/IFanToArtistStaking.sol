@@ -7,6 +7,8 @@ interface IFanToArtistStaking {
 
     function removeArtist(address artist, address sender) external;
 
+    function isVerified(address artist) external view returns (bool);
+
     function transferOwnership(address to) external;
 
     function totalVotingPower() external returns (uint256);
@@ -15,5 +17,13 @@ interface IFanToArtistStaking {
 
     function votingPowerOf(address user) external returns (uint256);
 
-    function votingPowerOfAt(address user, uint256 timestamp) external returns (uint256);
+    function votingPowerOfAt(
+        address user,
+        uint256 timestamp
+    ) external returns (uint256);
+
+    function calculateOverallStake(
+        uint256 start,
+        uint256 end
+    ) external view returns (uint256);
 }

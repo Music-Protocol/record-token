@@ -3,11 +3,13 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/IFanToArtistStaking.sol";
+
 // import "hardhat/console.sol";
 
-contract FanToArtistStaking is IFanToArtistStaking, Ownable {
+contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
@@ -71,20 +73,21 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
     //_stakerOfArtist[artist] = Array of user that staked (past and present)
 
     mapping(address => bool) private _verifiedArtists;
-    address[] private _verifiedArtistsArr; //redundant info array
+    address[] private _verifiedArtistsArr; //redundant info array also with removed
 
     mapping(address => uint128) private _artistLastPayment;
 
-    uint256 private immutable _veJTPRewardRate; //change onylOwner
-    uint128 private immutable _minStakePeriod; //change onylOwner
-    uint128 private immutable _maxStakePeriod; //change onylOwner
+    uint256 private _veJTPRewardRate; //change onylOwner
+    uint128 private _minStakePeriod; //change onylOwner
+    uint128 private _maxStakePeriod; //change onylOwner
 
-    constructor(
+    function initialize(
+        address jtp_,
         uint256 veJTPRewardRate,
         uint128 artistJTPRewardRate,
         uint128 min,
         uint128 max
-    ) {
+    ) public initializer {
         require(
             artistJTPRewardRate != 0,
             "FanToArtistStaking: the artist reward rate can not be 0"
@@ -93,20 +96,13 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             veJTPRewardRate != 0,
             "FanToArtistStaking: the voting reward rate can not be 0"
         );
+        _jtp = IJTP(jtp_);
         _veJTPRewardRate = veJTPRewardRate;
         _artistReward.push(
             ArtistReward({start: 0, end: 0, rate: artistJTPRewardRate})
         );
         _minStakePeriod = min;
         _maxStakePeriod = max;
-    }
-
-    function setJTP(address jtp) external onlyOwner {
-        require(
-            address(_jtp) == address(0),
-            "FanToArtistStaking: JTP contract already linked"
-        );
-        _jtp = IJTP(jtp);
     }
 
     modifier onlyVerifiedArtist(address artist) {
@@ -161,7 +157,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         _stake[artist][sender].push(
             Stake({
                 amount: amount,
-                start: uint128(block.timestamp),
+                start: uint40(block.timestamp),
                 end: uint128(block.timestamp) + end,
                 redeemed: false
             })
@@ -172,15 +168,15 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         address sender,
         address artist,
         uint128 end
-    ) internal view returns (int256) {
+    ) internal view returns (uint256) {
         for (uint i = _stake[artist][sender].length; i > 0; i--) {
-            if (_stake[artist][sender][i - 1].end == end) return int(i - 1);
+            if (_stake[artist][sender][i - 1].end == end) return i - 1;
         }
-        return -1;
+        return 0;
     }
 
     // @return the array of all Stake from the msg.sender
-    function getAllStake() external view returns (DetailedStake[] memory) {
+    function getAllUserStake() external view returns (DetailedStake[] memory) {
         uint count = 0;
         address[] memory array = _artistStaked[_msgSender()];
         for (uint i = 0; i < array.length; i++) {
@@ -323,9 +319,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         }
     }
 
-    // Note that this function is highly gas consuming,
-    // as many Stake structures are created as the number of active ones.
-    // A solution could be to stop all the active stakes instead of creating new one for each one of them.
     function changeArtistRewardRate(
         uint128 rate,
         address sender
@@ -383,9 +376,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint256 amount,
         uint128 end
     ) external onlyVerifiedArtist(artist) onlyNotEnded(end) {
-        int index = _getStakeIndex(_msgSender(), artist, end);
+        uint index = _getStakeIndex(_msgSender(), artist, end);
         require(
-            index > -1,
+            _stake[artist][_msgSender()].length > 0 &&
+                _stake[artist][_msgSender()][index].end == end,
             "FanToArtistStaking: no stake found with this end date"
         );
         // this check on redeemed is unecessary,
@@ -393,36 +387,36 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         // redeem = true, also when you increase the amount and the end is set to block.timestamp, onlyNotEnded prevent also this case
         // we could leave it as block.timestamp can be manipulated
         // require(
-        //     !_stake[artist][_msgSender()][uint(index)].redeemed,
+        //     !_stake[artist][_msgSender()][index].redeemed,
         //     "FanToArtistStaking: this stake has already been redeemed"
         // );
         if (_jtp.lock(_msgSender(), amount)) {
-            _stake[artist][_msgSender()][uint(index)].redeemed = true;
-            uint128 prev = _stake[artist][_msgSender()][uint(index)].end;
-            _stake[artist][_msgSender()][uint(index)].end = uint128(
+            _stake[artist][_msgSender()][index].redeemed = true;
+            uint128 prev = _stake[artist][_msgSender()][index].end;
+            _stake[artist][_msgSender()][index].end = uint128(
                 block.timestamp
             );
             _addStake(
                 _msgSender(), //sender
                 artist, //artist
-                _stake[artist][_msgSender()][uint(index)].amount + amount, //amount
-                prev - _stake[artist][_msgSender()][uint(index)].end //end
+                _stake[artist][_msgSender()][index].amount + amount, //amount
+                prev - _stake[artist][_msgSender()][index].end //end
             );
             emit StakeEndChanged(
                 artist,
                 _msgSender(),
                 prev,
-                _stake[artist][_msgSender()][uint(index)].end
+                _stake[artist][_msgSender()][index].end
             );
             emit StakeRedeemed(
                 artist,
                 _msgSender(),
-                _stake[artist][_msgSender()][uint(index)].end
+                _stake[artist][_msgSender()][index].end
             );
             emit StakeCreated(
                 artist,
                 _msgSender(),
-                _stake[artist][_msgSender()][uint(index)].amount,
+                _stake[artist][_msgSender()][index].amount,
                 prev
             );
         }
@@ -433,16 +427,17 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint128 end,
         uint128 newEnd
     ) external onlyVerifiedArtist(artist) onlyNotEnded(end) {
-        int index = _getStakeIndex(_msgSender(), artist, end);
+        uint index = _getStakeIndex(_msgSender(), artist, end);
         require(
-            index > -1,
+            _stake[artist][_msgSender()].length > 0 &&
+                _stake[artist][_msgSender()][index].end == end,
             "FanToArtistStaking: no stake found with this end date"
         );
         require(
             newEnd <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
-        _stake[artist][_msgSender()][uint(index)].end += newEnd;
+        _stake[artist][_msgSender()][index].end += newEnd;
         emit StakeEndChanged(artist, _msgSender(), end, end + newEnd);
     }
 
@@ -455,9 +450,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
             artist != newArtist,
             "FanToArtistStaking: the new artist is the same as the old one"
         );
-        int index = _getStakeIndex(_msgSender(), artist, end);
+        uint index = _getStakeIndex(_msgSender(), artist, end);
         require(
-            index > -1,
+            _stake[artist][_msgSender()].length > 0 &&
+                _stake[artist][_msgSender()][index].end == end,
             "FanToArtistStaking: no stake found with this end date"
         );
         // this check on redeemed is unecessary,
@@ -465,59 +461,60 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         // redeem = true, also when you increase the amount and the end is set to block.timestamp, onlyNotEnded prevent also this case
         // we could leave it as block.timestamp can be manipulated
         // require(
-        //     !_stake[artist][_msgSender()][uint(index)].redeemed,
+        //     !_stake[artist][_msgSender()][index].redeemed,
         //     "FanToArtistStaking: this stake has already been redeemed"
         // );
         require(
             !(_isStakingNow(_msgSender(), newArtist)),
             "FanToArtistStaking: already staking the new artist"
         );
-        _stake[artist][_msgSender()][uint(index)].redeemed = true;
-        uint128 prev = _stake[artist][_msgSender()][uint(index)].end;
-        _stake[artist][_msgSender()][uint(index)].end = uint128(
+        _stake[artist][_msgSender()][index].redeemed = true;
+        uint128 prev = _stake[artist][_msgSender()][index].end;
+        _stake[artist][_msgSender()][index].end = uint128(
             block.timestamp
         );
         _addStake(
             _msgSender(), //sender
             newArtist, //artist
-            _stake[artist][_msgSender()][uint(index)].amount, //amount
-            prev - _stake[artist][_msgSender()][uint(index)].end //end
+            _stake[artist][_msgSender()][index].amount, //amount
+            prev - _stake[artist][_msgSender()][index].end //end
         );
         emit StakeEndChanged(
             artist,
             _msgSender(),
             prev,
-            _stake[artist][_msgSender()][uint(index)].end
+            _stake[artist][_msgSender()][index].end
         );
         emit StakeRedeemed(
             artist,
             _msgSender(),
-            _stake[artist][_msgSender()][uint(index)].end
+            _stake[artist][_msgSender()][index].end
         );
         emit StakeCreated(
             artist,
             _msgSender(),
-            _stake[artist][_msgSender()][uint(index)].amount,
+            _stake[artist][_msgSender()][index].amount,
             prev
         );
     }
 
     function redeem(address artist, uint128 end) external onlyEnded(end) {
-        int index = _getStakeIndex(_msgSender(), artist, end);
+        uint index = _getStakeIndex(_msgSender(), artist, end);
         require(
-            index > -1,
+            _stake[artist][_msgSender()].length > 0 &&
+                _stake[artist][_msgSender()][index].end == end,
             "FanToArtistStaking: no stake found with this end date"
         );
         require(
-            !_stake[artist][_msgSender()][uint(index)].redeemed,
+            !_stake[artist][_msgSender()][index].redeemed,
             "FanToArtistStaking: this stake has already been redeemed"
         );
         if (
             _jtp.transfer(
                 _msgSender(),
-                _stake[artist][_msgSender()][uint(index)].amount
+                _stake[artist][_msgSender()][index].amount
             )
-        ) _stake[artist][_msgSender()][uint(index)].redeemed = true;
+        ) _stake[artist][_msgSender()][index].redeemed = true;
         emit StakeRedeemed(artist, _msgSender(), end);
     }
 
@@ -584,5 +581,55 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable {
         uint256 timestamp
     ) external view returns (uint256) {
         return _votingPowerOf(user, timestamp);
+    }
+
+    // ----------DEXLReward------------------
+    function calculateIntegral(
+        address artist,
+        address user,
+        uint256 start,
+        uint256 end
+    ) private view returns (uint256) {
+        uint256 integral = 0;
+        Stake[] storage stakes = _stake[artist][user];
+        for (uint i = 0; i < stakes.length; i++) {
+            if (stakes[i].end < start || stakes[i].start > end) {
+                continue; // skip stakes outside the interval
+            }
+            uint256 amount = stakes[i].amount;
+            uint256 startTime = start;
+            if (start < stakes[i].start) startTime = stakes[i].start;
+            uint256 endTime = end;
+            if (end > stakes[i].end) endTime = stakes[i].end;
+
+            integral += amount * (endTime - startTime);
+        }
+        return integral;
+    }
+
+    function calculateOverallStake(
+        uint256 start,
+        uint256 end
+    ) public view returns (uint256) {
+        require(
+            end > start,
+            "FanToArtistStaking: end must be greater than start"
+        );
+        uint256 totalStake = 0;
+        for (uint i = 0; i < _verifiedArtistsArr.length; i++) {
+            for (
+                uint j = 0;
+                j < _stakerOfArtist[_verifiedArtistsArr[i]].length;
+                j++
+            ) {
+                totalStake += calculateIntegral(
+                    _verifiedArtistsArr[i],
+                    _stakerOfArtist[_verifiedArtistsArr[i]][j],
+                    start,
+                    end
+                );
+            }
+        }
+        return totalStake;
     }
 }
