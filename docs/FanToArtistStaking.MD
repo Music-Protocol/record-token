@@ -1,305 +1,114 @@
 # FanToArtistStaking Contract
-This contract is an implementation of the IFanToArtistStaking interface, and is also Ownable, meaning it has an owner with special privileges.
+The `FanToArtistStaking` smart contract is based on the following **openzeppelin** standards:
+- `Ownable` to restrict access to certain functions to the owner's address only
+- `Initializable` to allow upgradeability
 
-The contract manages fan-to-artist staking, including adding and removing artists, and tracking staking information such as the amount staked, start and end times, and whether the stake has been redeemed. The contract also keeps track of rewards for artists, including reward rates and the start and end times for each reward period.
+There are also two interfaces one is `IJTP` to communicate with the `JTP` contract and one `IFanToArtistStaking` to allow other contracts to call the current one
 
-## Imports
-- The `Ownable` contract from the OpenZeppelin access library is imported to provide ownership-related functionality.
-- The `IJTP` interface is imported to interact with the JTP contract.
-- The `IFanToArtistStaking` interface is imported for contract compliance.
-## Structs
-- The `Stake` struct tracks information about individual stakes made by fans to artists, including the amount staked, start and end times, and whether the stake has been redeemed.
-- The `DetailedStake` struct extends the Stake struct by also tracking the artist and user associated with the stake.
-- The `ArtistReward` struct tracks information about rewards for artists, including the start and end times for each reward period and the reward rate.
-## Mappings
-- The `_stake` mapping tracks all stakes made by fans to artists, using the artist's address as the first key and the fan's address as the second key, to store an array of `Stake` structs.
-- The `_artistStaked` mapping tracks all artists staked by each fan, using the fan's address as the key to store an array of artist addresses.
-- The `_stakerOfArtist` mapping tracks all fans who have staked each artist, using the artist's address as the key to store an array of fan addresses.
-- The `_verifiedArtists` mapping keeps track of which artists have been verified, using the artist's address as the key and a boolean value indicating whether they have been verified or not.
-- The `_artistAlreadyPaid` mapping tracks how much each artist has already been paid, using the artist's address as the key and the amount paid as the value.
-## Variables
-- `_jtp` is a private variable to store the instance of the JTP contract.
-- `_artistReward` is a private array to store all ArtistReward structs.
-- `_verifiedArtistsArr` is a private array to store the addresses of all verified artists.
-- `_veJTPRewardRate` is a private constant to store the rate of rewards for VE in JTP tokens.
-- `_minStakePeriod` is a private constant to store the minimum period of time that a fan can stake for.
-- `_maxStakePeriod` is a private constant to store the maximum period of time that a fan can stake for.
+## Contract Properties
+Choices on implementations can be found in the detailed file
 
-## Events
-- `ArtistAdded`: triggered when a new artist is added to the contract.
-  - `artist`: The address of the artist added to the contract.
-  - `sender`: The address of the user who added the artist.
+## code snippets
+### deployment
+For the deployment of this smart contract if it has to be upgradeable, the proxy pattern must be followed. Otherwise, it can be deployed in the following way:
+```
+...
+const FTAS = await ethers.getContractFactory('FanToArtistStaking');
+const fanToArtistStaking = await FTAS.deploy();
+await fanToArtistStaking.deployed();
+...
+await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+```
+`minStakeTime` and `maxStakeTime` represent the minimum and maximum time to make a stake and can never be changed in this implementation.
+`jtp.address` is the address of the JTP smart contract that is to implement the IJTP interface.
+`defVeReward` and `defArtistReward` are respectively used to calculate the voting power and reward of artists, this number corresponds to x where amountJTP * time / x. can it be read as: "every how many seconds a jtp is staked corresponds to a token in the output?"
+Note that only the artist's reward can be changed over time and the new value is not retroactive but a phased mechanism is used which is described in the detailed documentation.
 
-- `ArtistRemoved`: triggered when an artist is removed from the contract.
-  - `artist`: The address of the artist removed from the contract.
-  - `sender`: The address of the user who removed the artist.
-- `ArtistPaid`: triggered when an artist is paid.
-  - `artist`: The address of the artist who is paid.
-  - `amount`: The amount paid to the artist.
-- `ArtistJTPRewardChanged`: triggered when the JTP reward rate for an artist is changed.
-  - `newRate`: The new JTP reward rate for the artist.
-  - `timestamp`: The timestamp of the change.
-  - `sender`: The address of the user who changed the JTP reward rate.
-- `StakeCreated`: triggered when a stake is created for an artist.
-  - `artist`: The address of the artist the stake is created for.
-  - `sender`: The address of the user who created the stake.
-  - `amount`: The amount of the stake.
-  - `end`: The end date of the stake.
-- `StakeEndChanged`: triggered when the end date of a stake is changed.
-  - `artist`: The address of the artist the stake belongs to.
-  - `sender`: The address of the user who changed the end date.
-  - `end`: The original end date of the stake.
-  - `newEnd`: The new end date of the stake.
-- `StakeRedeemed`: triggered when a stake is redeemed.
-  - `artist`: The address of the artist the stake belongs to.
-  - `sender`: The address of the user who redeemed the stake.
-  - `end`: The end date of the redeemed stake.
 
-## Constructor
-It takes four arguments: 
-- `veJTPRewardRate`: This is the reward rate for the voting power for each JTP token staked in the contract. 
-- `artistJTPRewardRate`: This is the reward rate for each artist for each JTP token staked in the contract.
-- `min`: This is the minimum staking period in seconds.
-- `max`: This is the maximum staking period in seconds.
+### User and Artist Stake retrieval
+returns users who call the function to see the stakes they have made
+```
+fanToArtistStaking.connect(users[0]).getAllUserStake();
+```
+returns to artists the stakes made by users towards them
+```
+fanToArtistStaking.connect(artists[0]).getAllArtistStake();
+```
 
-The constructor sets the values of `_veJTPRewardRate`, `_artistReward`, `_minStakePeriod`, and `_maxStakePeriod` to the values of the arguments passed. The `_artistReward` struct is initialized with the start, end, and rate equal to 0, 0, and `artistJTPRewardRate` respectively.
-After the deploy it is supposed to link the `JTP` contract through the `setJTP` function
+### Artist get reward
+Can only be called by verified artists and calculates the number of tokens the artist will receive based on the tokens staked towards them multiplied by seconds and divided by the artistRewardRate that was present at the time of each stake.
+```
+fanToArtistStaking.connect(artists[0]).getReward()
+```
 
-## Modifiers
-### `onlyNotEnded`
-This is a modifier that requires the passed `end` argument to be greater than the current block's timestamp. It will throw an error message if the `end` is less than or equal to the current block's timestamp.
+### add and remove of an artist
+An artist must be added to the verified artists list in order to receive stakes and rewards.
+These two functions can only be called by the owner of this contract, i.e. by the management initially and later by the DAO if this contract is transferred.
+When an artist is removed, all present stakeholders suffer an early end.
+```
+fanToArtistStaking.addArtist(artist1.address, sender.address)
+&&&
+fanToArtistStaking.removeArtist(artist1.address, addr1.address)
+```
+note that these functions should not be called directly from this contract but from the one that owns them
+TODO explain the uint8 thing
 
-### `onlyEnded`
-This is a modifier that requires the passed `end` argument to be less than the current block's timestamp. It will throw an error message if the `end` is greater than or equal to the current block's timestamp.
+### change of the artist reward rate
+Just as with artist management, this function can only be called by the owner of the contract. The newly entered rate takes effect from the current time.
+```
+fanToArtistStaking.changeArtistRewardRate(rate, sender.address)
+```
+### stake
+In order to make a stake, it is necessary to have the enough tokens in the JTP contract, that the stake period is between min and max, that there are no other stakes towards the same artist already active
+```
+fanToArtistStaking.connect(users[0]).stake(artist.address, amount, time)
+```
+In this example user0 is staking for time seconds and amount tokens that will be transferred from his jtp balance to that of fanToArtistStaking
 
-## Contract Functions
-### `setJTP`
-This function sets the `_jtp` address to the passed argument `jtp`. The function can only be called by the contract owner and requires that the `_jtp` address is not set before.
+### increase a stake
+A user can decide to increase the tokens staked, and in order to do so the stake must still be ongoing, so we also know that the tokens have not been redeemed and that the artist is still verified
+```
+fanToArtistStaking.increaseAmountStaked(artist.address, amountToAdd);
+```
+what happens underneath is that the current stake is stopped and a new one is created
 
-### `transferOwnership`
-This function transfers the ownership of the contract to the `to` address. It can only be called by the contract owner.
+### extend a stake
+A user can decide to increase the tokens staked, and in order to do so the stake must still be ongoing, so we also know that the tokens have not been redeemed and that the artist is still verified
+```
+fanToArtistStaking.increaseAmountStaked(artist.address, amountToAdd);
+```
+what happens underneath is that the current stake is stopped and a new one is created
 
-### **`getAllUserStake`**
-This function returns an array of all the stakes made by the message sender.
-#### **Inputs**
-None.
-#### **Outputs**
-`DetailedStake`[]: an array of all the stakes made by the message sender, represented as DetailedStake structs.
-#### **Behaviour** 
-The function first calculates the total number of stakes made by the message sender by looping through the `_artistStaked` mapping for the message sender and counting the number of stakes for each artist. Then, an array of `DetailedStake` structs is created with the calculated size. The function loops through the `_artistStaked` mapping again and for each artist, loops through the `_stake` mapping for the artist and message sender and adds each stake to the `DetailedStake` array, along with the artist and message sender addresses. Finally, the `DetailedStake` array is returned.
+### change staked artist
+A user may change a stake as long as it is not yet finished and the new artist is verified. The stake on the first artist is stopped and a new stake is created on newArtist 
+```
+fanToArtistStaking.changeArtistStaked(users[0].address, artists[1].address)
+```
 
-### **`getAllArtistStake`**
-This function returns an array of all the stakes made for the message sender as an artist.
-#### **Inputs**
-None.
-#### **Outputs**
-`DetailedStake`[]: an array of all the stakes made for the message sender as an artist, represented as `DetailedStake` structs.
-#### **Behaviour** 
-The function first calculates the total number of stakes made for the message sender by looping through the `_stakerOfArtist`
+### redeem a stake
+A user is only entitled to take back tokens staked at the moment the stake reaches its end. (once at most, obviously)
+```
+fanToArtistStaking.redeem(artists[0].address, endTime)
+//endTime = timestamp in seconds of the endTime of the stake you want to redeem
+```
 
-### **`getReward`**
-This function is used to calculate and distribute the rewards for an artist based on the stakes made by their fans.
-#### **Input**
-- None
-#### **Pre-conditions**
-- The calling user must be a registered artist in the system.
-- The artist must have at least one stake from a fan in the system.
-- The calling user must have at least one stake made by their fans in the system.
-#### **Output**
-- `ArtistPaid` event is emitted with the artist's address and the amount of reward paid to the artist.
-#### **Actions performed**:
-- It retrieves the list of fans that have staked the artist.
-- A variable `accumulator` is initialized to 0.
-- For each fan, the function loops through the stakes made by that fan to the artist and calculates the rewards based on the staking rate and period. The calculation is performed as follows:
-  - The reward amount is calculated as the product of the staking amount, the duration of the stake (in seconds), and the rate of rewards.
-  - The duration of the stake is calculated as the minimum of the end of the stake and the current block timestamp.
-  - The calculation is performed for each reward period defined for the artist, and the rewards are accumulated in the `accumulator` variable.
-- The function subtracts the amount already paid to the artist from the `accumulator`.
-- The calculated reward amount is then paid to the artist using the `payArtist` function of the `_jtp` contract.
-- The `ArtistPaid` event is emitted with the artist's address and the amount of reward paid to the artist.
-- The amount already paid to the artist is updated in the `_artistAlreadyPaid` mapping.
 
-### **`addArtist`**
-Adds an artist to the list of verified artists.
-#### **Input**
-- `artist`: Address of the artist to be added.
-- `sender`: Address of the person who is adding the artist.
-#### **Output**
-- `ArtistAdded`: Event is fired with the following parameters
-- `artist`: Address of the added artist.
-- `sender`: Address of the person who added the artist.
-#### **Behaviour**
-If the artist is not verified, the function sets the verification status to true and adds the artist to the list of verified artists.
-An `ArtistAdded` event is fired with the given artist and sender parameters.
-#### **Preconditions**
-- The caller of the function must be the contract owner.
-- The given artist is not already verified.
+### voting power
+There are 4 functions: `totalVotingPowerAt` `totalVotingPower`, `votingPowerOfAt` and `votingPowerOf` 
+as can be seen from the names, those ending with At calculate the voting power up to the timestamp passed in the parameters, those with of calculate only those of an artist. All these functions support the DAO contract for votes.
+```
+fanToArtistStaking.totalVotingPower()
+fanToArtistStaking.totalVotingPowerAt(dateInSec)
+fanToArtistStaking.votingPowerOf(user0.address)
+fanToArtistStaking.votingPowerOfAt(user0.address, dateInSec)
+```
+Returns an integer representing the amount staked multiplied by seconds and divided by the veJTPRate
 
-### **`removeArtist`**
-Removes an artist from the list of verified artists.
-#### **Input**
-- `artist`: Address of the artist to be removed.
-- `sender`: Address of the person who is removing the artist.
-#### **Output**
-- `ArtistRemoved`: Event is fired with the following parameters
-- `StakeEndChanged`: Event is fired for each active stake to the removed artist
-- `artist`: Address of the removed artist.
-- `sender`: Address of the person who removed the artist.
-#### **Behaviour**
-If the artist is verified, the function sets the verification status to false and ends all the stakes associated with the artist.
-An ArtistRemoved event is fired with the given artist and sender parameters.
-#### **Preconditions**
-- The caller of the function must be the contract owner.
-- The given artist is verified.
+### dexlreward
+calculateOverallStake is another support function but for the Factory contract that deals with redistributing the DEXLReward. this function returns the number of tokens staked multiplied by the seconds of each user to each artist
+```
+ fanToArtistStaking.calculateOverallStake(timestamp.min, timestamp.max)
+```
 
-### **`changeArtistRewardRate`**
-#### **Input**
-- `rate`: uint128, the new reward rate for the artist
-- `sender`: address, the address of the sender
-#### **Behaviour**
-This function changes the reward rate for the artists. It sets the end time for the previous reward rate and adds a new reward rate with the given rate and the current timestamp as the start time. It emits the ArtistJTPRewardChanged event with the new rate, the current timestamp and the sender's address.
-#### **Pre-Conditions**
-The caller must be the contract owner
-#### **Output**
-- `ArtistJTPRewardChanged` event is emitted
-
-### **`getStakingVeRate`**
-#### **Behaviour**
-This function returns the current rate of JTP reward for staking.
-#### **Output**
-uint128, the current JTP reward rate for staking
-
-### **`getArtistRewardRate`**
-#### **Behaviour**
-This function returns the current reward rate for the artists. It retrieves the rate of the most recent artist reward rate.
-#### **Output**
-uint256, the current artist reward rate
-
-### **`stake`**
-#### **Input**
-- `artist`: address, the address of the artist to stake JTP for
-- `amount`: uint256, the amount of JTP to stake
-- `end`: uint128, the end time for the stake period
-#### **Behaviour**
-This function allows a verified artist to stake JTP for another artist. If all checks pass, the function locks the given amount of JTP from the caller's account and adds the stake to the contract's internal state. It emits the StakeCreated event with the artist's address, the caller's address, the amount of JTP staked and the end time for the stake period.
-#### **Pre-Conditions**
-The caller must be a verified artist
-The end time must be greater than the minimum stake period and less than the maximum stake period
-The caller must not be staking for the same artist at the moment
-#### **Output**
-- `StakeCreated` event is emitted
-
-### **`increaseAmountStaked`**
-#### **Input**
-- `artist`: address, the address of the artist to stake JTP for
-- `amount`: uint256, the amount of JTP to stake
-- `end`: uint128, the end time for the stake period
-#### **Behaviour**
-This function allows the caller to increase the amount of JTP staked for a particular artist. It first finds the index of the stake with the given end time. If no such stake is found, it reverts the transaction. If the stake is found, the function locks the given amount of JTP from the caller's account, sets the redeemed status of the previous stake to true, updates the end time of the stake to the current timestamp, adds the increased amount of JTP to the new stake and emits several events to reflect the changes in the contract's internal state.
-#### **Pre-Conditions**
-The caller must be a verified artist
-The end time of the stake must not have ended
-#### **Output**
-- `StakeEndChanged` event is emitted
-- `StakeRedeemed` event is emitted
-- `StakeCreated` event is emitted
-
-### **`extendStake`**
-This function allows a fan to extend the end time of their stake to an artist.
-#### **Input**
-- `artist`: The address of the artist to extend the stake for.
-- `end`: The current end date of the stake.
-- `newEnd`: The new end date of the stake after extension.
-#### **Pre-Conditions**
-The caller must be a verified artist.
-The stake for the given artist must not have ended.
-The function requires that the newEnd date is not greater than the maximum stake period.
-#### **Output**
-- `StakeEndChanged` event is emitted
-#### **Behaviour**
-The function extends the end date of the stake for the given artist by newEnd, requires that the stake is found with the given end date.
-The function emits the StakeEndChanged event with the new end date.
-
-### **`changeArtistStaked`**
-#### **Input**
-- `artist`: The current address of the artist for which the stake is being held.
-- `newArtist`: The new address of the artist for which the stake will be held.
-- `end`: The end date of the current stake.
-#### **Pre-Conditions**
-- The caller must be a verified artist.
-- The stake for the given artist must not have ended.
-- The new artist must not be the same as the old artist.
-- The caller must not be staking for the new artist.
-#### **Output**
-- `StakeEndChanged` event is emitted with the new end date of the stake for the old artist.
-- `StakeRedeemed` event is emitted for the old artist.
-- `StakeCreated` event is emitted for the new artist.
-#### **Behaviour**
-The function marks the stake as redeemed and anticipate its end.
-Then creates a new stake for the new artist.
-
-### **`redeem`**
-#### **Input**
-- `artist`: The address of the artist for which the stake is being held.
-- `end`: The end date of the stake.
-#### **Pre-Conditions**
-- The stake for the given artist must have ended.
-- Requires that the stake is found with the given end date.
-- Requires that the stake has not already been redeemed
-#### **Output**
-- `StakeRedeemed` event is emitted.
-#### **Behaviour**
-The function unlocks the JTP amount held in the stake and then emits the StakeRedeemed event.
-
-### **`isVerified`**
-#### **Input**
-- `artist`: The address of the artist.
-#### **Output**
-- `bool` true if the artist is verified.
-
-### **`_totalVotingPower`**
-This internal view function calculates the total voting power of all staked JTP for a given timestamp.
-It returns the total voting power of JTPs, calculated as the **sum** of all staked JTP **divided** by the _veJTPRewardRate.
-#### **Input**
-- `timestamp`: The time to which the voting power of JTPs is to be calculated.
-#### **Output**
-- A `uint256` value representing the total voting power of JTPs at the specified timestamp.
-### **`totalVotingPower`**
-This view function returns the total voting power of JTPs at the current block's timestamp.
-It uses the internal `_totalVotingPower` function to calculate the total voting power.
-#### **Output**
-- A `uint256` value representing the total voting power of JTPs at the current block's timestamp.
-
-### **`totalVotingPowerAt`**
-This view function calculates the total voting power of JTPs at a specified timestamp.
-It uses the internal _totalVotingPower function to calculate the total voting power.
-#### **Input**
-- `timestamp`: The time to which the voting power of JTPs is to be calculated.
-#### **Output**
-- A `uint256` value representing the total voting power of JTPs at the specified timestamp.
-
-### **`_votingPowerOf`**
-This internal view function calculates the voting power of JTPs staked by a given user for a given timestamp.
-It returns the voting power of JTPs staked by the user, calculated as the **sum** of JTP staked by the user **divided** by the _veJTPRewardRate.
-#### **Input**
-- `user`: The address of the user whose staked JTPs voting power is to be calculated.
-- `timestamp`: The time to which the voting power of JTPs is to be calculated.
-#### **Output**
-- A `uint256` value representing the voting power of JTPs staked by the user at the specified timestamp.
-
-### **`votingPowerOf`**
-This view function returns the voting power of JTPs staked by a given user at the current block's timestamp.
-It uses the internal `_votingPowerOf` function to calculate the voting power of JTPs staked by the user.
-#### **Input**
-- `user`: The address of the user whose staked JTPs voting power is to be calculated.
-#### **Output**
-- A `uint256` value representing the voting power of JTPs staked by the user at the current block's timestamp.
-
-### **`votingPowerOfAt`**
-This view function calculates the voting power of JTPs staked by a given user for a given timestamp.
-It uses the internal `_votingPowerOf` function to calculate the voting power of JTPs staked by the user.
-#### **Input**
-- `user`: The address of the user whose staked JTPs voting power is to be calculated.
-- `timestamp`: The time to which the voting power of JTPs is to be calculated.
-#### **Output**
-- A `uint256` value representing the voting power of JTPs staked by the user at the specified timestamp.
+# key takeaways
+Keep in mind that although it is possible to upgrade, it is not possible to change the structure of the existing data, and consequently not all new functions can be integrated.

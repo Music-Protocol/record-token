@@ -14,8 +14,7 @@ contract JTPManagement is AccessControl {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-    bytes32 public constant FACTORY_MANAGER =
-        keccak256("FACTORY_MANAGER");
+    bytes32 public constant FACTORY_MANAGER = keccak256("FACTORY_MANAGER");
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
 
@@ -100,16 +99,20 @@ contract JTPManagement is AccessControl {
         return _dexl.approveProposal(index);
     }
 
-    function declineProposal(
-        uint256 index
-    ) external onlyRole(FACTORY_MANAGER) {
+    function declineProposal(uint256 index) external onlyRole(FACTORY_MANAGER) {
         _dexl.declineProposal(index);
     }
 
     function changeDEXLRewardRate(
         uint256 rate
-    ) external onlyRole(FACTORY_MANAGER) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _dexl.changeRewardRate(rate);
+    }
+
+    function changeArtistRewardRate(
+        uint256 rate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _ftas.changeArtistRewardRate(rate, _msgSender());
     }
 
     function changeJTP(address jtp) external onlyRole(DEFAULT_ADMIN_ROLE) {

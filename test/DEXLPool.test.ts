@@ -45,7 +45,7 @@ describe('DEXLPool', () => {
         const dProp = await ethers.getContractFactory('DEXLFactory');
         DEXLF = await dProp.deploy() as DEXLFactory;
         await DEXLF.deployed();
-        await DEXLF.initialize(owner.address, POOLADDRESS.address, owner.address, 1);
+        await DEXLF.initialize(owner.address, POOLADDRESS.address, owner.address, 120, 1);
 
         const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
         // @ts-ignore

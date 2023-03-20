@@ -64,7 +64,7 @@ describe('DEXLReward', () => {
         await jtp.deployed();
         await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
-        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, jtp.address, DEXLRATE);
+        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, jtp.address, 120, DEXLRATE);
 
         await Promise.allSettled(artists.map(artist =>
             fanToArtistStaking.addArtist(artist.address, owner.address)
@@ -164,7 +164,7 @@ describe('DEXLReward', () => {
         await DEXLF.connect(users[0]).castPreference([pools[0].address], [10e8], [], []);
         await pools[0].connect(users[0]).addArtist(artists[0].address);
         await expect(pools[0].connect(users[0]).addArtist(artists[0].address)).to.be.revertedWith('DEXLPool: artist already nominated');
-        await DEXLF.changeRewardRate(BigNumber.from('1'));
+        await DEXLF.changeRewardRate(1);
         let rewardRate = 1;
         await DEXLF.connect(artists[0]).getReward([pools[0].address]);
         expect(await jtp.balanceOf(artists[0].address)).to.be.equal(users.length * 10 * artists.length * 300 / rewardRate);

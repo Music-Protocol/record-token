@@ -47,7 +47,7 @@ describe('DEXLFactory', () => {
         const dProp = await ethers.getContractFactory('DEXLFactory');
         DEXLF = await dProp.deploy() as DEXLFactory;
         await DEXLF.deployed();
-        await DEXLF.initialize(owner.address, POOLADDRESS.address, owner.address, 1);
+        await DEXLF.initialize(owner.address, POOLADDRESS.address, owner.address, 120, 1);
 
         const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
         stableCoin = await StableCoin.deploy() as any;
@@ -211,6 +211,6 @@ describe('DEXLFactory', () => {
         await expect(DEXLF.connect(user0).proposePool(poolS, "description"))
             .to.be.revertedWith("DEXLFactory: the sum of leaderCommission and couponAmount must be lower than 10e8");
         await expect(DEXLF.connect(user0).approveProposal(10)).to.be.revertedWith('Ownable: caller is not the owner');
-        await expect(DEXLF.connect(user0).declineProposal(10)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(DEXLF.connect(user0).declineProposal(10)).to.be.revertedWith('DEXLFactory: a proposal can only be declined by the leader or the owner');
     });
 });

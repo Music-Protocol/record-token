@@ -1,50 +1,43 @@
 # JTP Smart Contract
-This code is the implementation of a smart contract for the JTP token on the Ethereum platform. The contract uses the Solidity programming language and is compatible with version 0.8.16 or later.
+The `JTP` smart contract is based on the following **openzeppelin** standards:
+- `Pausable` to give the possibility to interrupt operations
+- `Ownable` to restrict access of certain functions to the owner's address only
+- `ERC20` to implement the functions of the fungible token
 
-## Imports
-The contract is based on several external libraries, including:
-- `Ownable`
-- `Pausable`
-- `ERC20`
-- `IJTP`
-  
-The `Ownable` contract provides functionality for transfer of ownership of the contract, while the `Pausable` contract allows the contract owner to pause and unpause it. The ERC20 contract provides standard functionality for an `ERC20` token. The `IJTP` contract defines the interface for JTP token.
+There is also an `IJTP` interface that allows other smart contracts to communicate with the additional functions of JTP
 
 ## Contract Properties
-The contract includes a constructor that takes an address of the `FanToArtistStaking` contract and requires it to be non-zero. The address is stored as a private constant and is used to restrict the call of certain functions to only the `FanToArtistStaking` contract.
+The contract is initialized with a constructor and not with a pattern function Initializable so it will **not** be possible to deploy via proxy and will not be updatable. 
 
-## Contract Functions
-The contract implements the following functions:
-- `transferOwnership`
-- `mint`
-- `burn`
-- `burnFrom`
-- `lock`
-- `unlock`
-- `payArtist`
+## code snippets
+### deployment
+In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**FanToArtistStaking** and **DEXLFactory**)
+```
+...
+const jtpFactory = await ethers.getContractFactory('JTP');
+jtp = await jtpFactory.deploy(fanToArtistStaking.address, DEXLFactory.address);
+await jtp.deployed();
+...
+await jtp.transferOwnership(jtpManagement.address);
 
-### `transferOwnership`
-This function allows the contract owner to transfer ownership of the contract to a new address.
+```
 
-### `mint`
-This function allows the contract owner to mint new tokens and transfer them to a specified address.
+### mint and burn
+These three functions are restricted only to the address of the current contract owner this means that only one smart contract will always be able to call the functions (Management **OR** DAO).
+(note that **burn** destroys the tokens of the address calling the JTP contract, and that to use **burnFrom** the target address will have to provide the allowance for the amount to be burned to the address that will call burnFrom)
+```
+await jtp.mint(targetAddress, 10e18);
+OR
+await jtp.burn(10e18);
+OR
+await jtp.burnFrom(targetAddress, 10e18);
+```
 
-### `burn`
-This function allows the contract owner to burn tokens from their own account.
+### lock
+The `lock` function is restricted to the use of only the address of the `fanToArtistStaking` contract, which, being immutable, can never be changed, guaranteeing that the smart contract is secure.
 
-### `burnFrom`
-This function allows the contract owner to burn tokens from a specified account.
+### payArtist
+this function has the same kind of restriction that the lock function has but also for another address, that of the DEXLFactory to allow it to distribute the DEXLReward
 
-### `lock`
-This function allows tokens to be locked and can only be called by the `FanToArtistStaking` contract.
-
-### `unlock`
-This function allows tokens to be unlocked and can only be called by the `FanToArtistStaking` contract.
-
-### `payArtist`
-This function allows the `FanToArtistStaking` contract to pay artists and mint new tokens for them.
-
-## Contract Restrictions
-The locking and unlocking functions can only be called by the `FanToArtistStaking` contract, and the pay artist function can also only be called by the `FanToArtistStaking` contract.
-
-Additionally, the contract uses a `whenNotPaused` modifier to restrict certain actions from being executed when the contract is paused.
+# Key Takeaway
+The contract as it is now will not be able to be proxy upgraded, and the 2 contracts to which it is linked (fanToArtistStaking and DEXLFactory) can never be changed.

@@ -16,7 +16,7 @@ function parseDetailedStakes(elements: FanToArtistStaking.DetailedStakeStructOut
             artist: o.artist,
             user: o.user,
             amount: o.stake.amount.toNumber(),
-            duration: o.stake.end.toNumber() - o.stake.start.toNumber(),
+            duration: o.stake.end - o.stake.start,
             redeemed: o.stake.redeemed
         };
     });
@@ -26,8 +26,8 @@ function parseDatesStakes(elements: FanToArtistStaking.DetailedStakeStructOutput
     return elements.map(o => {
         return {
             amount: o.stake.amount.toNumber(),
-            start: o.stake.start.toNumber(),
-            end: o.stake.end.toNumber()
+            start: o.stake.start,
+            end: o.stake.end
         };
     });
 }

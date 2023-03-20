@@ -30,18 +30,18 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
 
     constructor(
         address staking_,
-        address dexlFactory_
+        address factory_
     ) ERC20("JoinThePressure", "JTP") {
         require(
             staking_ != address(0),
             "JTP: the address of FanToArtistStaking is 0"
         );
         require(
-            dexlFactory_ != address(0),
+            factory_ != address(0),
             "JTP: the address of DEXLFactory is 0"
         );
         _fanToArtistStaking = staking_;
-        _dexlFactory = dexlFactory_;
+        _dexlFactory = factory_;
     }
 
     function transferOwnership(

@@ -12,8 +12,6 @@ import "./interfaces/IFanToArtistStaking.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/SDEXLPool.sol";
 
-// import "hardhat/console.sol";
-
 contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
     using Math for uint256;
 
@@ -30,6 +28,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         address[] pools,
         uint256[] amount
     );
+    event RewardChanged(uint256 rate, uint256 timestamp);
 
     struct Nomination {
         uint40 lastVote;
@@ -50,19 +49,20 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
     address private _implementationDEXLPool;
     IJTP private _jtp;
 
-    uint64 _cooldown;
+    uint64 private _cooldown;
 
     function initialize(
         address ftas_,
         address implementation_,
         address jtp_,
+        uint40 cooldown_,
         uint64 rate_
     ) public initializer {
-        require(rate_ >= 0 && rate_ <= 10e8, "DEXLFactory: illegal rate");
+        require(rate_ <= 10e8, "DEXLFactory: illegal rate");
         _jtp = IJTP(jtp_);
         _ftas = ftas_;
         _implementationDEXLPool = implementation_;
-        _cooldown = 120;
+        _cooldown = cooldown_;
         _dexlRewardRate = rate_;
     }
 
@@ -75,6 +75,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
     function changeRewardRate(uint256 rate_) public override onlyOwner {
         require(rate_ > 0, "DEXLFactory: rate cant be 0");
         _dexlRewardRate = rate_;
+        emit RewardChanged(rate_, block.timestamp);
     }
 
     function proposePool(
@@ -146,6 +147,12 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         return proposals[index];
     }
 
+    function changeImplementation(
+        address newImplementation
+    ) external onlyOwner {
+        _implementationDEXLPool = newImplementation;
+    }
+
     function approveProposal(
         uint256 index
     ) external onlyOwner returns (address) {
@@ -155,9 +162,12 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         );
         address pool = Clones.clone(_implementationDEXLPool);
         DEXLPool(pool).initialize(proposals[index], _msgSender(), _ftas);
-        IERC20(proposals[index].fundingTokenContract).transfer(
-            pool,
-            proposals[index].initialDeposit
+        require(
+            IERC20(proposals[index].fundingTokenContract).transfer(
+                pool,
+                proposals[index].initialDeposit
+            ),
+            "ERC20 operation did not succeed"
         );
         _pools[pool] = true;
         emit PoolCreated(proposals[index].leader, pool, index);
@@ -165,7 +175,11 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         return pool;
     }
 
-    function declineProposal(uint256 index) external onlyOwner {
+    function declineProposal(uint256 index) external {
+        require(
+            owner() == _msgSender() || _msgSender() == proposals[index].leader,
+            "DEXLFactory: a proposal can only be declined by the leader or the owner"
+        );
         //sendback the money to the leader
         require(
             proposals[index].leader != address(0),
@@ -207,13 +221,16 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
                 10e8
             );
         }
-        uint256 amountJTP = IFanToArtistStaking(_ftas).calculateOverallStake(
-            _lastRedeem[_msgSender()],
-            block.timestamp
-        ) / _dexlRewardRate;
+        uint256 amountJTPEligible = IFanToArtistStaking(_ftas)
+            .calculateOverallStake(_lastRedeem[_msgSender()], block.timestamp) /
+            _dexlRewardRate;
+        uint256 amountJTP = amountJTPEligible.mulDiv(
+            accumulator,
+            _totalNomination
+        );
         IJTP(_jtp).payArtist(_msgSender(), amountJTP);
-        emit ArtistPaid(_msgSender(), amountJTP);
         _lastRedeem[_msgSender()] = uint40(block.timestamp);
+        emit ArtistPaid(_msgSender(), amountJTP);
     }
 
     function castPreference(
@@ -221,7 +238,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         uint64[] memory rate,
         address[] memory prevPools,
         uint256[] memory prevCasted
-    ) external returns (address) {
+    ) external {
         require(
             uint256(keccak256(abi.encode(prevPools, prevCasted))) ==
                 _userNomination[_msgSender()] ||
@@ -230,8 +247,9 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         );
         require(
             block.timestamp - _lastNomination[_msgSender()] >= _cooldown,
-            "DEXLFactory: already voted in the last 10 days"
+            "DEXLFactory: cooldown still active"
         );
+        _lastNomination[_msgSender()] = uint40(block.timestamp);
         require(
             targetPools.length == rate.length && targetPools.length > 0,
             "DEXLFactory: parameter error, different length or empty"
@@ -263,21 +281,25 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
             votingPower > 0,
             "DEXLFactory: no voting power gained since the last vote"
         );
+        uint256 accumulator = 0;
         for (uint i = 0; i < prevPools.length; i++) {
+            accumulator += prevCasted[i];
             _poolNomination[prevPools[i]] -= prevCasted[i];
-            _totalNomination -= prevCasted[i];
         }
+        _totalNomination -= accumulator;
+
         uint256[] memory amountCasted = new uint[](targetPools.length);
+        accumulator = 0;
         for (uint i = 0; i < targetPools.length; i++) {
             amountCasted[i] = (votingPower.mulDiv(rate[i], 10e8));
             _poolNomination[targetPools[i]] += amountCasted[i];
-            _totalNomination += amountCasted[i];
+            accumulator += amountCasted[i];
         }
+        _totalNomination += accumulator;
         _userNomination[_msgSender()] = uint256(
             keccak256(abi.encode(targetPools, amountCasted))
         );
         emit PreferencesCasted(_msgSender(), targetPools, amountCasted);
-        return _implementationDEXLPool;
     }
 
     function getPreferences(

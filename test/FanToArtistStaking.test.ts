@@ -3,6 +3,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, JTP } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { getTimestamp } from './utils/utils';
 
 describe('FanToArtistStaking', () => {
     let jtp: JTP;
@@ -110,7 +111,7 @@ describe('FanToArtistStaking', () => {
             const blockBefore = await ethers.provider.getBlock(blockNumBefore);
             await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
             const activeStake = await fanToArtistStaking.connect(addr1).getAllUserStake();
-            const endTime = activeStake[0].stake.end.toNumber();
+            const endTime = activeStake[0].stake.end;
             await fanToArtistStaking.connect(addr1).redeem(artist1.address, endTime);
             stake1.redeemed = true;
 
@@ -128,8 +129,8 @@ describe('FanToArtistStaking', () => {
                 return {
                     artist: o.artist,
                     amount: o.stake.amount.toNumber(),
-                    // start: o.stake.start.toNumber(),
-                    // end: o.stake.end.toNumber(),
+                    // start: o.stake.start,
+                    // end: o.stake.end,
                     redeemed: o.stake.redeemed
                 }
             });
@@ -143,8 +144,8 @@ describe('FanToArtistStaking', () => {
             expect(all).to.have.deep.members([stake1, stake2]);
             const returnedTime = as.map(x => {
                 return {
-                    start: x.stake.start.toNumber(),
-                    end: x.stake.end.toNumber(),
+                    start: x.stake.start,
+                    end: x.stake.end,
                 }
             });
             const myTimes: Object[] = [];
@@ -206,44 +207,15 @@ describe('FanToArtistStaking', () => {
                     .to.be.revertedWith('Ownable: caller is not the owner');
             });
 
-            it('Should not be able to extend a stake if the artist is not in the verified artist list', async () => {
-                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(owner.address, 50, 30))
-                    .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
-            });
-
-            it('Should not be able to extend a stake if the stake is ended', async () => {
-                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, 30))
-                    .to.be.revertedWith('FanToArtistStaking: the stake is already ended');
-            });
-
             it('Should not be able to extend a stake if the stake not found', async () => {
-                const date = Date.now();
-                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, date))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
+                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50))
+                    .to.be.revertedWith('FanToArtistStaking: no stake present');
             });
 
-            it('Should not be able to extend a stake if the stake not found', async () => {
-                const date = Date.now();
-                await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50, date))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
-            });
-
-            it('Should not be able to extend a stake if the artist is not verified', async () => { //should not be necessary the test and the modifier
-                const date = Date.now();
-                await expect(fanToArtistStaking.connect(addr2).extendStake(owner.address, 0, date))
-                    .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
-            });
-
-            it('Should not be able to extend a stake is ended', async () => {
-                const date = Date.now();
-                await expect(fanToArtistStaking.connect(addr2).extendStake(artist1.address, 0, date + 50))
-                    .to.be.revertedWith('FanToArtistStaking: the stake is already ended');
-            });
-
-            it('Should revert when extend a not existing stake', async () => {
-                const date = Date.now();
-                await expect(fanToArtistStaking.connect(addr2).extendStake(artist1.address, date + 50, date + 50))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
+            it('Should not be able to extend a stake if there is no stake', async () => { //should not be necessary the test and the modifier
+                const date = await getTimestamp()+10;
+                await expect(fanToArtistStaking.extendStake(artist1.address, 0))
+                    .to.be.revertedWith('FanToArtistStaking: no stake present');
             });
 
             it('Should revert when extend a not existing stake', async () => {

@@ -42,7 +42,7 @@ describe('JTPManagement', () => {
         await jtp.transferOwnership(jtpManagement.address);
         await fanToArtistStaking.transferOwnership(jtpManagement.address);
         await DEXLF.transferOwnership(jtpManagement.address);
-        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, jtp.address, 1);
+        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, jtp.address, 120, 1);
 
 
         adminRole = await jtpManagement.DEFAULT_ADMIN_ROLE();

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "toolbox": "MSYS_NO_PATHCONV=1 docker run -it --rm -v $(pwd):/TP eth-security-toolbox",
+    "docker:build": "docker build -t token-protocol .",
+    "docker:start": "docker run -it token-protocol",
     "compile": "npx hardhat clean && npx hardhat compile",
     "coverage": "npx hardhat coverage",
     "test": "npx hardhat test ",
@@ -31,11 +32,11 @@
   },
   "homepage": "https://github.com/public-pressure/token-protocol#readme",
   "dependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
-    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
-    "@nomiclabs/hardhat-ethers": "^2.2.1",
-    "@nomiclabs/hardhat-etherscan": "^3.0.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "^2.2.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@openzeppelin/contracts": "^4.8.0",
     "@openzeppelin/contracts-upgradeable": "^4.8.2",
@@ -47,7 +48,7 @@
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
     "hardhat": "^2.12.4",
-    "hardhat-gas-reporter": "^1.0.8",
+    "hardhat-gas-reporter": "^1.0.9",
     "solidity-coverage": "^0.8.2",
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.1",
@@ -57,6 +58,8 @@
     "minimatch": "^3.0.5"
   },
   "devDependencies": {
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/providers": "^5.7.2",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "web3": "^1.8.2"
   }

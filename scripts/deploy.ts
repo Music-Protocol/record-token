@@ -13,8 +13,8 @@ async function main() {
   const minStakeTime = 10;
   const maxStakeTime = 864000;
   const DEXLRATE = 1;
-  const daoQuorum= 10e7;
-  const daoMajority = 50e7+1;
+  const daoQuorum = 10e7;
+  const daoMajority = 50e7 + 1;
 
   const factoryPool = await ethers.getContractFactory('DEXLPool');
   let pool = await factoryPool.deploy() as DEXLPool;
@@ -33,14 +33,14 @@ async function main() {
   await jtp.deployed();
 
   await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
-  await DEXLF.initialize(fanToArtistStaking.address, pool.address, jtp.address, DEXLRATE);
+  await DEXLF.initialize(fanToArtistStaking.address, pool.address, jtp.address, 864000, DEXLRATE);
 
   const managementFactory = await ethers.getContractFactory("JTPManagement");
   const jtpManagement = await managementFactory.deploy(jtp.address, fanToArtistStaking.address, DEXLF.address);
   await jtpManagement.deployed();
 
   const daoFactory = await ethers.getContractFactory('PublicPressureDAO');
-  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority) as PublicPressureDAO;
+  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 864000) as PublicPressureDAO;
   await dao.deployed();
 
   await jtp.transferOwnership(jtpManagement.address);

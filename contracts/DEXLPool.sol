@@ -9,8 +9,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/SDEXLPool.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 
-// import "hardhat/console.sol";
-
 contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     using Math for uint256;
     event ReferendumProposed(
@@ -124,7 +122,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
 
     modifier activePool() {
         require(
-            totalAssets() >= _softCap &&
+            totalSupply() >= _softCap &&
                 block.timestamp > _raiseEndDate &&
                 block.timestamp < _terminationDate,
             "DEXLPool: is not active"
@@ -152,7 +150,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
 
     function isActive() external view returns (bool) {
         return
-            totalAssets() >= _softCap &&
+            totalSupply() >= _softCap &&
             block.timestamp > _raiseEndDate &&
             block.timestamp < _terminationDate;
     }
@@ -288,12 +286,15 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             block.timestamp <= _proposals[index].endTime,
             "DEXLPool: the time is ended"
         );
-        require(!_votes[index][_msgSender()], "DEXLPool: caller already voted");
+        uint256 hashVote = uint256(
+            keccak256(abi.encode(index, _proposals[index].endTime))
+        );
+        require(!_votes[hashVote][_msgSender()], "DEXLPool: caller already voted");
 
         if (isFor) _proposals[index].votesFor += balanceOf(_msgSender());
         else _proposals[index].votesAgainst += balanceOf(_msgSender());
 
-        _votes[index][_msgSender()] = true;
+        _votes[hashVote][_msgSender()] = true;
 
         emit ProposalVoted(index, msg.sender, balanceOf(_msgSender()), isFor);
     }

@@ -26,4 +26,6 @@ interface IFanToArtistStaking {
         uint256 start,
         uint256 end
     ) external view returns (uint256);
+
+    function changeArtistRewardRate(uint256 rate, address sender) external;
 }

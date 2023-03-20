@@ -14,7 +14,6 @@ contract PublicPressureDAO {
         address[] targets,
         bytes[] calldatas,
         uint256 startTime,
-        uint256 endTime,
         string description
     );
     event ProposalExecuted(
@@ -30,11 +29,10 @@ contract PublicPressureDAO {
     );
 
     struct Proposal {
-        uint128 timeStart;
-        uint128 timeEnd;
         uint256 maxVotingPower;
         uint256 votesFor;
         uint256 votesAgainst;
+        uint128 timeStart;
     }
 
     mapping(uint256 => Proposal) private _proposals;
@@ -42,12 +40,20 @@ contract PublicPressureDAO {
 
     uint128 private immutable _quorum; // 0 to 10e8
     uint128 private immutable _majority; // 0 to 10e8
+    uint128 private immutable _timeVotes; // 0 to 10e8
+
     IFanToArtistStaking private immutable _ftas;
 
-    constructor(address ftas_, uint128 quorum_, uint128 majority_) {
+    constructor(
+        address ftas_,
+        uint128 quorum_,
+        uint128 majority_,
+        uint128 time
+    ) {
         _ftas = IFanToArtistStaking(ftas_);
         _quorum = quorum_;
         _majority = majority_;
+        _timeVotes = time;
     }
 
     function _reachedQuorum(
@@ -58,6 +64,18 @@ contract PublicPressureDAO {
                 _proposals[proposalId].votesAgainst) >
             uint256(_quorum).mulDiv(
                 _proposals[proposalId].maxVotingPower,
+                10e8
+            );
+    }
+
+    function _votePassed(
+        uint256 proposalId
+    ) internal view virtual returns (bool) {
+        return
+            _proposals[proposalId].votesFor >=
+            uint256(_majority).mulDiv(
+                (_proposals[proposalId].votesFor +
+                    _proposals[proposalId].votesAgainst),
                 10e8
             );
     }
@@ -85,20 +103,17 @@ contract PublicPressureDAO {
             targets.length == calldatas.length,
             "DAO: invalid proposal length"
         );
-        require(targets.length > 0, "DAO: empty proposal");
 
         require(
-            _proposals[proposalId].timeStart == 0 &&
-                !(_reachedQuorum(proposalId) &&
-                    _proposals[proposalId].timeEnd > block.timestamp &&
-                    _proposals[proposalId].votesFor >
-                    _proposals[proposalId].votesAgainst),
+            _proposals[proposalId].timeStart == 0 ||
+                (block.timestamp >
+                    _proposals[proposalId].timeStart + _timeVotes &&
+                    !(_reachedQuorum(proposalId) && _votePassed(proposalId))),
             "DAO: proposal already exists"
         );
 
         _proposals[proposalId] = Proposal({
             timeStart: uint128(block.timestamp),
-            timeEnd: uint128(block.timestamp + 900),
             maxVotingPower: _ftas.totalVotingPowerAt(block.timestamp),
             votesFor: 0,
             votesAgainst: 0
@@ -110,7 +125,6 @@ contract PublicPressureDAO {
             targets,
             calldatas,
             _proposals[proposalId].timeStart,
-            _proposals[proposalId].timeEnd,
             description
         );
     }
@@ -132,7 +146,7 @@ contract PublicPressureDAO {
             "DAO: proposal not found"
         );
         require(
-            block.timestamp < _proposals[proposalId].timeEnd,
+            block.timestamp < _proposals[proposalId].timeStart + _timeVotes,
             "DAO: proposal expired"
         );
 
@@ -169,14 +183,10 @@ contract PublicPressureDAO {
             "DAO: proposal not found"
         );
         require(
-            block.timestamp > _proposals[proposalId].timeEnd,
+            block.timestamp > _proposals[proposalId].timeStart + _timeVotes,
             "DAO: proposal not ended"
         );
-        require(_reachedQuorum(proposalId), "DAO: quorum not reached");
-        if (
-            _proposals[proposalId].votesFor >
-            _proposals[proposalId].votesAgainst
-        ) {
+        if (_reachedQuorum(proposalId) && _votePassed(proposalId)) {
             for (uint256 i = 0; i < targets.length; ++i) {
                 (bool success, bytes memory returndata) = targets[i].call(
                     calldatas[i]
@@ -192,8 +202,7 @@ contract PublicPressureDAO {
         emit ProposalExecuted(
             proposalId,
             msg.sender,
-            _proposals[proposalId].votesFor >
-                _proposals[proposalId].votesAgainst
+            (_reachedQuorum(proposalId) && _votePassed(proposalId))
         );
     }
 

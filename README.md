@@ -41,13 +41,14 @@ yarn test ./test/<filename>.test.ts
     ```
 - run 
     ```
-    yarn toolbox
+    yarn docker:build
+    yarn
     ```
     - run slither
         ```
-        slither /TP
+        slither 
         ```
         to exclude @openzeppelin contracts
         ```
-        slither /TP --filter-paths "/TP/node_modules/@openzeppelin/"
+        slither . --filter-paths "./node_modules/@openzeppelin/"
         ```

@@ -65,7 +65,6 @@ describe('DEXLReward', () => {
         const max = Math.max(...p.map(s => s.end))
         const min = Math.min(...p.map(s => s.start))
         await timeMachine(2);
-        console.log(await fanToArtistStaking.calculateOverallStake(min, max));
         expect(Number(await fanToArtistStaking.calculateOverallStake(min, max))).to.be.equal(artists.length * 10 * 300);
         expect(Number(await fanToArtistStaking.calculateOverallStake(0, timestamp))).to.be.equal(artists.length * 10 * 300);
         await timeMachine(20);
@@ -86,7 +85,6 @@ describe('DEXLReward', () => {
         const max = Math.max(...p.map(s => s.end))
         const min = Math.min(...p.map(s => s.start))
         await timeMachine(2);
-        console.log(await fanToArtistStaking.calculateOverallStake(min, max));
         expect(Number(await fanToArtistStaking.calculateOverallStake(min, max))).to.be.equal(10 * 10 * 300);
         expect(Number(await fanToArtistStaking.calculateOverallStake(0, timestamp))).to.be.equal(10 * 10 * 300);
         await timeMachine(20);

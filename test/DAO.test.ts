@@ -32,10 +32,10 @@ describe('DAO', () => {
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await jtp.deployed();
-        await fanToArtistStaking.initialize(jtp.address,defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         const cDAO = await ethers.getContractFactory('PublicPressureDAO');
-        dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7+1) as PublicPressureDAO;
+        dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900) as PublicPressureDAO;
         await dao.deployed();
 
         await Promise.allSettled(artists.map(artist =>
@@ -79,14 +79,13 @@ describe('DAO', () => {
             expect(propCreated.proposer).to.deep.equal(users[2].address);
             expect(propCreated.targets).to.deep.equal([jtp.address]);
             expect(propCreated.calldatas).to.deep.equal([calldata]);
-            expect(propCreated.endTime - propCreated.startTime).to.deep.equal(900);
             expect(propCreated.description).to.deep.equal("Gift previous owner");
 
             //Other users should not be able to create the same proposal if one is already active
-            await expect(dao.propose([], [], "Gift previous owner")).to.be.revertedWith("DAO: empty proposal");
-            await expect(dao.connect(users[1]).propose([jtp.address], [calldata], "Gift previous owner"))
+            await expect(dao.connect(users[2]).propose([jtp.address], [calldata], "Gift previous owner"))
                 .to.be.revertedWith("DAO: proposal already exists");
         });
+
         it('Voting a proposal', async () => {
             await Promise.all(users.map(u =>
                 dao.connect(u).vote([jtp.address], [calldata], "Gift previous owner", true))
@@ -120,6 +119,52 @@ describe('DAO', () => {
             const prevJTP = await jtp.balanceOf(owner.address);
             await dao.execute([jtp.address], [calldata], "Gift previous owner");
             expect(await jtp.balanceOf(owner.address)).to.be.equal(prevJTP);
+        });
+
+        it('Creation of same proposal with no votes', async () => {
+            await dao.connect(users[2]).propose([jtp.address], [calldata], "Test not revert1");
+
+            await timeMachine(20);
+            //Other users should not be able to create the same proposal if one is already active
+            await expect(dao.connect(users[2]).propose([jtp.address], [calldata], "Test not revert1"))
+                .to.not.be.revertedWith("DAO: proposal already exists");
+        });
+
+        it('Creation of same proposal when doesnt pass', async () => {
+            await dao.connect(users[2]).propose([jtp.address], [calldata], "Test not revert2");
+            const yesUser = users.slice(0, 6);
+            const noUser = users.slice(- 7);
+            await Promise.all(yesUser.map(u =>
+                dao.connect(u).vote([jtp.address], [calldata], "Test not revert2", true))
+            )
+            await Promise.all(noUser.map(u =>
+                dao.connect(u).vote([jtp.address], [calldata], "Test not revert2", false))
+            )
+            await timeMachine(15);
+            //Other users should not be able to create the same proposal if one is already active
+            await expect(dao.connect(users[2]).propose([jtp.address], [calldata], "Test not revert2"))
+                .to.not.be.revertedWith("DAO: proposal already exists");
+
+
+            await expect(dao.connect(yesUser[0]).vote([jtp.address], [calldata], "Test not revert2", true))
+                .to.not.be.revertedWith("DAO: already voted");
+
+        });
+
+        it('Creation of same proposal when passes', async () => {
+            await dao.connect(users[2]).propose([jtp.address], [calldata], "Test not revert3");
+            const noUser = users.slice(0, 6);
+            const yesUser = users.slice(- 7);
+            await Promise.all(noUser.map(u =>
+                dao.connect(u).vote([jtp.address], [calldata], "Test not revert3", false))
+            )
+            await Promise.all(yesUser.map(u =>
+                dao.connect(u).vote([jtp.address], [calldata], "Test not revert3", true))
+            )
+            await timeMachine(15);
+            //Other users should not be able to create the same proposal if one is already active
+            await expect(dao.connect(users[2]).propose([jtp.address], [calldata], "Test not revert3"))
+                .to.be.revertedWith("DAO: proposal already exists");
         });
     });
 });
