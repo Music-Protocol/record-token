@@ -1,4 +1,4 @@
-# PublicPressureDAO Smart Contract
+# DEXLPool Smart Contract
 The `DEXLPool` smart contract is based on the following **openzeppelin** standard:
 - `ERC4626Upgradeable` 
 - `OwnableUpgradeable` to takeover the pool by the leader
