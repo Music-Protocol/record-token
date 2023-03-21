@@ -52,13 +52,6 @@ This action can only be performed by the contract owner and can set a new leader
 pool.setLeader(manager.address);
 ```
 
-### take over
-This action can only be performed by the contract owner and can set a new leader. Note that in this **only** the "ROLE" is transferred, **not** the shares in his possession. only in the case of revenue will the leader commission go to the new leader.
-(in order to take out the stable coins of the leader as well, it will be necessary to propose financing to an address and if it passes manage the case off chain)
-```
-pool.setLeader(manager.address);
-```
-
 ### deposit
 In the **raise found** phase, it is only possible to call the deposit to lock assets in exchange for shares. You can only deposit before the raise end date as long as you do not exceed the hardCap of assets.
 ```
