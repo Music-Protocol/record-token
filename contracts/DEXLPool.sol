@@ -130,6 +130,13 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         _;
     }
 
+    function _isNeverBeenShareholder(address target) internal view returns (bool) {
+        for(uint256 i = 0; i< _shareholders.length; i++){
+            if(_shareholders[i]== target) return true;
+        }
+        return false;
+    }
+
     function _isShareholder(address target) internal view returns (bool) {
         return balanceOf(target) != 0;
     }
@@ -180,7 +187,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             totalAssets() + assets <= _hardCap,
             "DEXLPool: you can not deposit more than hardcap"
         );
-        if (!_isShareholder(receiver)) _shareholders.push(receiver);
+        if (!_isNeverBeenShareholder(receiver)) _shareholders.push(receiver);
         return super.deposit(assets, receiver);
     }
 
@@ -443,7 +450,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         returns (bool)
     {
         require(_transferrable, "DEXLPool: function disabled");
-        if (!_isShareholder(to)) _shareholders.push(to);
+        if (!_isNeverBeenShareholder(to)) _shareholders.push(to);
         return super.transfer(to, amount);
     }
 
@@ -458,7 +465,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         returns (bool)
     {
         require(_transferrable, "DEXLPool: function disabled");
-        if (!_isShareholder(to)) _shareholders.push(to);
+        if (!_isNeverBeenShareholder(to)) _shareholders.push(to);
         return super.transferFrom(from, to, amount);
     }
 
