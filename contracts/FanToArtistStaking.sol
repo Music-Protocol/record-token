@@ -514,12 +514,13 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                     uint time = _stake[artist][array[i]][j].end;
                     if (time > timestamp) time = timestamp;
                     accumulator +=
-                        (time - _stake[artist][array[i]][j].start) *
-                        _stake[artist][array[i]][j].amount;
+                        ((time - _stake[artist][array[i]][j].start) *
+                            _stake[artist][array[i]][j].amount) /
+                        _veJTPRewardRate;
                 }
             }
         }
-        return accumulator / _veJTPRewardRate;
+        return accumulator;
     }
 
     function totalVotingPower() external view returns (uint256) {
@@ -544,11 +545,12 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 uint time = _stake[array[i]][user][j].end;
                 if (time > timestamp) time = timestamp;
                 accumulator +=
-                    (time - _stake[array[i]][user][j].start) *
-                    _stake[array[i]][user][j].amount;
+                    ((time - _stake[array[i]][user][j].start) *
+                        _stake[array[i]][user][j].amount) /
+                    _veJTPRewardRate;
             }
         }
-        return accumulator / _veJTPRewardRate;
+        return accumulator;
     }
 
     function votingPowerOf(address user) external view returns (uint256) {
