@@ -14,7 +14,7 @@ the green one will include s3 from 15 to 18 and s4 from 15 to 24.
 Rewards even if entered by mistake with too high a rate can never be deleted completely, only interrupted by entering a new rate.
 Let's take an example. If Alice stakes 100 JTP towards the verified artist Bob for 100 seconds and the reward rate remains 1 from the beginning to the end of the stake Bob will be able to claim 10000 JTP (amount * time / )(100 x 100 /1) most likely the rate will have to be a very high number. It corresponds to asking "How many seconds does it take for 1 jtp staked to generate 1 jtp of reward for the artist?"
 #### Ve rate
-The same equation applies to voting power, but as it is not modifiable there are no phased mechanisms
+The same equation applies to voting power, but as it is not modifiable there are no phased mechanisms and that you earn immediately the amount
 
 ### verified artist list
 Since in some cases there is a need to loop on every artist staked, we decided to keep a redundancy array for the artists. In order to prevent an artist from being double-posted on the array (double-push since you don't pop) the classic mapping(address => bool) became mapping(address => uin8)

@@ -511,10 +511,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             for (uint i = 0; i < array.length; i++) {
                 for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
                     if (_stake[artist][array[i]][j].start > timestamp) break;
-                    uint time = _stake[artist][array[i]][j].end;
-                    if (time > timestamp) time = timestamp;
                     accumulator +=
-                        ((time - _stake[artist][array[i]][j].start) *
+                        ((_stake[artist][array[i]][j].end - _stake[artist][array[i]][j].start) *
                             _stake[artist][array[i]][j].amount) /
                         _veJTPRewardRate;
                 }
@@ -542,10 +540,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         for (uint i = 0; i < array.length; i++) {
             for (uint j = 0; j < _stake[array[i]][user].length; j++) {
                 if (_stake[array[i]][user][j].start > timestamp) break;
-                uint time = _stake[array[i]][user][j].end;
-                if (time > timestamp) time = timestamp;
                 accumulator +=
-                    ((time - _stake[array[i]][user][j].start) *
+                    ((_stake[array[i]][user][j].end - _stake[array[i]][user][j].start) *
                         _stake[array[i]][user][j].amount) /
                     _veJTPRewardRate;
             }

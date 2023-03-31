@@ -102,16 +102,9 @@ fanToArtistStaking.totalVotingPowerAt(dateInSec)
 fanToArtistStaking.votingPowerOf(user0.address)
 fanToArtistStaking.votingPowerOfAt(user0.address, dateInSec)
 ```
-Returns an integer representing the amount staked multiplied by seconds and divided by the veJTPRate.
+Returns an integer representing the amount staked multiplied by the total seconds and divided by the veJTPRate. 
+Example, If you stake 10JTP for 100 seconds and the veJTPRate is 1, you will earn immediatly the voting power 10*100/1 = 1000 veJTP
 
-Voting functions calculate the voting power at a certain **timestamp** e.g. 100, if we are looking at a stake that has the **start** at 50 and the **end** at 150, `if (time > timestamp) time = timestamp` means that **time** = 150 and **timestamp** is 100, and since we want to calculate the voting power at **timestamp** 100, we count the stake as if **start** were 50 and **end** 100. There is an accumulator to give veJTP based on amount and time
-```
-accumulator +=
-              ((timeEnd - stake.start) *
-                 stake.amount) /
-                    _veJTPRewardRate;
-```
-If the function is subsequently called to find out the voting power at **timestamp** 150, it will calculate the stake in its entirety.
 
 ### dexlreward
 calculateOverallStake is another support function but for the Factory contract that deals with redistributing the DEXLReward. this function returns the number of tokens staked multiplied by the seconds of each user to each artist

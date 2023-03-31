@@ -64,7 +64,7 @@ describe('Voting Power Simulation', () => {
         expect(await ftas.votingPowerOfAt(user2.address, date)).to.equal((100 * 30) / 10);
     });
 
-    it('Should give the voting power for the non staked time', async () => {
+    it('Should give the same voting power even if the stake is not ended', async () => {
         const user0 = users[0];
         const user1 = users[1];
         const artist0 = artists[0];
@@ -76,11 +76,11 @@ describe('Voting Power Simulation', () => {
         await timeMachine(5);
         const midTotVp = await ftas.totalVotingPower();
 
-        expect(Number(await ftas.votingPowerOf(user0.address)) / 2)
-            .to.closeTo(await ftas.votingPowerOf(user1.address), 5);
+        expect(await ftas.votingPowerOf(user0.address))
+            .to.be.equal(await ftas.votingPowerOf(user1.address));
         await timeMachine(5);
 
-        expect(Number(await ftas.totalVotingPower()) * 0.75)
+        expect(Number(await ftas.totalVotingPower()))
             .to.closeTo(midTotVp, 10);
     });
 
