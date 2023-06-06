@@ -130,9 +130,11 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         _;
     }
 
-    function _isNeverBeenShareholder(address target) internal view returns (bool) {
-        for(uint256 i = 0; i< _shareholders.length; i++){
-            if(_shareholders[i]== target) return true;
+    function _isNeverBeenShareholder(
+        address target
+    ) internal view returns (bool) {
+        for (uint256 i = 0; i < _shareholders.length; i++) {
+            if (_shareholders[i] == target) return true;
         }
         return false;
     }
@@ -179,6 +181,23 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         uint256 assets,
         address receiver
     ) public virtual override returns (uint256) {
+        require(
+            block.timestamp < _raiseEndDate,
+            "DEXLPool: you can not join a pool after the raise end date"
+        );
+        require(
+            totalAssets() + assets <= _hardCap,
+            "DEXLPool: you can not deposit more than hardcap"
+        );
+        if (!_isNeverBeenShareholder(receiver)) _shareholders.push(receiver);
+        return super.deposit(assets, receiver);
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver
+    ) public virtual override returns (uint256) {
+        uint256 assets = previewMint(shares);
         require(
             block.timestamp < _raiseEndDate,
             "DEXLPool: you can not join a pool after the raise end date"
@@ -296,7 +315,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         uint256 hashVote = uint256(
             keccak256(abi.encode(index, _proposals[index].endTime))
         );
-        require(!_votes[hashVote][_msgSender()], "DEXLPool: caller already voted");
+        require(
+            !_votes[hashVote][_msgSender()],
+            "DEXLPool: caller already voted"
+        );
 
         if (isFor) _proposals[index].votesFor += balanceOf(_msgSender());
         else _proposals[index].votesAgainst += balanceOf(_msgSender());
