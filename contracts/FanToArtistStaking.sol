@@ -401,7 +401,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             emit StakeCreated(
                 artist,
                 _msgSender(),
-                _stake[artist][_msgSender()][index].amount,
+                _stake[artist][_msgSender()][index + 1].amount,
                 prev
             );
         }
@@ -470,9 +470,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             _stake[artist][_msgSender()][index].end
         );
         emit StakeCreated(
-            artist,
+            newArtist,
             _msgSender(),
-            _stake[artist][_msgSender()][index].amount,
+            _stake[newArtist][_msgSender()][index].amount,
             prev
         );
     }
