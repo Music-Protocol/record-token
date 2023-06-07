@@ -78,8 +78,11 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     //internal
     address[] private _artistNominated;
 
-    //modified by factory
+    constructor() {
+        _disableInitializers();
+    }
 
+    //modified by factory
     function initialize(
         Pool memory pool,
         address newOwner,
