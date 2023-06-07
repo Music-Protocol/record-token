@@ -440,8 +440,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             "DEXLPool: artist not nominated"
         );
         //shifting
-        for (uint256 i = index; i < _artistNominated.length - 1; i++)
-            _artistNominated[i] = _artistNominated[i + 1];
+        _artistNominated[index] = _artistNominated[_artistNominated.length - 1];
         _artistNominated.pop();
 
         emit ArtistRemoved(artist);
