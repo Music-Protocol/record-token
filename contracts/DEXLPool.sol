@@ -215,25 +215,22 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
 
     function redistributeRevenue(uint256 amount) external {
         require(amount != 0, "DEXLPool: the amount can not be 0");
-        require(
-            IERC20Upgradeable(_fundingTokenContract).transferFrom(
-                _msgSender(),
-                address(this),
-                amount
-            ),
-            "ERC20 operation did not succeed"
+        SafeERC20Upgradeable.safeTransferFrom(
+            IERC20Upgradeable(_fundingTokenContract),
+            _msgSender(),
+            address(this),
+            amount
         );
+
         uint256 leaderReward = uint256(_leaderCommission).mulDiv(
             amount,
             10e8,
             Math.Rounding.Down
         );
-        require(
-            IERC20Upgradeable(_fundingTokenContract).transfer(
-                _leader,
-                leaderReward
-            ),
-            "ERC20 operation did not succeed"
+        SafeERC20Upgradeable.safeTransfer(
+            IERC20Upgradeable(_fundingTokenContract),
+            _leader,
+            leaderReward
         );
         amount = amount.mulDiv(_couponAmount, 10e8, Math.Rounding.Down);
 
@@ -243,12 +240,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
                 totalSupply(),
                 Math.Rounding.Down
             );
-            require(
-                IERC20Upgradeable(_fundingTokenContract).transfer(
-                    _shareholders[i],
-                    toPay
-                ),
-                "ERC20 operation did not succeed"
+            SafeERC20Upgradeable.safeTransfer(
+                IERC20Upgradeable(_fundingTokenContract),
+                _shareholders[i],
+                toPay
             );
         }
         emit RevenueRedistributed(_msgSender(), amount);

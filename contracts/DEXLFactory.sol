@@ -114,13 +114,11 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
             pool.majority <= 10e8,
             "DEXLFactory: majority value must be between 0 and 10e8"
         );
-        require(
-            IERC20(pool.fundingTokenContract).transferFrom(
-                msg.sender,
-                address(this),
-                pool.initialDeposit
-            ),
-            "DEXLFactory: ERC20 operation did not succeed"
+        SafeERC20Upgradeable.safeTransferFrom(
+            IERC20Upgradeable(pool.fundingTokenContract),
+            _msgSender(),
+            address(this),
+            pool.initialDeposit
         );
         uint256 hashProp = uint256(
             keccak256(abi.encode(msg.sender, pool, block.timestamp))
@@ -162,12 +160,10 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         );
         address pool = Clones.clone(_implementationDEXLPool);
         DEXLPool(pool).initialize(proposals[index], _msgSender(), _ftas);
-        require(
-            IERC20(proposals[index].fundingTokenContract).transfer(
-                pool,
-                proposals[index].initialDeposit
-            ),
-            "ERC20 operation did not succeed"
+        SafeERC20Upgradeable.safeTransfer(
+            IERC20Upgradeable(proposals[index].fundingTokenContract),
+            pool,
+            proposals[index].initialDeposit
         );
         _pools[pool] = true;
         emit PoolCreated(proposals[index].leader, pool, index);
@@ -186,12 +182,10 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
             "DEXLFactory: Proposal can not be deployed"
         );
 
-        require(
-            IERC20(proposals[index].fundingTokenContract).transfer(
-                proposals[index].leader,
-                proposals[index].initialDeposit
-            ),
-            "ERC20 operation did not succeed"
+        SafeERC20Upgradeable.safeTransfer(
+            IERC20Upgradeable(proposals[index].fundingTokenContract),
+            proposals[index].leader,
+            proposals[index].initialDeposit
         );
         delete proposals[index];
         emit PoolDeclined(proposals[index].leader, index);
