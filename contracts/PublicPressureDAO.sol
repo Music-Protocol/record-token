@@ -40,7 +40,7 @@ contract PublicPressureDAO {
 
     uint128 private immutable _quorum; // 0 to 10e8
     uint128 private immutable _majority; // 0 to 10e8
-    uint128 private immutable _timeVotes; // 0 to 10e8
+    uint128 private immutable _timeVotes;
 
     IFanToArtistStaking private immutable _ftas;
 
@@ -50,6 +50,9 @@ contract PublicPressureDAO {
         uint128 majority_,
         uint128 time
     ) {
+        require(ftas_ != address(0), "DAO: the jtp address can not be 0");
+        require(quorum_ <= 10e8, "DAO: the quorum must be less than or equal 10e8");
+        require(majority_ <= 10e8, "DAO: the majority must be less than or equal 10e8");
         _ftas = IFanToArtistStaking(ftas_);
         _quorum = quorum_;
         _majority = majority_;

@@ -56,9 +56,12 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         address implementation_,
         address jtp_,
         uint40 cooldown_,
-        uint64 rate_
+        uint256 rate_
     ) public initializer {
         require(rate_ <= 10e8, "DEXLFactory: illegal rate");
+        require(ftas_ != address(0), "DEXLFactory: fanToArtistStaking address can not be 0");
+        require(implementation_ != address(0), "DEXLFactory: implementation address can not be 0");
+        require(jtp_ != address(0), "DEXLFactory: jtp address can not be 0");
         _jtp = IJTP(jtp_);
         _ftas = ftas_;
         _implementationDEXLPool = implementation_;
@@ -129,10 +132,10 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
             leaderCommission: pool.leaderCommission,
             softCap: pool.softCap,
             hardCap: pool.hardCap,
-            raiseEndDate: uint40(block.timestamp) + pool.raiseEndDate,
+            raiseEndDate: pool.raiseEndDate,
             couponAmount: pool.couponAmount,
             initialDeposit: pool.initialDeposit,
-            terminationDate: uint40(block.timestamp) + pool.terminationDate,
+            terminationDate: pool.terminationDate,
             votingTime: pool.votingTime,
             transferrable: pool.transferrable,
             quorum: pool.quorum,

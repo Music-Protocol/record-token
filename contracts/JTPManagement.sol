@@ -23,19 +23,25 @@ contract JTPManagement is AccessControl {
     IDEXLFactory private _dexl;
 
     constructor(address jtp, address ftas, address dexl) {
-        //set jtp
+        require(jtp != address(0), "JTPManagement: jtp address can not be 0");
         _jtp = IJTP(jtp);
         // Grant the minter role to a specified account
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(BURNER_ROLE, msg.sender);
 
-        //set FanToArtistStaking
+        require(
+            ftas != address(0),
+            "JTPManagement: fanToArtistStaking address can not be 0"
+        );
         _ftas = IFanToArtistStaking(ftas);
         //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
         _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
 
-        //set DEXLFactory
+        require(
+            dexl != address(0),
+            "JTPManagement: DEXLFactory address can not be 0"
+        );
         _dexl = IDEXLFactory(dexl);
         _grantRole(FACTORY_MANAGER, msg.sender);
     }
@@ -116,16 +122,25 @@ contract JTPManagement is AccessControl {
     }
 
     function changeJTP(address jtp) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(jtp != address(0), "JTPManagement: jtp address can not be 0");
         _jtp = IJTP(jtp);
     }
 
     function changeFTAS(address ftas) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            ftas != address(0),
+            "JTPManagement: fanToArtistStaking address can not be 0"
+        );
         _ftas = IFanToArtistStaking(ftas);
     }
 
     function changeDEXLFactory(
         address dexl
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            dexl != address(0),
+            "JTPManagement: DEXLFactory address can not be 0"
+        );
         _dexl = IDEXLFactory(dexl);
     }
 

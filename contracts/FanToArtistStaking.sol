@@ -86,6 +86,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         uint40 max
     ) public initializer {
         require(
+            jtp_ != address(0),
+            "FanToArtistStaking: the jtp address can not be 0"
+        );
+        require(
             artistJTPRewardRate != 0,
             "FanToArtistStaking: the artist reward rate can not be 0"
         );
@@ -271,7 +275,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                                 ((end - _artistReward[j].start) *
                                     _stake[_msgSender()][user[i]][z].amount) /
                                 _artistReward[j].rate;
-                        } else {
+                    } else {
                             break;
                         }
                     }
@@ -287,6 +291,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         address artist,
         address sender
     ) external override onlyOwner {
+        require(
+            artist != address(0),
+            "FanToArtistStaking: the artist address can not be 0"
+        );
         if (_verifiedArtists[artist] != 1) {
             if (_verifiedArtists[artist] != 2) _verifiedArtistsArr.push(artist);
             _verifiedArtists[artist] = 1;

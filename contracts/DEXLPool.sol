@@ -88,17 +88,55 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         address newOwner,
         address ftas_
     ) public initializer {
-        //ERC20("Shares", "SHR")
-        // super.__ERC20_init();
+        require(
+            pool.softCap <= pool.hardCap,
+            "DEXLPool: softcap must be less or equal than the hardcap"
+        );
+        require(
+            pool.raiseEndDate < pool.terminationDate,
+            "DEXLPool: raiseEndDate must be less than the terminationDate"
+        );
+        require(
+            pool.fundingTokenContract != address(0),
+            "DEXLPool: the funding token contract's address can not be 0"
+        );
+        require(
+            pool.couponAmount <= 10e8,
+            "DEXLPool: couponAmount value must be between 0 and 10e8"
+        );
+        require(
+            pool.leaderCommission <= 10e8,
+            "DEXLPool: leaderCommission value must be between 0 and 10e8"
+        );
+        require(
+            pool.couponAmount + pool.leaderCommission <= 10e8,
+            "DEXLPool: the sum of leaderCommission and couponAmount must be lower than 10e8"
+        );
+        require(
+            pool.quorum <= 10e8,
+            "DEXLPool: quorum value must be between 0 and 10e8"
+        );
+        require(
+            pool.majority <= 10e8,
+            "DEXLPool: majority value must be between 0 and 10e8"
+        );
+        require(
+            newOwner != address(0),
+            "DEXLPool: the new owner's address can not be 0"
+        );
+        require(
+            ftas_ != address(0),
+            "DEXLPool: the fanToArtistStaking address can not be 0"
+        );
         super.__ERC4626_init(IERC20Upgradeable(pool.fundingTokenContract));
         _leader = pool.leader;
         _softCap = pool.softCap;
         _hardCap = pool.hardCap;
         _fundingTokenContract = pool.fundingTokenContract;
-        _raiseEndDate = pool.raiseEndDate;
+        _raiseEndDate = uint40(block.timestamp) + pool.raiseEndDate;
         _couponAmount = pool.couponAmount;
         _initialDeposit = pool.initialDeposit;
-        _terminationDate = pool.terminationDate;
+        _terminationDate = uint40(block.timestamp) + pool.terminationDate;
         _shareholders.push(pool.leader);
         _leaderCommission = pool.leaderCommission;
         _transferrable = pool.transferrable;
