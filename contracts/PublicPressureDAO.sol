@@ -191,6 +191,7 @@ contract PublicPressureDAO {
         );
         delete _proposals[proposalId];
         if (_reachedQuorum(proposalId) && _votePassed(proposalId)) {
+            delete _proposals[proposalId];
             for (uint256 i = 0; i < targets.length; ++i) {
                 (bool success, bytes memory returndata) = targets[i].call(
                     calldatas[i]
