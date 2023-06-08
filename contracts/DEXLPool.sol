@@ -254,7 +254,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     function redistributeRevenue(uint256 amount) external {
         require(amount != 0, "DEXLPool: the amount can not be 0");
         require(
-            _raiseEndDate > block.timestamp,
+            block.timestamp > _raiseEndDate ,
             "DEXLPool: the redistribution can happen only after the founding phase"
         );
         SafeERC20Upgradeable.safeTransferFrom(
@@ -417,7 +417,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         string memory description
     ) external onlyLeader activePool {
         require(
-            _raiseEndDate > block.timestamp,
+            block.timestamp > _raiseEndDate ,
             "DEXLPool: the redistribution can happen only after the founding phase"
         );
         bytes memory request = abi.encodeWithSignature(
