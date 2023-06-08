@@ -147,6 +147,8 @@ describe('DEXLPool', () => {
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
+            await timeMachine((raiseEndDate / 60) + 1);
+
             const raised = Number(await stableCoin.balanceOf(POOL.address));
             await stableCoin.mint(artists[0].address, raised);
             await stableCoin.connect(artists[0]).approve(POOL.address, raised);
@@ -177,7 +179,7 @@ describe('DEXLPool', () => {
             expect(prevTermDate).to.be.greaterThan(await POOL.getTerminationDate());
         });
 
-        it('should test artist founding', async () => {
+        it('should test artist funding', async () => {
             await Promise.all(users.map(u => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
@@ -185,9 +187,8 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
-
             const prevAssets = (await POOL.totalAssets()) as BigNumber;
-            const hash = await getProposalHash(await POOL.connect(leader).proposeFounding(artists[0].address, 100, '100 servizio completo'));
+            const hash = await getProposalHash(await POOL.connect(leader).proposeFunding(artists[0].address, 100, '100 servizio completo'));
 
             await Promise.all(users.map(u => {
                 return POOL.connect(u).voteProposal(hash, true);

@@ -218,8 +218,9 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
                 10e8
             );
         }
-        uint256 amountJTPEligible = IFanToArtistStaking(_ftas)
-            .calculateOverallStake(_lastRedeem[_msgSender()], block.timestamp) /
+        uint256 amountJTPEligible =  0;
+            // IFanToArtistStaking(_ftas)
+            // .calculateOverallStake(_lastRedeem[_msgSender()], block.timestamp) /
             _dexlRewardRate;
         uint256 amountJTP = amountJTPEligible.mulDiv(
             accumulator,

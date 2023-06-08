@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { FanToArtistStaking, JTP } from '../typechain-types/index';
+import { FanToArtistStaking, JTP } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { getTimestamp } from './utils/utils';
 
@@ -23,7 +23,7 @@ describe('FanToArtistStaking', () => {
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await jtp.deployed();
-        await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, 10, 86400);
+        await fanToArtistStaking.initialize(jtp.address, owner.address, defVeReward, defArtistReward, 10, 86400);
     });
 
     describe('Deployment', () => {
@@ -93,7 +93,7 @@ describe('FanToArtistStaking', () => {
             times.push(time);
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr1.address, 100, anyValue);
+                .withArgs(artist1.address, addr1.address, 100, 0, anyValue);
             stake1 = {
                 artist: artist1.address,
                 amount,
@@ -110,62 +110,20 @@ describe('FanToArtistStaking', () => {
             const blockNumBefore = await ethers.provider.getBlockNumber();
             const blockBefore = await ethers.provider.getBlock(blockNumBefore);
             await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
-            const activeStake = await fanToArtistStaking.connect(addr1).getAllUserStake();
-            const endTime = activeStake[0].stake.end;
-            await fanToArtistStaking.connect(addr1).redeem(artist1.address, endTime);
+            await fanToArtistStaking.connect(addr1).redeem(artist1.address, 0);
             stake1.redeemed = true;
 
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
             expect(await jtp.balanceOf(addr1.address)).to.equal(100);
         });
 
-        it('Should be able to see his own stakes', async () => {
-            const amount = 50;
-            const time = 70;
-            times.push(time);
-            await fanToArtistStaking.connect(addr1).stake(artist2.address, amount, time);
-            const as = await fanToArtistStaking.connect(addr1).getAllUserStake();
-            const all = as.map(o => {
-                return {
-                    artist: o.artist,
-                    amount: o.stake.amount.toNumber(),
-                    // start: o.stake.start,
-                    // end: o.stake.end,
-                    redeemed: o.stake.redeemed
-                }
-            });
-            stake2 = {
-                artist: artist2.address,
-                amount,
-                // start: anyValue,
-                // end: anyValue,
-                redeemed: false
-            };
-            expect(all).to.have.deep.members([stake1, stake2]);
-            const returnedTime = as.map(x => {
-                return {
-                    start: x.stake.start,
-                    end: x.stake.end,
-                }
-            });
-            const myTimes: Object[] = [];
-            returnedTime.forEach(x => {
-                times.forEach(element => {
-                    myTimes.push({
-                        start: x.start,
-                        end: x.start + element
-                    })
-                })
-            });
-            expect(myTimes).to.include.deep.members(returnedTime);
-        });
-
         it('Should be able to stake again', async () => {
-            const amount = 50;
+            const amount = 100;
             const time = 86400;
+
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr1.address, amount, anyValue);
+                .withArgs(artist1.address, addr1.address, amount, 1, anyValue);
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
             expect(await jtp.balanceOf(addr1.address)).to.equal(0);
         });
@@ -194,7 +152,7 @@ describe('FanToArtistStaking', () => {
 
             it('Should not be able to redeem a non existent stake', async () => {
                 await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, 123))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found with this end date');
+                    .to.be.revertedWith('FanToArtistStaking: no stake found with this index');
             });
 
             it('Should not be able to transferOwnership if not the Owner', async () => {
@@ -209,18 +167,18 @@ describe('FanToArtistStaking', () => {
 
             it('Should not be able to extend a stake if the stake not found', async () => {
                 await expect(fanToArtistStaking.connect(addr2).increaseAmountStaked(artist1.address, 50))
-                    .to.be.revertedWith('FanToArtistStaking: no stake present');
+                    .to.be.revertedWith('FanToArtistStaking: no stake found');
             });
 
             it('Should not be able to extend a stake if there is no stake', async () => { //should not be necessary the test and the modifier
-                const date = await getTimestamp()+10;
+                const date = await getTimestamp() + 10;
                 await expect(fanToArtistStaking.extendStake(artist1.address, 0))
-                    .to.be.revertedWith('FanToArtistStaking: no stake present');
+                    .to.be.revertedWith('FanToArtistStaking: no stake found');
             });
 
             it('Should revert when extend a not existing stake', async () => {
                 const date = Date.now();
-                await expect(fanToArtistStaking.connect(owner).getReward())
+                await expect(fanToArtistStaking.connect(owner).extendStake(artist2.address, 23))
                     .to.be.revertedWith('FanToArtistStaking: no stake found');
             });
 

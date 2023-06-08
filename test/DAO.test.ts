@@ -32,7 +32,7 @@ describe('DAO', () => {
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await jtp.deployed();
-        await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        await fanToArtistStaking.initialize(jtp.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         const cDAO = await ethers.getContractFactory('PublicPressureDAO');
         dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900) as PublicPressureDAO;
@@ -49,6 +49,8 @@ describe('DAO', () => {
             users.forEach(user =>
                 promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10, 300)))
         );
+        await fanToArtistStaking.connect(owner).setVotingPowerOf(users.map(u => u.address), users.map(u => 1000));
+        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length*1000);
         await Promise.all(promises);
         await timeMachine(6);
         await jtp.connect(owner).transferOwnership(dao.address);//give ownership of jtp to dao

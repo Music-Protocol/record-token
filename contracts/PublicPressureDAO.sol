@@ -51,8 +51,14 @@ contract PublicPressureDAO {
         uint128 time
     ) {
         require(ftas_ != address(0), "DAO: the jtp address can not be 0");
-        require(quorum_ <= 10e8, "DAO: the quorum must be less than or equal 10e8");
-        require(majority_ <= 10e8, "DAO: the majority must be less than or equal 10e8");
+        require(
+            quorum_ <= 10e8,
+            "DAO: the quorum must be less than or equal 10e8"
+        );
+        require(
+            majority_ <= 10e8,
+            "DAO: the majority must be less than or equal 10e8"
+        );
         _ftas = IFanToArtistStaking(ftas_);
         _quorum = quorum_;
         _majority = majority_;
@@ -117,7 +123,7 @@ contract PublicPressureDAO {
 
         _proposals[proposalId] = Proposal({
             timeStart: uint128(block.timestamp),
-            maxVotingPower: _ftas.totalVotingPowerAt(block.timestamp),
+            maxVotingPower: _ftas.totalVotingPower(),
             votesFor: 0,
             votesAgainst: 0
         });
@@ -158,10 +164,7 @@ contract PublicPressureDAO {
         );
         require(!_votes[hashVote][msg.sender], "DAO: already voted");
 
-        uint256 amount = _ftas.votingPowerOfAt(
-            msg.sender,
-            _proposals[proposalId].timeStart
-        );
+        uint256 amount = _ftas.votingPowerOf(msg.sender);
         if (isFor) _proposals[proposalId].votesFor += amount;
         else _proposals[proposalId].votesAgainst += amount;
 
@@ -189,7 +192,6 @@ contract PublicPressureDAO {
             block.timestamp > _proposals[proposalId].timeStart + _timeVotes,
             "DAO: proposal not ended"
         );
-        delete _proposals[proposalId];
         if (_reachedQuorum(proposalId) && _votePassed(proposalId)) {
             delete _proposals[proposalId];
             for (uint256 i = 0; i < targets.length; ++i) {

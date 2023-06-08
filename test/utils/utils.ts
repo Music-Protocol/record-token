@@ -10,17 +10,14 @@ async function timeMachine(minutes: number) {
     await ethers.provider.send('evm_mine', [(60 * minutes) + blockBefore.timestamp]);
 }
 
-function parseDetailedStakes(elements: FanToArtistStaking.DetailedStakeStructOutput[]) {
-    return elements.map(o => {
-        return {
-            artist: o.artist,
-            user: o.user,
-            amount: o.stake.amount.toNumber(),
-            duration: o.stake.end - o.stake.start,
-            redeemed: o.stake.redeemed
-        };
-    });
-}
+function parseDetailedStake(element: any) {
+    return {
+        artist: element.artist,
+        user: element.sender,
+        amount: element.amount,
+        duration: element.end - element.start
+    }
+};
 
 function parseDatesStakes(elements: FanToArtistStaking.DetailedStakeStructOutput[]) {
     return elements.map(o => {
@@ -32,12 +29,11 @@ function parseDatesStakes(elements: FanToArtistStaking.DetailedStakeStructOutput
     });
 }
 
-function matchDetailedStakes(element: any, artist: string, user: string, amount: number, time: any, redeemed: boolean) {
+function matchDetailedStakes(element: any, artist: string, user: string, amount: number, time: any) {
     expect(element.artist).to.equal(artist);
     expect(element.user).to.equal(user);
     expect(element.amount).to.equal(amount);
     expect(element.duration).to.equal(time);
-    expect(element.redeemed).to.equal(redeemed);
 }
 
 const matchPool = (response: DEXLFactory.PoolStructOutput, source: any) => {
@@ -58,6 +54,32 @@ async function getTimestamp() {
     return blockBefore.timestamp;
 }
 
+async function getStakeFromEvent(receipt: ContractTransaction) {
+    const args = (await receipt.wait()).events?.find(e => e.event == 'StakeCreated')?.args;
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    return {
+        artist: args?.artist,
+        sender: args?.sender,
+        amount: args?.amount.toNumber(),
+        end: args?.end,
+        start: blockBefore.timestamp,
+        index: args?.index.toNumber()
+    }
+}
+
+async function getStakeExtendedFromEvent(previous: any, receipt: ContractTransaction) {
+    const args = (await receipt.wait()).events?.find(e => e.event == 'StakeEndChanged')?.args;
+    return {
+        artist: previous?.artist,
+        sender: previous?.sender,
+        amount: previous?.amount,
+        end: args?.end,
+        start: previous?.start,
+        index: previous?.index
+    }
+}
+
 async function getPoolFromEvent(receipt: ContractTransaction) {
     return (await receipt.wait()).events?.find(e => e.event == 'PoolCreated')?.args?.pool;
 }
@@ -66,7 +88,7 @@ async function getIndexFromProposal(receipt: ContractTransaction) {
 }
 
 async function getProposalHash(receipt: ContractTransaction) {
-    return (await receipt.wait()).events!.filter(e => ['ReferendumProposed', 'EarlyClosureProposed','FoundingProposed'].includes(e.event!)).at(0)!.args!.hash;
+    return (await receipt.wait()).events!.filter(e => ['ReferendumProposed', 'EarlyClosureProposed', 'FundingProposed'].includes(e.event!)).at(0)!.args!.hash;
 }
 
 function calcPoolRevenues(input: number, leaderFee: number, couponFee: number) {
@@ -81,7 +103,7 @@ function calcPoolRevenues(input: number, leaderFee: number, couponFee: number) {
 
 export {
     timeMachine,
-    parseDetailedStakes,
+    parseDetailedStake,
     matchDetailedStakes,
     matchPool,
     getTimestamp,
@@ -89,5 +111,7 @@ export {
     getProposalHash,
     parseDatesStakes,
     calcPoolRevenues,
-    getIndexFromProposal
+    getIndexFromProposal,
+    getStakeFromEvent,
+    getStakeExtendedFromEvent
 };

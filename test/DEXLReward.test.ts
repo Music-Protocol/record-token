@@ -62,7 +62,7 @@ describe('DEXLReward', () => {
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fanToArtistStaking.address, DEXLF.address);
         await jtp.deployed();
-        await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        await fanToArtistStaking.initialize(jtp.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, jtp.address, 120, DEXLRATE);
 
@@ -78,6 +78,9 @@ describe('DEXLReward', () => {
                 promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10, 300)))
         );
         await Promise.all(promises);
+        await fanToArtistStaking.connect(owner).setVotingPowerOf(users.map(u => u.address), users.map(u => 1000));
+        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length * 1000);
+
         await timeMachine(6);
 
 

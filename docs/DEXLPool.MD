@@ -79,12 +79,12 @@ pool.connect(u).redeem(
 
 ### proposals
 There are 3 different types of proposals and all of them can only be made in an active pool (which is in the active period and must have collected deposits of at least softCap).
-Let's start with the founding proposal, which can only be made by the pool leader (who may also not own shares if he has transferred them). Founding can be made to any address and also of assets that the pool doesnt own at the time of the proposal but will have to be present at the time of execution.
+Let's start with the funding proposal, which can only be made by the pool leader (who may also not own shares if he has transferred them). Funding can be made to any address and also of assets that the pool doesnt own at the time of the proposal but will have to be present at the time of execution.
 ```
-pool.connect(leader).proposeFounding(
+pool.connect(leader).proposeFunding(
     artist.address,
     amountAsset,  // amount of the stable coin
-    description   // text containing the reason of the founding
+    description   // text containing the reason of the funding
 );
 ```
 For the other proposal types, you need to be a shareholder, it is about the early closure of the pool and referendums (only description but nothing will be executed). 

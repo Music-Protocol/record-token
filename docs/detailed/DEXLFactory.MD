@@ -9,4 +9,4 @@ We therefore have that JTPtoRedistribute equals 50 and that the only pool the ar
 
 Unfortunately, it will also not be able to claim the part of the reward that is allocated to pool2 because it is out of activity, this system is optimal in an active environment where preferences are updated more frequently than pools end their activity period.
 
-Doing the calculations in this example, the artist is entitled to 75% of the JTP put in reward which equals 37.5 but due to rounding will receive 37 JTP
+Doing the calculations in this example, the artist is entitled to 75% of the JTP put in reward which equals 37.5 but due to Rounding will receive 37 JTP

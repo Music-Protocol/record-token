@@ -23,7 +23,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         uint40 endTime,
         string description
     );
-    event FoundingProposed(
+    event FundingProposed(
         address indexed proposer,
         address indexed artist,
         uint256 indexed hash,
@@ -411,7 +411,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         );
     }
 
-    function proposeFounding(
+    function proposeFunding(
         address artist,
         uint256 value,
         string memory description
@@ -434,7 +434,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             endTime: uint40(block.timestamp) + _votingTime,
             encodedRequest: request
         });
-        emit FoundingProposed(
+        emit FundingProposed(
             _msgSender(),
             artist,
             hashProp,
@@ -454,6 +454,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
 
     function getTerminationDate() external view returns (uint256) {
         return _terminationDate;
+    }
+
+    function getActivity() external view returns (uint256) {
+        return block.timestamp - _raiseEndDate;
     }
 
     function _getNominationIndex(

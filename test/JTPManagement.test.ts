@@ -34,7 +34,7 @@ describe('JTPManagement', () => {
         const cJTP = await ethers.getContractFactory('JTP');
         jtp = await cJTP.deploy(fakeStaking.address, DEXLF.address);
         await jtp.deployed();
-        fanToArtistStaking.initialize(jtp.address, 10, 10, 60, 86400);
+        fanToArtistStaking.initialize(jtp.address, owner.address, 10, 10, 60, 86400);
 
         const cJTPManagement = await ethers.getContractFactory('JTPManagement');
         jtpManagement = await cJTPManagement.deploy(jtp.address, fanToArtistStaking.address, DEXLF.address);
