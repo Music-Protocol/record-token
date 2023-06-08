@@ -393,8 +393,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         );
         uint index = _stake[artist][_msgSender()].length - 1;
         require(
-            _stake[artist][_msgSender()][index].end > block.timestamp,
-            "FanToArtistStaking: last stake cant be changed"
+            _stake[artist][_msgSender()][index].end + _minStakePeriod> block.timestamp,
+            "FanToArtistStaking: can not increase the amount below the minimum stake period"
         );
         if (_jtp.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()][index].redeemed = true;
