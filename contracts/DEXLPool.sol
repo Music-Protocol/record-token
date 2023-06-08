@@ -301,7 +301,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             "DEXLPool: you can not withdraw before the raise end date"
         );
         require(
-            (totalAssets() < _softCap),
+            (totalSupply() < _softCap),
             "DEXLPool: you can not withdraw if the soft cap is reached"
         );
         return super.withdraw(assets, receiver, owner);
