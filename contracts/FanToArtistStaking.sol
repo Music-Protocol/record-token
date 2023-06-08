@@ -429,6 +429,11 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             _minStakePeriod <= newEnd && newEnd <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum or less than minimum"
         );
+        require(
+            _stake[artist][_msgSender()][index].end + newEnd <
+                block.timestamp + _maxStakePeriod,
+            "FanToArtistStaking: the new stake period exceeds the maximum"
+        );
         _stake[artist][_msgSender()][index].end += newEnd;
         emit StakeEndChanged(
             artist,
@@ -520,7 +525,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 for (uint j = 0; j < _stake[artist][array[i]].length; j++) {
                     if (_stake[artist][array[i]][j].start > timestamp) break;
                     accumulator +=
-                        ((_stake[artist][array[i]][j].end - _stake[artist][array[i]][j].start) *
+                        ((_stake[artist][array[i]][j].end -
+                            _stake[artist][array[i]][j].start) *
                             _stake[artist][array[i]][j].amount) /
                         _veJTPRewardRate;
                 }
@@ -549,7 +555,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             for (uint j = 0; j < _stake[array[i]][user].length; j++) {
                 if (_stake[array[i]][user][j].start > timestamp) break;
                 accumulator +=
-                    ((_stake[array[i]][user][j].end - _stake[array[i]][user][j].start) *
+                    ((_stake[array[i]][user][j].end -
+                        _stake[array[i]][user][j].start) *
                         _stake[array[i]][user][j].amount) /
                     _veJTPRewardRate;
             }
