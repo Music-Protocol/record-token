@@ -561,6 +561,22 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         return super.transfer(to, amount);
     }
 
+    function transfer(address to) public virtual returns (bool) {
+        require(
+            block.timestamp > _raiseEndDate,
+            "DEXLPool: the transfer can happen only after the funding phase"
+        );
+        require(
+            _shareholders.add(to),
+            "DEXLPool: the transfer can be done only to non-shareholder"
+        );
+        require(
+            _shareholders.remove(_msgSender()),
+            "DEXLPool: the transfer can be performed only by a shareholder"
+        );
+        return super.transfer(to, balanceOf(_msgSender()));
+    }
+
     function transferFrom(
         address from,
         address to,
