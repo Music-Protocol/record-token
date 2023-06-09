@@ -11,8 +11,9 @@ import "./interfaces/IDEXLFactory.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "./interfaces/IJTP.sol";
 import "./interfaces/SDEXLPool.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
+contract DEXLFactory is Ownable, IDEXLFactory, Initializable, ReentrancyGuard {
     using Math for uint256;
 
     event PoolCreated(
@@ -59,8 +60,14 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         uint256 rate_
     ) public initializer {
         require(rate_ <= 10e8, "DEXLFactory: illegal rate");
-        require(ftas_ != address(0), "DEXLFactory: fanToArtistStaking address can not be 0");
-        require(implementation_ != address(0), "DEXLFactory: implementation address can not be 0");
+        require(
+            ftas_ != address(0),
+            "DEXLFactory: fanToArtistStaking address can not be 0"
+        );
+        require(
+            implementation_ != address(0),
+            "DEXLFactory: implementation address can not be 0"
+        );
         require(jtp_ != address(0), "DEXLFactory: jtp address can not be 0");
         _jtp = IJTP(jtp_);
         _ftas = ftas_;
@@ -156,13 +163,18 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
 
     function approveProposal(
         uint256 index
-    ) external onlyOwner returns (address) {
+    ) external onlyOwner nonReentrant returns (address) {
         require(
             proposals[index].leader != address(0),
             "DEXLFactory: Proposal can not be deployed"
         );
         address pool = Clones.clone(_implementationDEXLPool);
-        DEXLPool(pool).initialize(proposals[index], _msgSender(), _ftas, address(_jtp));
+        DEXLPool(pool).initialize(
+            proposals[index],
+            _msgSender(),
+            _ftas,
+            address(_jtp)
+        );
         SafeERC20Upgradeable.safeTransfer(
             IERC20Upgradeable(proposals[index].fundingTokenContract),
             pool,
@@ -174,7 +186,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         return pool;
     }
 
-    function declineProposal(uint256 index) external {
+    function declineProposal(uint256 index) external nonReentrant {
         require(
             owner() == _msgSender() || _msgSender() == proposals[index].leader,
             "DEXLFactory: a proposal can only be declined by the leader or the owner"
