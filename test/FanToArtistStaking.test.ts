@@ -110,7 +110,7 @@ describe('FanToArtistStaking', () => {
             const blockNumBefore = await ethers.provider.getBlockNumber();
             const blockBefore = await ethers.provider.getBlock(blockNumBefore);
             await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
-            await fanToArtistStaking.connect(addr1).redeem(artist1.address, 0);
+            await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0);
             stake1.redeemed = true;
 
             expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
@@ -151,7 +151,7 @@ describe('FanToArtistStaking', () => {
             });
 
             it('Should not be able to redeem a non existent stake', async () => {
-                await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, 123))
+                await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, addr1.address, 123))
                     .to.be.revertedWith('FanToArtistStaking: no stake found with this index');
             });
 

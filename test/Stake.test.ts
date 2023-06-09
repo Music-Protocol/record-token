@@ -65,14 +65,14 @@ describe('Stake Simulation', () => {
         expect(await jtp.balanceOf(ftas.address)).to.equal(50);
         const parsed = await getStakeFromEvent(event);
 
-        await expect(ftas.connect(user).redeem(artists[0].address, parsed.index))
+        await expect(ftas.connect(user).redeem(artists[0].address, user.address, parsed.index))
             .to.be.revertedWith('FanToArtistStaking: the stake is not ended');
 
         await timeMachine(1);
-        await ftas.connect(user).redeem(artists[0].address, parsed.index);
+        await ftas.connect(user).redeem(artists[0].address, user.address, parsed.index);
         expect(await jtp.balanceOf(ftas.address)).to.equal(0);
 
-        await expect(ftas.connect(user).redeem(artists[0].address, parsed.index))
+        await expect(ftas.connect(user).redeem(artists[0].address, user.address, parsed.index))
             .to.be.revertedWith('FanToArtistStaking: this stake has already been redeemed');
     });
 
@@ -82,7 +82,7 @@ describe('Stake Simulation', () => {
             expect(await jtp.balanceOf(ftas.address)).to.equal(100);
             const parsed = await getStakeFromEvent(event);
             await timeMachine(1);
-            await ftas.connect(user).redeem(artists[0].address, parsed.index);
+            await ftas.connect(user).redeem(artists[0].address, user.address, parsed.index);
             expect(await jtp.balanceOf(ftas.address)).to.equal(0);
             return parsed.index;
         }
@@ -380,7 +380,7 @@ describe('Stake Simulation', () => {
             await timeMachine(1);
 
             for await (const user of users)
-                await ftas.connect(user).redeem(artists[0].address, 0);
+                await ftas.connect(user).redeem(artists[0].address, user.address, 0);
 
 
             expect(await jtp.balanceOf(ftas.address)).to.equal(0);
@@ -402,7 +402,7 @@ describe('Stake Simulation', () => {
 
             for await (const user of users)
                 for (let i = 0; i < artists.length; i++)
-                    await ftas.connect(user).redeem(artists[i].address, 0);
+                    await ftas.connect(user).redeem(artists[i].address, user.address, 0);
 
 
             expect(await jtp.balanceOf(ftas.address)).to.equal(0);

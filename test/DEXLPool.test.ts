@@ -350,7 +350,7 @@ describe('DEXLPool', () => {
             .to.be.revertedWith("DEXLPool: you can not withdraw if the soft cap is reached");
 
         //disabled function
-        await expect(POOL.transfer(leader.address, 100))
+        await expect(POOL['transfer(address,uint256)'](leader.address, 100))
             .to.be.revertedWith("DEXLPool: function disabled");
         await expect(POOL.transferFrom(leader.address, leader.address, 100))
             .to.be.revertedWith("DEXLPool: function disabled");
