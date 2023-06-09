@@ -3,7 +3,7 @@ The `FanToArtistStaking` smart contract is based on the following **openzeppelin
 - `Ownable` to restrict access to certain functions to the owner's address only
 - `Initializable` to allow upgradeability
 
-There are also two interfaces one is `IJTP` to communicate with the `JTP` contract and one `IFanToArtistStaking` to allow other contracts to call the current one
+There are also two interfaces one is `IWeb3MusicNativeToken` to communicate with the `Web3MusicNativeToken` contract and one `IFanToArtistStaking` to allow other contracts to call the current one
 
 ## Contract Properties
 Choices on implementations can be found in the detailed file
@@ -17,11 +17,11 @@ const FTAS = await ethers.getContractFactory('FanToArtistStaking');
 const fanToArtistStaking = await FTAS.deploy();
 await fanToArtistStaking.deployed();
 ...
-await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 ```
 `minStakeTime` and `maxStakeTime` represent the minimum and maximum time to make a stake and can never be changed in this implementation.
-`jtp.address` is the address of the JTP smart contract that is to implement the IJTP interface.
-`defVeReward` and `defArtistReward` are respectively used to calculate the voting power and reward of artists, this number corresponds to x where amountJTP * time / x. can it be read as: "every how many seconds a jtp is staked corresponds to a token in the output?"
+`Web3MusicNativeToken.address` is the address of the Web3MusicNativeToken smart contract that is to implement the IWeb3MusicNativeToken interface.
+`defVeReward` and `defArtistReward` are respectively used to calculate the voting power and reward of artists, this number corresponds to x where amountWeb3MusicNativeToken * time / x. can it be read as: "every how many seconds a Web3MusicNativeToken is staked corresponds to a token in the output?"
 Note that only the artist's reward can be changed over time and the new value is not retroactive but a phased mechanism is used which is described in the detailed documentation.
 
 
@@ -59,11 +59,11 @@ Just as with artist management, this function can only be called by the owner of
 fanToArtistStaking.changeArtistRewardRate(rate, sender.address)
 ```
 ### stake
-In order to make a stake, it is necessary to have the enough tokens in the JTP contract, that the stake period is between min and max, that there are no other stakes towards the same artist already active
+In order to make a stake, it is necessary to have the enough tokens in the Web3MusicNativeToken contract, that the stake period is between min and max, that there are no other stakes towards the same artist already active
 ```
 fanToArtistStaking.connect(users[0]).stake(artist.address, amount, time)
 ```
-In this example user0 is staking for time seconds and amount tokens that will be transferred from his jtp balance to that of fanToArtistStaking
+In this example user0 is staking for time seconds and amount tokens that will be transferred from his Web3MusicNativeToken balance to that of fanToArtistStaking
 
 ### increase a stake
 A user can decide to increase the tokens staked, and in order to do so the stake must still be ongoing, so we also know that the tokens have not been redeemed and that the artist is still verified
@@ -102,8 +102,8 @@ fanToArtistStaking.totalVotingPowerAt(dateInSec)
 fanToArtistStaking.votingPowerOf(user0.address)
 fanToArtistStaking.votingPowerOfAt(user0.address, dateInSec)
 ```
-Returns an integer representing the amount staked multiplied by the total seconds and divided by the veJTPRate. 
-Example, If you stake 10JTP for 100 seconds and the veJTPRate is 1, you will earn immediatly the voting power 10*100/1 = 1000 veJTP
+Returns an integer representing the amount staked multiplied by the total seconds and divided by the veWeb3MusicNativeTokenRate. 
+Example, If you stake 10Web3MusicNativeToken for 100 seconds and the veWeb3MusicNativeTokenRate is 1, you will earn immediatly the voting power 10*100/1 = 1000 veWeb3MusicNativeToken
 
 
 ### dexlreward

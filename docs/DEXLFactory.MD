@@ -14,7 +14,7 @@ const factoryDEXLFactory = await ethers.getContractFactory('DEXLFactory');
 const DEXLF = await factoryDEXLFactory.deploy() as DEXLFactory;
 await DEXLF.deployed();
 ...
-await DEXLF.initialize(fanToArtistStaking.address, pool.address, jtp.address, preferenceCooldown, DEXLRATE);
+await DEXLF.initialize(fanToArtistStaking.address, pool.address, Web3MusicNativeToken.address, preferenceCooldown, DEXLRATE);
 ```
 `preferenceCooldown` amount of second between a castPreference and another.
 `pool.address` is the address of the implementation of the pool that will be deployed.
@@ -61,21 +61,21 @@ DEXLFactory.declineProposal(index);
 ```
 
 ### casting preferences
-Every user who has earned veJTP can express his preference for DEXLPools, all of which must be verified and still in operation at the time of nomination.
+Every user who has earned veWeb3MusicNativeToken can express his preference for DEXLPools, all of which must be verified and still in operation at the time of nomination.
 Preferences can be changed every preferenceCooldown seconds, **4** parameters must be specified:
 an array of pools and an array with the respective percentages, which when added together must be equivalent to 10e8. And an array containing the previous pools and an array with the exact amount (not percentages) that was staked in the previous vote.
 ```
 const receipt = await DEXLF.connect(users[0]).castPreference([pools[0].address], [10e8], [], []);
 ...
-await DEXLF.connect(users[0]).castPreference([pools[1].address], [10e8], [pools[0].address], [amountVeJTPCasted]);
+await DEXLF.connect(users[0]).castPreference([pools[1].address], [10e8], [pools[0].address], [amountVeWeb3MusicNativeTokenCasted]);
 ```
 
 ### get reward
 this function (unlike FanToArtistStaking) can **only** be performed by a verified artist, 
 
 The artist provides a list of **active** pools in which he has been nominated, and after checking that they are still valid, the proportion of votes will be taken according to the number of verified nominated artists. 
-The number of jtp's multiplied by the seconds for which they have been staked is taken, this number is divided by the coefficient (DEXLRATE), and then will be multiplied by the votes (in proportion) received from the pools in which they are nominated, divided by the total votes.
+The number of Web3MusicNativeToken's multiplied by the seconds for which they have been staked is taken, this number is divided by the coefficient (DEXLRATE), and then will be multiplied by the votes (in proportion) received from the pools in which they are nominated, divided by the total votes.
 ```
 DEXLFactory.connect(artists[0]).getReward([pools[0].address, pools[27].address]);
 ```
-the artist will then receive the reward on his balance of the JTP contract
+the artist will then receive the reward on his balance of the Web3MusicNativeToken contract

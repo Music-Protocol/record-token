@@ -5,9 +5,9 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "./interfaces/IJTP.sol";
+import "./interfaces/IWeb3MusicNativeToken.sol";
 
-contract JTP is IJTP, ERC20, Ownable, Pausable {
+contract Web3MusicNativeToken is IWeb3MusicNativeToken, ERC20, Ownable, Pausable {
     address private immutable _fanToArtistStaking;
     address private immutable _dexlFactory;
 
@@ -15,7 +15,7 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
     modifier onlyStaking() {
         require(
             _fanToArtistStaking == _msgSender(),
-            "JTP: caller is not the FanToArtistStaking contract"
+            "Web3MusicNativeToken: caller is not the FanToArtistStaking contract"
         );
         _;
     }
@@ -23,7 +23,7 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
     modifier onlyTP() {
         require(
             _fanToArtistStaking == _msgSender() || _dexlFactory == _msgSender(),
-            "JTP: caller is not the FanToArtistStaking contract"
+            "Web3MusicNativeToken: caller is not the FanToArtistStaking contract"
         );
         _;
     }
@@ -31,14 +31,14 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
     constructor(
         address staking_,
         address factory_
-    ) ERC20("JoinThePressure", "JTP") {
+    ) ERC20("Web3MusicNativeToken", "W3M") {
         require(
             staking_ != address(0),
-            "JTP: the address of FanToArtistStaking is 0"
+            "Web3MusicNativeToken: the address of FanToArtistStaking is 0"
         );
         require(
             factory_ != address(0),
-            "JTP: the address of DEXLFactory is 0"
+            "Web3MusicNativeToken: the address of DEXLFactory is 0"
         );
         _fanToArtistStaking = staking_;
         _dexlFactory = factory_;
@@ -46,7 +46,7 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
 
     function transferOwnership(
         address to
-    ) public override(IJTP, Ownable) onlyOwner {
+    ) public override(IWeb3MusicNativeToken, Ownable) onlyOwner {
         super.transferOwnership(to);
     }
 

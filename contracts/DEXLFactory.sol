@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IDEXLFactory.sol";
 import "./interfaces/IFanToArtistStaking.sol";
-import "./interfaces/IJTP.sol";
+import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/SDEXLPool.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -48,14 +48,14 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable, ReentrancyGuard {
 
     address private _ftas;
     address private _implementationDEXLPool;
-    IJTP private _jtp;
+    IWeb3MusicNativeToken private _Web3MusicNativeToken;
 
     uint64 private _cooldown;
 
     function initialize(
         address ftas_,
         address implementation_,
-        address jtp_,
+        address Web3MusicNativeToken_,
         uint40 cooldown_,
         uint256 rate_
     ) public initializer {
@@ -68,8 +68,8 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable, ReentrancyGuard {
             implementation_ != address(0),
             "DEXLFactory: implementation address can not be 0"
         );
-        require(jtp_ != address(0), "DEXLFactory: jtp address can not be 0");
-        _jtp = IJTP(jtp_);
+        require(Web3MusicNativeToken_ != address(0), "DEXLFactory: Web3MusicNativeToken address can not be 0");
+        _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken_);
         _ftas = ftas_;
         _implementationDEXLPool = implementation_;
         _cooldown = cooldown_;
@@ -173,7 +173,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable, ReentrancyGuard {
             proposals[index],
             _msgSender(),
             _ftas,
-            address(_jtp)
+            address(_Web3MusicNativeToken)
         );
         SafeERC20Upgradeable.safeTransfer(
             IERC20Upgradeable(proposals[index].fundingTokenContract),
@@ -210,18 +210,18 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable, ReentrancyGuard {
         uint256 raiseEndDate
     ) external virtual override returns (uint256) {
         require(_pools[_msgSender()], "DEXLFactory: the pool is not official");
-        uint256 amountJTPEligible = IJTP(_jtp).balanceOf(_ftas).mulDiv(
+        uint256 amountWeb3MusicNativeTokenEligible = IWeb3MusicNativeToken(_Web3MusicNativeToken).balanceOf(_ftas).mulDiv(
             _poolNomination[_msgSender()],
             _totalNomination
         );
 
-        uint256 amount = amountJTPEligible.mulDiv(
+        uint256 amount = amountWeb3MusicNativeTokenEligible.mulDiv(
             (block.timestamp -
                 Math.max(_lastRedeem[_msgSender()], raiseEndDate)),
             _dexlRewardRate
         );
 
-        IJTP(_jtp).pay(_msgSender(), amount);
+        IWeb3MusicNativeToken(_Web3MusicNativeToken).pay(_msgSender(), amount);
         _lastRedeem[_msgSender()] = uint40(block.timestamp);
         emit PoolRedeem(_msgSender(), amount);
         return amount;

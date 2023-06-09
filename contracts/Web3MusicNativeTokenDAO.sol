@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 
-contract PublicPressureDAO {
+contract Web3MusicNetworkDAO {
     using Math for uint256;
 
     event ProposalCreated(
@@ -50,7 +50,7 @@ contract PublicPressureDAO {
         uint128 majority_,
         uint128 time
     ) {
-        require(ftas_ != address(0), "DAO: the jtp address can not be 0");
+        require(ftas_ != address(0), "DAO: the Web3MusicNativeToken address can not be 0");
         require(
             quorum_ <= 10e8,
             "DAO: the quorum must be less than or equal 10e8"

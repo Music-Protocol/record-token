@@ -4,11 +4,11 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
 import "@openzeppelin/contracts/utils/Address.sol";
-import "./interfaces/IJTP.sol";
+import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "./interfaces/IDEXLFactory.sol";
 
-contract JTPManagement is AccessControl {
+contract Web3MusicNativeTokenManagement is AccessControl {
     event Mint(address indexed to, uint256 amount, address indexed sender);
     event Burn(address indexed from, uint256 amount, address indexed sender);
 
@@ -18,13 +18,13 @@ contract JTPManagement is AccessControl {
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
 
-    IJTP private _jtp;
+    IWeb3MusicNativeToken private _Web3MusicNativeToken;
     IFanToArtistStaking private _ftas;
     IDEXLFactory private _dexl;
 
-    constructor(address jtp, address ftas, address dexl) {
-        require(jtp != address(0), "JTPManagement: jtp address can not be 0");
-        _jtp = IJTP(jtp);
+    constructor(address Web3MusicNativeToken, address ftas, address dexl) {
+        require(Web3MusicNativeToken != address(0), "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0");
+        _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken);
         // Grant the minter role to a specified account
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -32,7 +32,7 @@ contract JTPManagement is AccessControl {
 
         require(
             ftas != address(0),
-            "JTPManagement: fanToArtistStaking address can not be 0"
+            "Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0"
         );
         _ftas = IFanToArtistStaking(ftas);
         //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
@@ -40,20 +40,20 @@ contract JTPManagement is AccessControl {
 
         require(
             dexl != address(0),
-            "JTPManagement: DEXLFactory address can not be 0"
+            "Web3MusicNativeTokenManagement: DEXLFactory address can not be 0"
         );
         _dexl = IDEXLFactory(dexl);
         _grantRole(FACTORY_MANAGER, msg.sender);
     }
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
-        _jtp.mint(to, amount);
+        _Web3MusicNativeToken.mint(to, amount);
         emit Mint(to, amount, _msgSender());
     }
 
-    // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(JTPManament)
+    // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(Web3MusicNativeTokenManament)
     function burn(uint256 amount) external onlyRole(BURNER_ROLE) {
-        _jtp.burn(amount);
+        _Web3MusicNativeToken.burn(amount);
         emit Burn(address(this), amount, _msgSender());
     }
 
@@ -61,12 +61,12 @@ contract JTPManagement is AccessControl {
         address account,
         uint256 amount
     ) external onlyRole(BURNER_ROLE) {
-        _jtp.burnFrom(account, amount);
+        _Web3MusicNativeToken.burnFrom(account, amount);
         emit Burn(account, amount, _msgSender());
     }
 
-    function transferJTP(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _jtp.transferOwnership(to);
+    function transferWeb3MusicNativeToken(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _Web3MusicNativeToken.transferOwnership(to);
     }
 
     function transferFanToArtistStaking(
@@ -91,12 +91,12 @@ contract JTPManagement is AccessControl {
         _ftas.removeArtist(artist, _msgSender());
     }
 
-    function pauseJTP() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _jtp.pause();
+    function pauseWeb3MusicNativeToken() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _Web3MusicNativeToken.pause();
     }
 
-    function unpauseJTP() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _jtp.unpause();
+    function unpauseWeb3MusicNativeToken() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _Web3MusicNativeToken.unpause();
     }
 
     function approveProposal(
@@ -121,15 +121,15 @@ contract JTPManagement is AccessControl {
         _ftas.changeArtistRewardRate(rate, _msgSender());
     }
 
-    function changeJTP(address jtp) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(jtp != address(0), "JTPManagement: jtp address can not be 0");
-        _jtp = IJTP(jtp);
+    function changeWeb3MusicNativeToken(address Web3MusicNativeToken) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(Web3MusicNativeToken != address(0), "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0");
+        _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken);
     }
 
     function changeFTAS(address ftas) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             ftas != address(0),
-            "JTPManagement: fanToArtistStaking address can not be 0"
+            "Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0"
         );
         _ftas = IFanToArtistStaking(ftas);
     }
@@ -139,7 +139,7 @@ contract JTPManagement is AccessControl {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             dexl != address(0),
-            "JTPManagement: DEXLFactory address can not be 0"
+            "Web3MusicNativeTokenManagement: DEXLFactory address can not be 0"
         );
         _dexl = IDEXLFactory(dexl);
     }
@@ -155,7 +155,7 @@ contract JTPManagement is AccessControl {
             Address.verifyCallResult(
                 success,
                 returndata,
-                "JTPManagement: call reverted without message"
+                "Web3MusicNativeTokenManagement: call reverted without message"
             );
         }
     }

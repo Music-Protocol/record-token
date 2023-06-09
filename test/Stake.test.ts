@@ -1,7 +1,7 @@
 import { expect, use } from 'chai';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { FanToArtistStaking, JTP } from '../typechain-types/index';
+import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine, parseDetailedStake, matchDetailedStakes, getStakeFromEvent, getStakeExtendedFromEvent } from './utils/utils';
 import { ContractTransaction } from '@ethersproject/contracts';
@@ -9,7 +9,7 @@ import { ContractTransaction } from '@ethersproject/contracts';
 const cache = {};
 
 describe('Stake Simulation', () => {
-    let jtp: JTP;
+    let Web3MusicNativeToken: Web3MusicNativeToken;
     let ftas: FanToArtistStaking;
     let owner: SignerWithAddress;
     let artists: SignerWithAddress[]; //6
@@ -29,16 +29,16 @@ describe('Stake Simulation', () => {
         ftas = await FTAS.deploy();
         await ftas.deployed();
 
-        const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(ftas.address, ftas.address);
-        await jtp.deployed();
-        await ftas.initialize(jtp.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(ftas.address, ftas.address);
+        await Web3MusicNativeToken.deployed();
+        await ftas.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         await Promise.allSettled([artists.forEach(artist =>
             ftas.addArtist(artist.address, owner.address)
         )]);
         await Promise.allSettled([users.forEach(user =>
-            jtp.mint(user.address, 100)
+            Web3MusicNativeToken.mint(user.address, 100)
         )]);
     });
 
@@ -48,13 +48,13 @@ describe('Stake Simulation', () => {
         const event = await ftas.connect(user).stake(artists[0].address, 50, 30);
         const parsed = await getStakeFromEvent(event);
 
-        expect(await jtp.balanceOf(ftas.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(50);
 
         await expect(ftas.connect(user).stake(artists[0].address, 50, 30))
             .to.be.revertedWith('FanToArtistStaking: already staking');
 
-        expect(await jtp.balanceOf(ftas.address)).to.equal(50);
-        expect(await jtp.balanceOf(user.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(50);
 
         matchDetailedStakes(parseDetailedStake(parsed), artists[0].address, user.address, 50, 30);
     });
@@ -62,7 +62,7 @@ describe('Stake Simulation', () => {
     it('A users should not be able to redeem a stake before his maturation', async () => {
         const user = users[0];
         const event = await ftas.connect(user).stake(artists[0].address, 50, 30);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(50);
         const parsed = await getStakeFromEvent(event);
 
         await expect(ftas.connect(user).redeem(artists[0].address, user.address, parsed.index))
@@ -70,7 +70,7 @@ describe('Stake Simulation', () => {
 
         await timeMachine(1);
         await ftas.connect(user).redeem(artists[0].address, user.address, parsed.index);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(0);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(0);
 
         await expect(ftas.connect(user).redeem(artists[0].address, user.address, parsed.index))
             .to.be.revertedWith('FanToArtistStaking: this stake has already been redeemed');
@@ -79,11 +79,11 @@ describe('Stake Simulation', () => {
     it('A user should be able to fetch all his stakes', async () => {
         async function StakeAndRedeem() {
             const event = await ftas.connect(user).stake(artists[0].address, 100, 30);
-            expect(await jtp.balanceOf(ftas.address)).to.equal(100);
+            expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(100);
             const parsed = await getStakeFromEvent(event);
             await timeMachine(1);
             await ftas.connect(user).redeem(artists[0].address, user.address, parsed.index);
-            expect(await jtp.balanceOf(ftas.address)).to.equal(0);
+            expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(0);
             return parsed.index;
         }
         const user = users[0];
@@ -99,22 +99,22 @@ describe('Stake Simulation', () => {
             indexes.map(o => 0),
             indexes.map(o => 10)
         );
-        expect(await jtp.balanceOf(artists[0].address)).to.equal((100 * 30 * 3) / defArtistReward);
+        expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal((100 * 30 * 3) / defArtistReward);
     });
 
     it('A user should be able to increase the amount staked', async () => {
         const user = users[0];
 
         const event = await ftas.connect(user).stake(artists[0].address, 50, 30);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(50);
-        expect(await jtp.balanceOf(user.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(50);
         const parsed = await getStakeFromEvent(event);
         matchDetailedStakes(parseDetailedStake(parsed), artists[0].address, user.address, 50, 30);
 
         const event2 = await ftas.connect(user).increaseAmountStaked(artists[0].address, 50);
         const parsed2 = await getStakeFromEvent(event2);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(100);
-        expect(await jtp.balanceOf(user.address)).to.equal(0);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(100);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(0);
         matchDetailedStakes(parseDetailedStake(parsed2), artists[0].address, user.address, 100, parsed2.end - parsed2.start);
     });
 
@@ -136,13 +136,13 @@ describe('Stake Simulation', () => {
         await ftas.connect(user).stake(artists[0].address, 50, 3000);
 
         await ftas.connect(user).increaseAmountStaked(artists[0].address, 50);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(100);
-        expect(await jtp.balanceOf(user.address)).to.equal(0);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(100);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(0);
 
         await expect(ftas.connect(user).extendStake(artists[0].address, 10e10))
             .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum or less than minimum');
-        expect(await jtp.balanceOf(ftas.address)).to.equal(100);
-        expect(await jtp.balanceOf(user.address)).to.equal(0);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(100);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(0);
 
     });
 
@@ -152,17 +152,17 @@ describe('Stake Simulation', () => {
         const parsed = await getStakeFromEvent(event);
 
         await ftas.connect(user).increaseAmountStaked(artists[0].address, 20);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(70);
-        expect(await jtp.balanceOf(user.address)).to.equal(30);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(70);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(30);
 
         await ftas.connect(user).increaseAmountStaked(artists[0].address, 20);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(90);
-        expect(await jtp.balanceOf(user.address)).to.equal(10);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(90);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(10);
 
         await expect(ftas.connect(user).extendStake(artists[0].address, parsed.end))
             .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum or less than minimum');
-        expect(await jtp.balanceOf(ftas.address)).to.equal(90);
-        expect(await jtp.balanceOf(user.address)).to.equal(10);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(90);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(10);
     });
 
     it('A user should be able to change the artist staked', async () => {
@@ -175,8 +175,8 @@ describe('Stake Simulation', () => {
 
         const event2 = await ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address);
         const parsed2 = await getStakeFromEvent(event2);
-        expect(await jtp.balanceOf(ftas.address)).to.equal(50);
-        expect(await jtp.balanceOf(user.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(50);
+        expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(50);
 
         const stake0 = parsed;
         const stake1 = parsed2;
@@ -203,7 +203,7 @@ describe('Stake Simulation', () => {
             [0],
             [10]
         );
-        expect(await jtp.balanceOf(artists[0].address)).to.be.closeTo((600 * 50 / defArtistReward) / 2, 50);
+        expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.be.closeTo((600 * 50 / defArtistReward) / 2, 50);
     });
 
     it('A user should not be able to change the artist staked when doesnt meet the requirements', async () => {
@@ -225,7 +225,7 @@ describe('Stake Simulation', () => {
         it('Should get no reward if there is no staking', async () => {
             await expect(ftas.connect(artists[0]).getReward(artists[0].address, [users[0].address], [0], [0], [2]))
                 .to.be.revertedWith('FanToArtistStaking: no stake found with this index');
-            expect(await jtp.balanceOf(artists[0].address)).to.equal(0);
+            expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(0);
         });
 
         it('Should get the only his reward and not twice', async () => {
@@ -237,19 +237,19 @@ describe('Stake Simulation', () => {
             await ftas.connect(user0).stake(artist1.address, 100, 60);
             await timeMachine(10);
             await ftas.connect(artist1).getReward(artist1.address, [user0.address], [0], [0], [10]);
-            expect(await jtp.balanceOf(artist1.address)).to.equal(600);
+            expect(await Web3MusicNativeToken.balanceOf(artist1.address)).to.equal(600);
             await ftas.changeArtistRewardRate(20, owner.address);
 
             await ftas.connect(user1).stake(artist2.address, 100, 60);
             await timeMachine(10);
             await ftas.connect(artist2).getReward(artist2.address, [user1.address], [0], [1], [10]);
-            expect(await jtp.balanceOf(artist2.address)).to.equal(300);
+            expect(await Web3MusicNativeToken.balanceOf(artist2.address)).to.equal(300);
 
             // await timeMachine(10);
             // await expect(ftas.connect(artist1).getReward(artist1.address, [user0.address], [0], [0], [10])).to.be.revertedWith('FanToArtistStaking: a stake was already redeemed completely');
-            // expect(await jtp.balanceOf(artist1.address)).to.equal(600);
+            // expect(await Web3MusicNativeToken.balanceOf(artist1.address)).to.equal(600);
             // await expect(ftas.connect(artist2).getReward(artist2.address, [user1.address], [0], [0], [10])).to.be.revertedWith('FanToArtistStaking: a stake was already redeemed completely');
-            // expect(await jtp.balanceOf(artist2.address)).to.equal(300);
+            // expect(await Web3MusicNativeToken.balanceOf(artist2.address)).to.equal(300);
         });
 
         it('Should get the same value if the rate is the same but in 2 different timeframes', async () => {
@@ -267,7 +267,7 @@ describe('Stake Simulation', () => {
             await timeMachine(6);
             await ftas.connect(artist1).getReward(artist1.address, [user0.address], [0], [0], [10]);
 
-            expect(await jtp.balanceOf(artist2.address)).to.equal(await jtp.balanceOf(artist1.address));
+            expect(await Web3MusicNativeToken.balanceOf(artist2.address)).to.equal(await Web3MusicNativeToken.balanceOf(artist1.address));
         });
 
         it('Should get the same value if the rate is the same but in 3 different timeframes', async () => {
@@ -287,7 +287,7 @@ describe('Stake Simulation', () => {
             await timeMachine(6);
             await ftas.connect(artist1).getReward(artist1.address, [user0.address], [0], [0], [10]);
 
-            expect(await jtp.balanceOf(artist2.address)).to.closeTo(await jtp.balanceOf(artist1.address), 20);
+            expect(await Web3MusicNativeToken.balanceOf(artist2.address)).to.closeTo(await Web3MusicNativeToken.balanceOf(artist1.address), 20);
         });
 
         it('Should get half the value if the rate changes halfway', async () => {
@@ -307,7 +307,7 @@ describe('Stake Simulation', () => {
 
             console.log('test')
             await ftas.connect(artist1).getReward(artist1.address, [user0.address], [0], [0], [10]);
-            expect(Number(await jtp.balanceOf(artist2.address)) / 2).to.closeTo(await jtp.balanceOf(artist1.address), 20); //safe?
+            expect(Number(await Web3MusicNativeToken.balanceOf(artist2.address)) / 2).to.closeTo(await Web3MusicNativeToken.balanceOf(artist1.address), 20); //safe?
         });
 
         it('An artist should be able to get his reward', async () => {
@@ -316,41 +316,41 @@ describe('Stake Simulation', () => {
             const user2 = users[2];
             const artist0 = artists[0];
 
-            await jtp.mint(user0.address, 100);
+            await Web3MusicNativeToken.mint(user0.address, 100);
             await ftas.changeArtistRewardRate(1, owner.address);
             await ftas.connect(user0).stake(artist0.address, 100, 100);
             await timeMachine(4);
             await ftas.connect(artist0).getReward(artist0.address, [user0.address], [0], [1], [10]);
-            expect(await jtp.balanceOf(artist0.address)).to.equal(100 * 100 / 1);
+            expect(await Web3MusicNativeToken.balanceOf(artist0.address)).to.equal(100 * 100 / 1);
 
             await ftas.connect(user1).stake(artist0.address, 50, 100);
             await timeMachine(4);
 
             await ftas.connect(artist0).getReward(artist0.address, [user1.address], [0], [1], [10]);
-            const balancePrev = await jtp.balanceOf(artist0.address);
+            const balancePrev = await Web3MusicNativeToken.balanceOf(artist0.address);
             expect(balancePrev).to.equal((100 * 100 / 1) + (50 * 100 / 1));
 
             await ftas.connect(user2).stake(artist0.address, 50, 10000);
             await timeMachine(5);
             await ftas.connect(artist0).getReward(artist0.address, [user2.address], [0], [1], [10]);
-            const balanceMiddle = await jtp.balanceOf(artist0.address);
+            const balanceMiddle = await Web3MusicNativeToken.balanceOf(artist0.address);
             await timeMachine(5);
             await ftas.connect(artist0).getReward(artist0.address, [user2.address], [0], [1], [10]);
             expect(balanceMiddle).to.be.greaterThan(balancePrev);
-            expect(await jtp.balanceOf(artist0.address)).to.greaterThan(balanceMiddle);
+            expect(await Web3MusicNativeToken.balanceOf(artist0.address)).to.greaterThan(balanceMiddle);
         });
 
         it('An artist should get no reward if already redeemed it', async () => {
             const user0 = users[0];
             const artist0 = artists[0];
 
-            await jtp.mint(user0.address, 100);
+            await Web3MusicNativeToken.mint(user0.address, 100);
             await ftas.changeArtistRewardRate(1, owner.address);
             await ftas.connect(user0).stake(artist0.address, 100, 600); //staking 100 for 10 minutes
             await timeMachine(15);
 
             await ftas.connect(artist0).getReward(artist0.address, [user0.address], [0], [1], [10]);
-            expect(await jtp.balanceOf(artist0.address)).to.be.equal(100 * 600 / 1); //amount * seconds / artistRate
+            expect(await Web3MusicNativeToken.balanceOf(artist0.address)).to.be.equal(100 * 600 / 1); //amount * seconds / artistRate
             await timeMachine(15);
             await ftas.changeArtistRewardRate(10, owner.address);
             await timeMachine(5);
@@ -359,14 +359,14 @@ describe('Stake Simulation', () => {
                 .to.be.revertedWith("FanToArtistStaking: a stake was already redeemed completely");
             await timeMachine(5);
 
-            expect(await jtp.balanceOf(artist0.address)).to.be.equal(100 * 600 / 1); //amount * seconds / artistRate
+            expect(await Web3MusicNativeToken.balanceOf(artist0.address)).to.be.equal(100 * 600 / 1); //amount * seconds / artistRate
             await ftas.changeArtistRewardRate(1, owner.address);
             await timeMachine(5);
 
             await ftas.connect(user0).stake(artist0.address, 100, 600); //staking 100 for 10 minutes
             await timeMachine(15);
             await ftas.connect(artist0).getReward(artist0.address, [user0.address], [1], [3], [10]);
-            expect(await jtp.balanceOf(artist0.address)).to.be.equal((100 * 600 / 1) * 2); //amount * seconds / artistRate
+            expect(await Web3MusicNativeToken.balanceOf(artist0.address)).to.be.equal((100 * 600 / 1) * 2); //amount * seconds / artistRate
         });
     });
 
@@ -375,7 +375,7 @@ describe('Stake Simulation', () => {
             for await (const user of users)
                 await ftas.connect(user).stake(artists[0].address, 100, 30)
 
-            expect(await jtp.balanceOf(ftas.address)).to.equal(1300);
+            expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(1300);
 
             await timeMachine(1);
 
@@ -383,7 +383,7 @@ describe('Stake Simulation', () => {
                 await ftas.connect(user).redeem(artists[0].address, user.address, 0);
 
 
-            expect(await jtp.balanceOf(ftas.address)).to.equal(0);
+            expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(0);
         });
 
         it('All users should be able to stake all artists at the same time', async () => {
@@ -396,7 +396,7 @@ describe('Stake Simulation', () => {
 
 
 
-            expect(await jtp.balanceOf(ftas.address)).to.equal(10 * users.length * artists.length);
+            expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(10 * users.length * artists.length);
 
             await timeMachine(1);
 
@@ -405,7 +405,7 @@ describe('Stake Simulation', () => {
                     await ftas.connect(user).redeem(artists[i].address, user.address, 0);
 
 
-            expect(await jtp.balanceOf(ftas.address)).to.equal(0);
+            expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(0);
         });
     });
 });

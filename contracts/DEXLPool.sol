@@ -53,7 +53,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     event ArtistRemoved(address indexed artist);
 
     IFanToArtistStaking private _ftas;
-    address private _jtp;
+    address private _Web3MusicNativeToken;
     address private _leader;
     address private _fundingTokenContract;
     address private _factory;
@@ -108,7 +108,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         Pool memory pool,
         address newOwner,
         address ftas_,
-        address jtp_
+        address Web3MusicNativeToken_
     ) public initializer {
         _factory = _msgSender();
         require(
@@ -151,7 +151,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             ftas_ != address(0),
             "DEXLPool: the fanToArtistStaking address can not be 0"
         );
-        require(jtp_ != address(0), "DEXLPool: the jtp address can not be 0");
+        require(Web3MusicNativeToken_ != address(0), "DEXLPool: the Web3MusicNativeToken address can not be 0");
         super.__ERC4626_init(IERC20Upgradeable(pool.fundingTokenContract));
         _leader = pool.leader;
         _softCap = pool.softCap;
@@ -170,7 +170,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         super._mint(pool.leader, pool.initialDeposit);
         _transferOwnership(newOwner);
         _ftas = IFanToArtistStaking(ftas_);
-        _jtp = jtp_;
+        _Web3MusicNativeToken = Web3MusicNativeToken_;
     }
 
     modifier onlyLeader() {
@@ -493,7 +493,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         uint256 amount = IDEXLFactory(_factory).redeem(_raiseEndDate);
         for (uint i = 0; i < _artistNominated.length(); i++) {
             SafeERC20Upgradeable.safeTransfer(
-                IERC20Upgradeable(_jtp),
+                IERC20Upgradeable(_Web3MusicNativeToken),
                 _artistNominated.at(i),
                 amount / _artistNominated.length()
             );

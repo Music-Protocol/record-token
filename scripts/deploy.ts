@@ -5,7 +5,7 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 import { ethers } from "hardhat";
-import { DEXLFactory, DEXLPool, PublicPressureDAO } from "../typechain-types";
+import { DEXLFactory, DEXLPool, Web3MusicNetworkDAO } from "../typechain-types";
 
 async function main() {
   const defVeReward = 10;
@@ -28,27 +28,27 @@ async function main() {
   let DEXLF = await factoryDEXLFactory.deploy() as DEXLFactory;
   await DEXLF.deployed();
 
-  const jtpFactory = await ethers.getContractFactory('JTP');
-  let jtp = await jtpFactory.deploy(fanToArtistStaking.address, DEXLF.address);
-  await jtp.deployed();
+  const Web3MusicNativeTokenFactory = await ethers.getContractFactory('Web3MusicNativeToken');
+  let Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address, DEXLF.address);
+  await Web3MusicNativeToken.deployed();
 
-  await fanToArtistStaking.initialize(jtp.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
-  await DEXLF.initialize(fanToArtistStaking.address, pool.address, jtp.address, 864000, DEXLRATE);
+  await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+  await DEXLF.initialize(fanToArtistStaking.address, pool.address, Web3MusicNativeToken.address, 864000, DEXLRATE);
 
-  const managementFactory = await ethers.getContractFactory("JTPManagement");
-  const jtpManagement = await managementFactory.deploy(jtp.address, fanToArtistStaking.address, DEXLF.address);
-  await jtpManagement.deployed();
+  const managementFactory = await ethers.getContractFactory("Web3MusicNativeTokenManagement");
+  const Web3MusicNativeTokenManagement = await managementFactory.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address, DEXLF.address);
+  await Web3MusicNativeTokenManagement.deployed();
 
-  const daoFactory = await ethers.getContractFactory('PublicPressureDAO');
-  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 864000) as PublicPressureDAO;
+  const daoFactory = await ethers.getContractFactory('Web3MusicNetworkDAO');
+  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 864000) as Web3MusicNetworkDAO;
   await dao.deployed();
 
-  await jtp.transferOwnership(jtpManagement.address);
-  await fanToArtistStaking.transferOwnership(jtpManagement.address);
-  await DEXLF.transferOwnership(jtpManagement.address);
+  await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
+  await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
+  await DEXLF.transferOwnership(Web3MusicNativeTokenManagement.address);
 
-  console.log('JTPManagement address', jtpManagement.address);
-  console.log('JTP address', jtp.address);
+  console.log('Web3MusicNativeTokenManagement address', Web3MusicNativeTokenManagement.address);
+  console.log('Web3MusicNativeToken address', Web3MusicNativeToken.address);
   console.log('FanToArtistStaking address', fanToArtistStaking.address);
   console.log('DEXLFactory address', DEXLF.address);
   console.log('DAO address', dao.address);

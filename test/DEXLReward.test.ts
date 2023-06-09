@@ -2,7 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 require("@nomiclabs/hardhat-web3");
-import { DEXLPool, DEXLFactory, FanToArtistStaking, JTP } from '../typechain-types/index';
+import { DEXLPool, DEXLFactory, FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
 import { timeMachine, getPoolFromEvent, getIndexFromProposal, getTimestamp } from './utils/utils';
 import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
@@ -15,7 +15,7 @@ describe('DEXLReward', () => {
     let owner: SignerWithAddress;
     let stableCoin: any;
     let fanToArtistStaking: FanToArtistStaking;
-    let jtp: JTP;
+    let Web3MusicNativeToken: Web3MusicNativeToken;
     let pools: DEXLPool[] = [];
 
     let artists: SignerWithAddress[]; //6
@@ -58,18 +58,18 @@ describe('DEXLReward', () => {
         DEXLF = await dProp.deploy() as DEXLFactory;
         await DEXLF.deployed();
 
-        const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(fanToArtistStaking.address, DEXLF.address);
-        await jtp.deployed();
-        await fanToArtistStaking.initialize(jtp.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, DEXLF.address);
+        await Web3MusicNativeToken.deployed();
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
-        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, jtp.address, 120, DEXLRATE);
+        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, Web3MusicNativeToken.address, 120, DEXLRATE);
 
         await Promise.allSettled(artists.map(artist =>
             fanToArtistStaking.addArtist(artist.address, owner.address)
         ));
         await Promise.allSettled(users.map(user =>
-            jtp.mint(user.address, 100)
+            Web3MusicNativeToken.mint(user.address, 100)
         ));
         const promises: Promise<ContractTransaction>[] = [];
         artists.forEach(artist =>
@@ -172,16 +172,16 @@ describe('DEXLReward', () => {
         let rewardRate = 1;
         await DEXLF.changeRewardRate(rewardRate);
         await pools[0].connect(artists[0]).payArtists();
-        const totalAmountStaked = (await jtp.balanceOf(fanToArtistStaking.address)).toNumber();
+        const totalAmountStaked = (await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).toNumber();
         const time1 = (await pools[0].getActivityTime()).toNumber();
-        const artistR1 = (await jtp.balanceOf(artists[0].address)).toNumber();
+        const artistR1 = (await Web3MusicNativeToken.balanceOf(artists[0].address)).toNumber();
         expect(artistR1).to.be.equal(totalAmountStaked * time1 / rewardRate);
         await timeMachine(90);
         rewardRate = 2;
         await DEXLF.changeRewardRate(rewardRate);
         await pools[0].connect(artists[0]).payArtists();
         const time2 = (await pools[0].getActivityTime()).toNumber();
-        const artistR2 = (await jtp.balanceOf(artists[0].address)).toNumber();
+        const artistR2 = (await Web3MusicNativeToken.balanceOf(artists[0].address)).toNumber();
         expect(artistR2 - artistR1).to.be.equal(totalAmountStaked * (time2 - time1) / rewardRate);
     });
 });

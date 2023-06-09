@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./interfaces/IJTP.sol";
+import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "hardhat/console.sol";
 
@@ -13,7 +13,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
 
-    event ArtistJTPRewardChanged(
+    event ArtistWeb3MusicNativeTokenRewardChanged(
         uint256 newRate,
         uint40 timestamp,
         address indexed sender
@@ -54,7 +54,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     ArtistReward[] private _artistReward;
     // to track all the
 
-    IJTP private _jtp;
+    IWeb3MusicNativeToken private _Web3MusicNativeToken;
 
     mapping(address => mapping(address => Stake[])) private _stake;
     //_stake[artist][staker]
@@ -63,7 +63,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
 
     mapping(address => uint40) private _verifiedArtists; // 0 never added | 1 addedd | else is the timestamp of removal
 
-    uint256 private _veJTPRewardRate; //change onylOwner
+    uint256 private _veWeb3MusicNativeTokenRewardRate; //change onylOwner
     uint40 private _minStakePeriod; //change onylOwner
     uint40 private _maxStakePeriod; //change onylOwner
 
@@ -73,37 +73,37 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     address private _offChain;
 
     function initialize(
-        address jtp_,
+        address Web3MusicNativeToken_,
         address offChain_,
-        uint256 veJTPRewardRate,
-        uint256 artistJTPRewardRate,
+        uint256 veWeb3MusicNativeTokenRewardRate,
+        uint256 artistWeb3MusicNativeTokenRewardRate,
         uint40 min,
         uint40 max
     ) public initializer {
         require(
-            jtp_ != address(0),
-            "FanToArtistStaking: the jtp address can not be 0"
+            Web3MusicNativeToken_ != address(0),
+            "FanToArtistStaking: the Web3MusicNativeToken address can not be 0"
         );
         require(
             offChain_ != address(0),
             "FanToArtistStaking: the offChain address can not be 0"
         );
         require(
-            artistJTPRewardRate != 0,
+            artistWeb3MusicNativeTokenRewardRate != 0,
             "FanToArtistStaking: the artist reward rate can not be 0"
         );
         require(
-            veJTPRewardRate != 0,
+            veWeb3MusicNativeTokenRewardRate != 0,
             "FanToArtistStaking: the voting reward rate can not be 0"
         );
         require(max > min, "FanToArtistStaking: min cant be greater than max");
-        _jtp = IJTP(jtp_);
-        _veJTPRewardRate = veJTPRewardRate;
+        _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken_);
+        _veWeb3MusicNativeTokenRewardRate = veWeb3MusicNativeTokenRewardRate;
         _artistReward.push(
             ArtistReward({
                 start: 0,
                 end: (2 ** 40) - 1,
-                rate: artistJTPRewardRate
+                rate: artistWeb3MusicNativeTokenRewardRate
             })
         );
         _minStakePeriod = min;
@@ -302,7 +302,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 rewardDeep[i]
             );
         }
-        _jtp.pay(artist, accumulator);
+        _Web3MusicNativeToken.pay(artist, accumulator);
         emit ArtistPaid(artist, accumulator);
     }
 
@@ -346,11 +346,11 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 rate: rate
             })
         );
-        emit ArtistJTPRewardChanged(rate, uint40(block.timestamp), sender);
+        emit ArtistWeb3MusicNativeTokenRewardChanged(rate, uint40(block.timestamp), sender);
     }
 
     function getStakingVeRate() external view returns (uint256) {
-        return _veJTPRewardRate;
+        return _veWeb3MusicNativeTokenRewardRate;
     }
 
     function getArtistRewardRate() external view returns (uint256) {
@@ -374,7 +374,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             !(_isStakingNow(_msgSender(), artist)),
             "FanToArtistStaking: already staking"
         );
-        if (_jtp.lock(_msgSender(), amount)) {
+        if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _addStake(_msgSender(), artist, amount, end);
             emit StakeCreated(
                 artist,
@@ -396,7 +396,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             _stake[artist][_msgSender()][index].end + _minStakePeriod> block.timestamp,
             "FanToArtistStaking: can not increase the amount below the minimum stake period"
         );
-        if (_jtp.lock(_msgSender(), amount)) {
+        if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()][index].redeemed = true;
             uint40 prev = _stake[artist][_msgSender()][index].end;
             _stake[artist][_msgSender()][index].end = uint40(block.timestamp);
@@ -519,7 +519,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             "FanToArtistStaking: this stake has already been redeemed"
         );
         if (
-            _jtp.transfer(
+            _Web3MusicNativeToken.transfer(
                 user,
                 _stake[artist][user][index].amount
             )

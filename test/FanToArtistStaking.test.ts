@@ -1,12 +1,12 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { FanToArtistStaking, JTP } from '../typechain-types';
+import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { getTimestamp } from './utils/utils';
 
 describe('FanToArtistStaking', () => {
-    let jtp: JTP;
+    let Web3MusicNativeToken: Web3MusicNativeToken;
     let fanToArtistStaking: FanToArtistStaking;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress, artist3: SignerWithAddress;
 
@@ -20,15 +20,15 @@ describe('FanToArtistStaking', () => {
         fanToArtistStaking = await FTAS.deploy();
         await fanToArtistStaking.deployed();
 
-        const cJTP = await ethers.getContractFactory('JTP');
-        jtp = await cJTP.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
-        await jtp.deployed();
-        await fanToArtistStaking.initialize(jtp.address, owner.address, defVeReward, defArtistReward, 10, 86400);
+        const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
+        await Web3MusicNativeToken.deployed();
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, 10, 86400);
     });
 
     describe('Deployment', () => {
         it('Should set the right owner', async () => {
-            expect(await jtp.owner()).to.equal(owner.address);
+            expect(await Web3MusicNativeToken.owner()).to.equal(owner.address);
         });
     });
 
@@ -63,14 +63,14 @@ describe('FanToArtistStaking', () => {
 
 
     describe('Rates', () => {
-        it('Should be able to change the veJTP reward rate', async () => {
+        it('Should be able to change the veWeb3MusicNativeToken reward rate', async () => {
             expect(await fanToArtistStaking.getStakingVeRate()).to.equal(10);
         });
 
         it('Should be able to change the artist reward rate', async () => {
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(10);
             await expect(fanToArtistStaking.changeArtistRewardRate(50, owner.address))
-                .to.emit(fanToArtistStaking, 'ArtistJTPRewardChanged')
+                .to.emit(fanToArtistStaking, 'ArtistWeb3MusicNativeTokenRewardChanged')
                 .withArgs(50, anyValue, owner.address);
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(50);
         });
@@ -82,7 +82,7 @@ describe('FanToArtistStaking', () => {
         let times: number[] = [];
         before(async () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
-            await jtp.mint(addr1.address, 100);
+            await Web3MusicNativeToken.mint(addr1.address, 100);
             await fanToArtistStaking.addArtist(artist2.address, owner.address);
             await fanToArtistStaking.changeArtistRewardRate(10, owner.address);
         });
@@ -101,8 +101,8 @@ describe('FanToArtistStaking', () => {
                 // end: anyValue,
                 redeemed: false
             };
-            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
-            expect(await jtp.balanceOf(addr1.address)).to.equal(0);
+            expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(100);
+            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
         });
 
         it('Should be able to redeem the token locked', async () => {
@@ -113,8 +113,8 @@ describe('FanToArtistStaking', () => {
             await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0);
             stake1.redeemed = true;
 
-            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(0);
-            expect(await jtp.balanceOf(addr1.address)).to.equal(100);
+            expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(0);
+            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(100);
         });
 
         it('Should be able to stake again', async () => {
@@ -124,8 +124,8 @@ describe('FanToArtistStaking', () => {
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, 1, anyValue);
-            expect(await jtp.balanceOf(fanToArtistStaking.address)).to.equal(100);
-            expect(await jtp.balanceOf(addr1.address)).to.equal(0);
+            expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(100);
+            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
         });
 
         describe('Reverts', () => {
@@ -140,7 +140,7 @@ describe('FanToArtistStaking', () => {
             });
 
             it('Should not be able to stake more than maximum', async () => {
-                await jtp.mint(addr2.address, 100);
+                await Web3MusicNativeToken.mint(addr2.address, 100);
                 await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 1, 30))
                     .to.be.revertedWith('FanToArtistStaking: already staking');
             });

@@ -1,5 +1,5 @@
-# PublicPressureDAO Smart Contract
-The `PublicPressureDAO` smart contract is based on the following **openzeppelin** standard:
+# Web3MusicNetworkDAO Smart Contract
+The `Web3MusicNetworkDAO` smart contract is based on the following **openzeppelin** standard:
 - `Address` to check the result of call on other smart contracts
 
 ## Contract Properties
@@ -7,9 +7,9 @@ Note that this contract is initialized via the constructor and is therefore **no
 
 ## code snippets
 ### deployment
-In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**FanToArtistStaking** and consequently **JTP**)
+In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**FanToArtistStaking** and consequently **Web3MusicNativeToken**)
 ```
-const cDAO = await ethers.getContractFactory('PublicPressureDAO');
+const cDAO = await ethers.getContractFactory('Web3MusicNetworkDAO');
 dao = await cDAO.deploy(fanToArtistStaking.address, quorum, majority, proposalTime);
 await dao.deployed();
 ```
@@ -31,20 +31,20 @@ const calldata = web3.eth.abi.encodeFunctionCall({
         name: 'amount'
     }]
 }, [owner.address, `1000`]);
-dao.propose([jtp.address], [calldata], "Gift previous owner");
+dao.propose([Web3MusicNativeToken.address], [calldata], "Gift previous owner");
 //or
 dao.propose([], [], "should we only sell rock songs?");
 ```
 
 ### votes
-You can vote **for** or **against** any active proposal. The weight of your vote is determined by how many jtp and how long you staked them, meaning your **VeJTP**s. In the voting process, targets must be specified along with their calldata and description.
+You can vote **for** or **against** any active proposal. The weight of your vote is determined by how many Web3MusicNativeToken and how long you staked them, meaning your **VeWeb3MusicNativeToken**s. In the voting process, targets must be specified along with their calldata and description.
 ```
-dao.vote([jtp.address], [calldata], "Gift previous owner", true);  // for
-dao.vote([jtp.address], [calldata], "Gift previous owner", false); // against
+dao.vote([Web3MusicNativeToken.address], [calldata], "Gift previous owner", true);  // for
+dao.vote([Web3MusicNativeToken.address], [calldata], "Gift previous owner", false); // against
 ```
 
 ### execution
 On all proposals that have passed the end of the voting period the **execute** can be called but **only** those that reached quorum and passed the majority will actually be executed and then the memory slot dedicated to the proposal will be freed up.
 ```
-dao.execute([jtp.address], [calldata], "Gift previous owner");
+dao.execute([Web3MusicNativeToken.address], [calldata], "Gift previous owner");
 ```
