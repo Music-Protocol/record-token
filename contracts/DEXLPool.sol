@@ -298,6 +298,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
 
     function redistributeRevenue(uint256 amount) external {
         require(amount != 0, "DEXLPool: the amount can not be 0");
+        require(
+            block.timestamp > _raiseEndDate,
+            "DEXLPool: the redistribution can happen only after the funding phase"
+        );
         SafeERC20Upgradeable.safeTransferFrom(
             IERC20Upgradeable(_fundingTokenContract),
             _msgSender(),
