@@ -507,23 +507,24 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
 
     function redeem(
         address artist,
+        address user,
         uint index
     )
         external
-        validateIndex(artist, _msgSender(), index)
-        onlyEnded(_stake[artist][_msgSender()][index].end)
+        validateIndex(artist, user, index)
+        onlyEnded(_stake[artist][user][index].end)
     {
         require(
-            !_stake[artist][_msgSender()][index].redeemed,
+            !_stake[artist][user][index].redeemed,
             "FanToArtistStaking: this stake has already been redeemed"
         );
         if (
             _jtp.transfer(
-                _msgSender(),
-                _stake[artist][_msgSender()][index].amount
+                user,
+                _stake[artist][user][index].amount
             )
-        ) _stake[artist][_msgSender()][index].redeemed = true;
-        emit StakeRedeemed(artist, _msgSender(), index);
+        ) _stake[artist][user][index].redeemed = true;
+        emit StakeRedeemed(artist, user, index);
     }
 
     function isVerified(address artist) external view returns (bool) {
