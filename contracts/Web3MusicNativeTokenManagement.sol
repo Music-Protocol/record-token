@@ -17,6 +17,8 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     bytes32 public constant FACTORY_MANAGER = keccak256("FACTORY_MANAGER");
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
+    bytes32 public constant REMOVE_ARTIST_ROLE =
+        keccak256("REMOVE_ARTIST_ROLE");
 
     IWeb3MusicNativeToken private _Web3MusicNativeToken;
     IFanToArtistStaking private _ftas;
@@ -37,6 +39,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         _ftas = IFanToArtistStaking(ftas);
         //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
         _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
+        _grantRole(REMOVE_ARTIST_ROLE, msg.sender);
 
         require(
             dexl != address(0),
@@ -87,7 +90,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
 
     function removeArtist(
         address artist
-    ) external onlyRole(VERIFY_ARTIST_ROLE) {
+    ) external onlyRole(REMOVE_ARTIST_ROLE) {
         _ftas.removeArtist(artist, _msgSender());
     }
 

@@ -14,7 +14,7 @@ describe('Web3MusicNativeTokenManagement', () => {
     let DEXLF: DEXLFactory;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let artist1: SignerWithAddress, artist2: SignerWithAddress;
-    let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike;
+    let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike, removeArtistRole: BytesLike;
 
     before(async () => { //same as deploy
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
@@ -49,6 +49,7 @@ describe('Web3MusicNativeTokenManagement', () => {
         minterRole = await Web3MusicNativeTokenManagement.MINTER_ROLE();
         burnerRole = await Web3MusicNativeTokenManagement.BURNER_ROLE();
         verifyArtistRole = await Web3MusicNativeTokenManagement.VERIFY_ARTIST_ROLE();
+        removeArtistRole = await Web3MusicNativeTokenManagement.REMOVE_ARTIST_ROLE();
     });
 
     describe('Deployment', () => {
@@ -175,6 +176,7 @@ describe('Web3MusicNativeTokenManagement', () => {
         describe('Verified Artist', () => {
             before(async () => {
                 await Web3MusicNativeTokenManagement.grantRole(verifyArtistRole, addr1.address);
+                await Web3MusicNativeTokenManagement.grantRole(removeArtistRole, addr1.address);
             });
 
             it('When an artist is added through ftas should emit an event', async () => {
@@ -191,7 +193,7 @@ describe('Web3MusicNativeTokenManagement', () => {
                 await expect(Web3MusicNativeTokenManagement.connect(artist1).addArtist(artist1.address))
                     .to.be.revertedWith(`AccessControl: account ${artist1.address.toLowerCase()} is missing role ${verifyArtistRole}`);
                 await expect(Web3MusicNativeTokenManagement.connect(artist1).removeArtist(artist1.address))
-                    .to.be.revertedWith(`AccessControl: account ${artist1.address.toLowerCase()} is missing role ${verifyArtistRole}`);
+                    .to.be.revertedWith(`AccessControl: account ${artist1.address.toLowerCase()} is missing role ${removeArtistRole}`);
             })
         });
 
@@ -243,7 +245,6 @@ describe('Web3MusicNativeTokenManagement', () => {
                 couponAmount: 20e7, // 20%
                 quorum: 30e7, // 30%
                 majority: 50e7, // 50%
-                transferrable: false
             };
             const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
 
@@ -279,7 +280,6 @@ describe('Web3MusicNativeTokenManagement', () => {
                 couponAmount: 20e7, // 20%
                 quorum: 30e7, // 30%
                 majority: 50e7, // 50%
-                transferrable: false
             };
             const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
             await Web3MusicNativeTokenManagement.declineProposal(hash);
@@ -321,7 +321,6 @@ describe('Web3MusicNativeTokenManagement', () => {
                 couponAmount: 20e7, // 20%
                 quorum: 30e7, // 30%
                 majority: 50e7, // 50%
-                transferrable: false
             };
             const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
             const eventi = ((await (await Web3MusicNativeTokenManagement.approveProposal(hash)).wait()).events)?.filter(e => e.address == DEXLF.address).at(0)!;
