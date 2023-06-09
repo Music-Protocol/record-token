@@ -302,7 +302,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 rewardDeep[i]
             );
         }
-        _jtp.payArtist(artist, accumulator);
+        _jtp.pay(artist, accumulator);
         emit ArtistPaid(artist, accumulator);
     }
 

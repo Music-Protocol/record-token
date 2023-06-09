@@ -10,4 +10,6 @@ interface IDEXLFactory {
     function declineProposal(uint256 index) external;
 
     function changeRewardRate(uint256 rate) external;
+
+    function redeem(uint256 raiseEndDate) external returns (uint256);
 }

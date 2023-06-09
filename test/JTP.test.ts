@@ -138,7 +138,7 @@ describe('JTP', () => {
             //         .to.be.revertedWith('JTP: caller is not the FanToArtistStaking contract');
             // });
             it('Should not be able to payArtist', async () => {
-                await expect(jtp.connect(addr1).payArtist(addr1.address, 100))
+                await expect(jtp.connect(addr1).pay(addr1.address, 100))
                     .to.be.revertedWith('JTP: caller is not the FanToArtistStaking contract');
             });
         });

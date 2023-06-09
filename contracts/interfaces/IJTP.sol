@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface IJTP is IERC20 {
     function lock(address from, uint256 amount) external returns (bool);
 
-    function payArtist(address to, uint256 amount) external;
+    function pay(address to, uint256 amount) external;
 
     function mint(address to, uint256 amount) external;
 

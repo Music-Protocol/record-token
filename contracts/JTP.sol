@@ -91,7 +91,7 @@ contract JTP is IJTP, ERC20, Ownable, Pausable {
         return true;
     }
 
-    function payArtist(address to, uint256 amount) external override onlyTP {
+    function pay(address to, uint256 amount) external override onlyTP {
         _mint(to, amount);
     }
 }

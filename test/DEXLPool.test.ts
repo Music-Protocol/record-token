@@ -97,7 +97,6 @@ describe('DEXLPool', () => {
                 couponAmount,
                 quorum,
                 majority,
-                transferrable: false
             };
             const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
             const temPool = await getPoolFromEvent(await DEXLF.connect(owner).approveProposal(hash));
@@ -107,6 +106,7 @@ describe('DEXLPool', () => {
         it('should allow the leader to deposit again', async () => {
             await stableCoin.connect(leader).approve(POOL.address, 50);
             await POOL.connect(leader).deposit(50, leader.address);
+            await POOL.connect(leader).accept(leader.address);
         });
 
         it('should set the right owner and be able to change the leader', async () => {
@@ -122,6 +122,9 @@ describe('DEXLPool', () => {
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(10, u.address);
+            }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
             }));
             expect(await stableCoin.balanceOf(POOL.address)).to.equal(initialDeposit + (users.length * 10));
             expect(await POOL.totalAssets()).to.equal(initialDeposit + (users.length * 10));
@@ -147,6 +150,9 @@ describe('DEXLPool', () => {
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
+            }));
             await timeMachine((raiseEndDate / 60) + 1);
 
             const raised = Number(await stableCoin.balanceOf(POOL.address));
@@ -165,6 +171,9 @@ describe('DEXLPool', () => {
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
+            }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
@@ -186,6 +195,9 @@ describe('DEXLPool', () => {
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
+            }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevAssets = (await POOL.totalAssets()) as BigNumber;
             const hash = await getProposalHash(await POOL.connect(leader).proposeFunding(artists[0].address, 100, '100 servizio completo'));
@@ -206,6 +218,9 @@ describe('DEXLPool', () => {
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
+            }));
             await timeMachine((raiseEndDate / 60) + 1);
 
             const hash = await getProposalHash(await POOL.connect(leader).proposeReferendum('Meglio far invidia che pietà'));
@@ -223,39 +238,15 @@ describe('DEXLPool', () => {
             await DEXLF.approveProposal(hash);
         });
 
-        it('should test a transferrable proposal', async () => {
-            poolS.transferrable = true;
-            poolS.initialDeposit = 100;
-            await stableCoin.connect(leader).approve(DEXLF.address, poolS.initialDeposit);
-            const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
-            const temPool = await getPoolFromEvent(await DEXLF.connect(owner).approveProposal(hash));
-            POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
-
-            await stableCoin.connect(users[0]).approve(POOL.address, 100);
-            await stableCoin.connect(users[1]).approve(POOL.address, 100);
-            await POOL.connect(users[0]).deposit(100, users[0].address);
-            await POOL.connect(users[1]).deposit(100, users[1].address);
-
-            await POOL.connect(users[0]).transfer(users[1].address, 100);
-            expect(await POOL.balanceOf(users[1].address)).to.equal(200);
-
-            await timeMachine((Number(poolS.raiseEndDate) / 60) + 1);
-            await stableCoin.mint(artists[0].address, 1000);
-            await stableCoin.connect(artists[0]).approve(POOL.address, 300);
-            const prevAddr0 = await stableCoin.balanceOf(users[0].address);
-            const prevAddr1 = await stableCoin.balanceOf(users[1].address);
-
-            await POOL.connect(artists[0]).redistributeRevenue(300);
-            expect(await stableCoin.balanceOf(users[0].address)).to.be.equal(prevAddr0);
-            expect(await stableCoin.balanceOf(users[1].address)).to.be.greaterThan(prevAddr1);
-        });
-
         it('should not execute if quorum is not reached', async () => {
             await Promise.all(users.map(u => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
+            }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
@@ -272,6 +263,9 @@ describe('DEXLPool', () => {
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
+            }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
@@ -298,6 +292,9 @@ describe('DEXLPool', () => {
             await Promise.all(users.map(u => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
+            await Promise.all(users.map(u => {
+                return POOL.connect(leader).accept(u.address);
+            }));
             await timeMachine((raiseEndDate / 60) + 1);
             const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Porto io?'));
 
@@ -323,7 +320,6 @@ describe('DEXLPool', () => {
             couponAmount: 20e7, // 20%
             quorum: 30e7, // 30%
             majority: 50e7, // 50%
-            transferrable: false
         };
 
         const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
@@ -331,16 +327,20 @@ describe('DEXLPool', () => {
         const POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
         await stableCoin.connect(users[0]).approve(POOL.address, 50);
         await POOL.connect(users[0]).deposit(50, users[0].address);
-
+        await POOL.connect(leader).accept(users[0].address);
         await stableCoin.mint(leader.address, 10e5);
-        await expect(POOL.connect(leader).deposit(10e5, leader.address))
+
+        await POOL.connect(leader).deposit(10e5, leader.address);
+        await expect(POOL.connect(leader).accept(leader.address))
             .to.be.revertedWith("DEXLPool: you can not deposit more than hardcap");
+
         await expect(POOL.connect(leader).withdraw(10, leader.address, leader.address))
             .to.be.revertedWith("DEXLPool: you can not withdraw before the raise end date");
 
         await expect(POOL.connect(leader).redeem(10, leader.address, leader.address))
             .to.be.revertedWith("DEXLPool: you can not redeem before the termination date");
         await timeMachine(10);
+        
         await expect(POOL.connect(leader).deposit(10, leader.address))
             .to.be.revertedWith("DEXLPool: you can not join a pool after the raise end date");
         await expect(POOL.connect(leader).redistributeRevenue(0))

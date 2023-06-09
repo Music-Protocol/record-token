@@ -31,8 +31,7 @@ describe('DEXLReward', () => {
         leaderCommission: 10e7,
         couponAmount: 20e7,
         quorum: 10e7,
-        majority: 10e7,
-        transferrable: false
+        majority: 10e7
     };
     const defVeReward = 10;
     const defArtistReward = 10;
@@ -116,6 +115,9 @@ describe('DEXLReward', () => {
             await Promise.all(users.map(u => {
                 return pools[i].connect(u).deposit(100, u.address);
             }));
+            await Promise.all(users.map(u => {
+                return pools[i].connect(users[0]).accept(u.address);
+            }));
 
         }
         await timeMachine((Number(poolStructure.raiseEndDate) / 60) + 1);
@@ -167,13 +169,19 @@ describe('DEXLReward', () => {
         await DEXLF.connect(users[0]).castPreference([pools[0].address], [10e8], [], []);
         await pools[0].connect(users[0]).addArtist(artists[0].address);
         await expect(pools[0].connect(users[0]).addArtist(artists[0].address)).to.be.revertedWith('DEXLPool: artist already nominated');
-        await DEXLF.changeRewardRate(1);
         let rewardRate = 1;
-        await DEXLF.connect(artists[0]).getReward([pools[0].address]);
-        expect(await jtp.balanceOf(artists[0].address)).to.be.equal(users.length * 10 * artists.length * 300 / rewardRate);
+        await DEXLF.changeRewardRate(rewardRate);
+        await pools[0].connect(artists[0]).payArtists();
+        const totalAmountStaked = (await jtp.balanceOf(fanToArtistStaking.address)).toNumber();
+        const time1 = (await pools[0].getActivityTime()).toNumber();
+        const artistR1 = (await jtp.balanceOf(artists[0].address)).toNumber();
+        expect(artistR1).to.be.equal(totalAmountStaked * time1 / rewardRate);
         await timeMachine(90);
-        await DEXLF.changeRewardRate(BigNumber.from('100'));
-        await DEXLF.connect(artists[0]).getReward([pools[0].address]);
-        expect(await jtp.balanceOf(artists[0].address)).to.be.equal(users.length * 10 * artists.length * 300 / rewardRate);
+        rewardRate = 2;
+        await DEXLF.changeRewardRate(rewardRate);
+        await pools[0].connect(artists[0]).payArtists();
+        const time2 = (await pools[0].getActivityTime()).toNumber();
+        const artistR2 = (await jtp.balanceOf(artists[0].address)).toNumber();
+        expect(artistR2 - artistR1).to.be.equal(totalAmountStaked * (time2 - time1) / rewardRate);
     });
 });

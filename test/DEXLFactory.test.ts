@@ -27,7 +27,6 @@ describe('DEXLFactory', () => {
         couponAmount: 20e7,
         quorum: 10e7,
         majority: 10e7,
-        transferrable: false
     };
 
     before(async () => {
@@ -112,32 +111,34 @@ describe('DEXLFactory', () => {
     });
 
     it('should return the token if doesnt reach the softCap', async () => {
-        const user0 = users[0];
+        const leader = users[0];
         const user1 = users[1];
         const user2 = users[2];
-        await stableCoin.connect(user0).approve(DEXLF.address, 50);
+        await stableCoin.connect(leader).approve(DEXLF.address, 50);
         poolS.softCap = 10000;
         poolS.hardCap = 20000;
         poolS.raiseEndDate = 60;
-        const hash = await getIndexFromProposal(await DEXLF.connect(users[0]).proposePool(poolS, "description"));
+        const hash = await getIndexFromProposal(await DEXLF.connect(leader).proposePool(poolS, "description"));
         const pool = await getPoolFromEvent(await DEXLF.approveProposal(hash));
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
         await stableCoin.connect(user1).approve(DEXLPool.address, 100);
         await DEXLPool.connect(user1).deposit(100, user1.address);
+        await DEXLPool.connect(leader).accept(user1.address);
         await stableCoin.connect(user2).approve(DEXLPool.address, 100);
         await DEXLPool.connect(user2).deposit(100, user2.address);
+        await DEXLPool.connect(leader).accept(user2.address);
 
-        expect(await DEXLPool.balanceOf(user0.address)).to.equal(50);
+        expect(await DEXLPool.balanceOf(leader.address)).to.equal(50);
         expect(await DEXLPool.balanceOf(user1.address)).to.equal(100);
         expect(await DEXLPool.balanceOf(user2.address)).to.equal(100);
         expect(await DEXLPool.totalSupply()).to.equal(250);
         expect(await stableCoin.balanceOf(DEXLPool.address)).to.equal(250);
         await timeMachine(4);
-        await DEXLPool.connect(user0).withdraw(await DEXLPool.balanceOf(user0.address), user0.address, user0.address);
+        await DEXLPool.connect(leader).withdraw(await DEXLPool.balanceOf(leader.address), leader.address, leader.address);
         await DEXLPool.connect(user1).withdraw(await DEXLPool.balanceOf(user1.address), user1.address, user1.address);
         await DEXLPool.connect(user2).withdraw(await DEXLPool.balanceOf(user2.address), user2.address, user2.address);
 
-        expect(await stableCoin.balanceOf(user0.address)).to.equal(1000);
+        expect(await stableCoin.balanceOf(leader.address)).to.equal(1000);
         expect(await stableCoin.balanceOf(user1.address)).to.equal(1000);
         expect(await stableCoin.balanceOf(user2.address)).to.equal(1000);
         expect(await DEXLPool.totalSupply()).to.equal(0);

@@ -36,7 +36,7 @@ await jtp.burnFrom(targetAddress, 10e18);
 ### lock
 The `lock` function is restricted to the use of only the address of the `fanToArtistStaking` contract, which, being immutable, can never be changed, guaranteeing that the smart contract is secure.
 
-### payArtist
+### pay
 this function has the same kind of restriction that the lock function has but also for another address, that of the DEXLFactory to allow it to distribute the DEXLReward
 
 # Key Takeaway

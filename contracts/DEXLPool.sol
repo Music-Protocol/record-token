@@ -5,12 +5,16 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/SDEXLPool.sol";
 import "./interfaces/IFanToArtistStaking.sol";
+import "./interfaces/IDEXLFactory.sol";
 
 contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     using Math for uint256;
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     event ReferendumProposed(
         address indexed proposer,
         uint256 indexed hash,
@@ -37,6 +41,11 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         uint256 amount,
         bool isFor
     );
+    event RequestCreated(
+        address indexed requester,
+        uint256 indexed assets,
+        address indexed receiver
+    );
     event ProposalExecuted(uint256 indexed hash, address indexed executor);
     event RevenueRedistributed(address indexed executor, uint256 amount);
     event LeaderChanged(address indexed voter);
@@ -44,8 +53,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     event ArtistRemoved(address indexed artist);
 
     IFanToArtistStaking private _ftas;
+    address private _jtp;
     address private _leader;
     address private _fundingTokenContract;
+    address private _factory;
     uint256 private _softCap;
     uint256 private _hardCap;
     uint256 private _initialDeposit;
@@ -58,10 +69,20 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     uint32 private _couponAmount;
     uint32 private _quorum;
     uint32 private _majority;
+
+    uint32 private constant MAX_SHAREHOLDER = 18;
+    uint32 private constant MAX_ARTIST = 50;
+
     bool private _transferrable;
     // a uint128 can be added without taking another slot
 
-    address[] private _shareholders;
+    EnumerableSet.AddressSet private _shareholders;
+
+    struct Request {
+        address receiver;
+        uint256 assets;
+    }
+    mapping(address => Request) private _requests;
 
     struct Proposal {
         address target;
@@ -76,7 +97,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
 
     //--------------artist nomination-----------------
     //internal
-    address[] private _artistNominated;
+    EnumerableSet.AddressSet private _artistNominated;
 
     constructor() {
         _disableInitializers();
@@ -86,8 +107,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     function initialize(
         Pool memory pool,
         address newOwner,
-        address ftas_
+        address ftas_,
+        address jtp_
     ) public initializer {
+        _factory = _msgSender();
         require(
             pool.softCap <= pool.hardCap,
             "DEXLPool: softcap must be less or equal than the hardcap"
@@ -128,6 +151,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             ftas_ != address(0),
             "DEXLPool: the fanToArtistStaking address can not be 0"
         );
+        require(jtp_ != address(0), "DEXLPool: the jtp address can not be 0");
         super.__ERC4626_init(IERC20Upgradeable(pool.fundingTokenContract));
         _leader = pool.leader;
         _softCap = pool.softCap;
@@ -136,16 +160,17 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         _raiseEndDate = uint40(block.timestamp) + pool.raiseEndDate;
         _couponAmount = pool.couponAmount;
         _initialDeposit = pool.initialDeposit;
+        _shareholders.add(pool.leader);
         _terminationDate = uint40(block.timestamp) + pool.terminationDate;
-        _shareholders.push(pool.leader);
         _leaderCommission = pool.leaderCommission;
-        _transferrable = pool.transferrable;
+        // _transferrable = pool.transferrable;
         _votingTime = pool.votingTime;
         _quorum = pool.quorum;
         _majority = pool.majority;
         super._mint(pool.leader, pool.initialDeposit);
         _transferOwnership(newOwner);
         _ftas = IFanToArtistStaking(ftas_);
+        _jtp = jtp_;
     }
 
     modifier onlyLeader() {
@@ -169,15 +194,6 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             "DEXLPool: is not active"
         );
         _;
-    }
-
-    function _isNeverBeenShareholder(
-        address target
-    ) internal view returns (bool) {
-        for (uint256 i = 0; i < _shareholders.length; i++) {
-            if (_shareholders[i] == target) return true;
-        }
-        return false;
     }
 
     function _isShareholder(address target) internal view returns (bool) {
@@ -209,6 +225,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         return _leader;
     }
 
+    function getActivityTime() external view returns (uint256) {
+        return block.timestamp - _raiseEndDate;
+    }
+
     function setLeader(address leader_) external onlyOwner {
         require(
             leader_ != address(0),
@@ -222,39 +242,64 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         uint256 assets,
         address receiver
     ) public virtual override returns (uint256) {
+        // We do not check if a request has already been made
+        // because a user may choose to replace it with another one.
+        // totalSupply + shares > hardCap is checked on accept()
         require(
             block.timestamp < _raiseEndDate,
             "DEXLPool: you can not join a pool after the raise end date"
         );
-        require(
-            totalAssets() + assets <= _hardCap,
-            "DEXLPool: you can not deposit more than hardcap"
-        );
-        if (!_isNeverBeenShareholder(receiver)) _shareholders.push(receiver);
-        return super.deposit(assets, receiver);
+        _requests[_msgSender()] = Request({receiver: receiver, assets: assets});
+        emit RequestCreated(_msgSender(), assets, receiver);
+        return assets;
     }
 
     function mint(
         uint256 shares,
         address receiver
     ) public virtual override returns (uint256) {
+        // We do not check if a request has already been made
+        // because a user may choose to replace it with another one.
+        // totalSupply + shares > hardCap is checked on accept()
         uint256 assets = previewMint(shares);
         require(
             block.timestamp < _raiseEndDate,
             "DEXLPool: you can not join a pool after the raise end date"
         );
+        _requests[_msgSender()] = Request({receiver: receiver, assets: assets});
+        emit RequestCreated(_msgSender(), assets, receiver);
+        return assets;
+    }
+
+    function accept(
+        address requester
+    ) public virtual onlyLeader returns (uint256) {
+        Request memory req = _requests[requester];
+        uint256 shares = previewDeposit(req.assets);
+
+        delete _requests[requester];
         require(
-            totalAssets() + assets <= _hardCap,
+            block.timestamp < _raiseEndDate,
+            "DEXLPool: you can not join a pool after the raise end date"
+        );
+        require(
+            totalSupply() + shares <= _hardCap,
             "DEXLPool: you can not deposit more than hardcap"
         );
-        if (!_isNeverBeenShareholder(receiver)) _shareholders.push(receiver);
-        return super.deposit(assets, receiver);
+        _shareholders.add(req.receiver);
+        require(
+            _shareholders.length() <= MAX_SHAREHOLDER,
+            "DEXLPool: the maximum number of shareholder has already been reached"
+        );
+
+        super._deposit(requester, req.receiver, req.assets, shares);
+        return shares;
     }
 
     function redistributeRevenue(uint256 amount) external {
         require(amount != 0, "DEXLPool: the amount can not be 0");
         require(
-            block.timestamp > _raiseEndDate ,
+            block.timestamp > _raiseEndDate,
             "DEXLPool: the redistribution can happen only after the founding phase"
         );
         SafeERC20Upgradeable.safeTransferFrom(
@@ -276,15 +321,15 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         );
         amount = amount.mulDiv(_couponAmount, 10e8, Math.Rounding.Down);
 
-        for (uint256 i = 0; i < _shareholders.length; i++) {
+        for (uint256 i = 0; i < _shareholders.length(); i++) {
             uint256 toPay = amount.mulDiv(
-                balanceOf(_shareholders[i]),
+                balanceOf(_shareholders.at(i)),
                 totalSupply(),
                 Math.Rounding.Down
             );
             SafeERC20Upgradeable.safeTransfer(
                 IERC20Upgradeable(_fundingTokenContract),
-                _shareholders[i],
+                _shareholders.at(i),
                 toPay
             );
         }
@@ -417,7 +462,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         string memory description
     ) external onlyLeader activePool {
         require(
-            block.timestamp > _raiseEndDate ,
+            block.timestamp > _raiseEndDate,
             "DEXLPool: the redistribution can happen only after the founding phase"
         );
         bytes memory request = abi.encodeWithSignature(
@@ -444,6 +489,21 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         );
     }
 
+    function payArtists() public activePool {
+        require(
+            _artistNominated.length() > 0,
+            "DEXLPool::payNominatedArtists: no artist is nominated."
+        );
+        uint256 amount = IDEXLFactory(_factory).redeem(_raiseEndDate);
+        for (uint i = 0; i < _artistNominated.length(); i++) {
+            SafeERC20Upgradeable.safeTransfer(
+                IERC20Upgradeable(_jtp),
+                _artistNominated.at(i),
+                amount / _artistNominated.length()
+            );
+        }
+    }
+
     function changeTerminationDate() external {
         require(
             _msgSender() == address(this),
@@ -456,58 +516,40 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         return _terminationDate;
     }
 
-    function getActivity() external view returns (uint256) {
-        return block.timestamp - _raiseEndDate;
-    }
-
-    function _getNominationIndex(
-        address artist
-    ) internal view returns (uint256) {
-        for (uint i = 0; i < _artistNominated.length; i++)
-            if (_artistNominated[i] == artist) return i;
-        return 0;
-    }
-
     function addArtist(address artist) external onlyLeader activePool {
-        uint256 index = _getNominationIndex(artist);
         require(
-            _artistNominated.length == 0 || _artistNominated[index] != artist,
+            _artistNominated.length() + 1 <= MAX_ARTIST,
+            "DEXLPool: artist already nominated"
+        );
+        require(
+            !_artistNominated.contains(artist),
             "DEXLPool: artist already nominated"
         );
         require(
             _ftas.isVerified(artist),
             "DEXLPool::artistNomination: the artist is not verified"
         );
-        _artistNominated.push(artist);
+        _artistNominated.add(artist);
 
         emit ArtistNominated(artist);
     }
 
     function removeArtist(address artist) external onlyLeader activePool {
-        uint256 index = _getNominationIndex(artist);
-        require(
-            _artistNominated.length > 0 && (_artistNominated[index] == artist),
-            "DEXLPool: artist not nominated"
-        );
-        //shifting
-        _artistNominated[index] = _artistNominated[_artistNominated.length - 1];
-        _artistNominated.pop();
-
+        _artistNominated.remove(artist);
         emit ArtistRemoved(artist);
     }
 
-    function isNominated(address artist) external view returns (bool) {
-        return _artistNominated[_getNominationIndex(artist)] == artist;
-    }
-
-    function getTotalNominations() external view returns (uint256) {
-        uint counter = 0;
-        for (uint i = 0; i < _artistNominated.length; i++)
-            if (_ftas.isVerified(_artistNominated[i])) counter++;
-        return 10e8 / counter;
+    function removeArtistNotNominated(address artist) external {
+        require(
+            !_ftas.isVerified(artist),
+            "DEXLPool::removeArtistNotNominated: the artist is verified"
+        );
+        _artistNominated.remove(artist);
+        emit ArtistRemoved(artist);
     }
 
     // OVERRIDEN METHODS OF TRANSFER
+    // replace false with _transferrable if in the future we want to allow these methods
 
     function transfer(
         address to,
@@ -518,8 +560,8 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         override(ERC20Upgradeable, IERC20Upgradeable)
         returns (bool)
     {
-        require(_transferrable, "DEXLPool: function disabled");
-        if (!_isNeverBeenShareholder(to)) _shareholders.push(to);
+        require(false, "DEXLPool: function disabled");
+        _shareholders.add(to);
         return super.transfer(to, amount);
     }
 
@@ -533,8 +575,8 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         override(ERC20Upgradeable, IERC20Upgradeable)
         returns (bool)
     {
-        require(_transferrable, "DEXLPool: function disabled");
-        if (!_isNeverBeenShareholder(to)) _shareholders.push(to);
+        require(false, "DEXLPool: function disabled");
+        _shareholders.add(to);
         return super.transferFrom(from, to, amount);
     }
 
@@ -547,7 +589,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         override(ERC20Upgradeable, IERC20Upgradeable)
         returns (bool)
     {
-        require(_transferrable, "DEXLPool: function disabled");
+        require(false, "DEXLPool: function disabled");
         return super.approve(spender, amount);
     }
 
@@ -561,7 +603,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         override(ERC20Upgradeable, IERC20Upgradeable)
         returns (uint256)
     {
-        require(_transferrable, "DEXLPool: function disabled");
+        require(false, "DEXLPool: function disabled");
         return super.allowance(owner, spender);
     }
 
@@ -569,7 +611,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         address spender,
         uint256 addedValue
     ) public virtual override(ERC20Upgradeable) returns (bool) {
-        require(_transferrable, "DEXLPool: function disabled");
+        require(false, "DEXLPool: function disabled");
         return super.increaseAllowance(spender, addedValue);
     }
 
@@ -577,7 +619,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         address spender,
         uint256 subtractedValue
     ) public virtual override(ERC20Upgradeable) returns (bool) {
-        require(_transferrable, "DEXLPool: function disabled");
+        require(false, "DEXLPool: function disabled");
         return super.decreaseAllowance(spender, subtractedValue);
     }
 }

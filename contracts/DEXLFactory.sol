@@ -22,7 +22,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
     );
     event PoolDeclined(address indexed leader, uint256 indexed index);
     event PoolProposed(uint256 indexed index, Pool pool, string description);
-    event ArtistPaid(address indexed artist, uint256 amount);
+    event PoolRedeem(address indexed pool, uint256 amount);
     event PreferencesCasted(
         address indexed user,
         address[] pools,
@@ -137,7 +137,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
             initialDeposit: pool.initialDeposit,
             terminationDate: pool.terminationDate,
             votingTime: pool.votingTime,
-            transferrable: pool.transferrable,
+            // transferrable: pool.transferrable,
             quorum: pool.quorum,
             majority: pool.majority
         });
@@ -162,7 +162,7 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
             "DEXLFactory: Proposal can not be deployed"
         );
         address pool = Clones.clone(_implementationDEXLPool);
-        DEXLPool(pool).initialize(proposals[index], _msgSender(), _ftas);
+        DEXLPool(pool).initialize(proposals[index], _msgSender(), _ftas, address(_jtp));
         SafeERC20Upgradeable.safeTransfer(
             IERC20Upgradeable(proposals[index].fundingTokenContract),
             pool,
@@ -194,41 +194,25 @@ contract DEXLFactory is Ownable, IDEXLFactory, Initializable {
         emit PoolDeclined(proposals[index].leader, index);
     }
 
-    function getReward(address[] memory targetPools) external {
-        require(
-            IFanToArtistStaking(_ftas).isVerified(_msgSender()),
-            "DEXLFactory: artist is not verified"
-        );
-        uint256 accumulator = 0;
-        for (uint i = 0; i < targetPools.length; i++) {
-            require(
-                _pools[targetPools[i]],
-                "DEXLFactory: one of the pool in targetPools is not official"
-            );
-            require(
-                DEXLPool(targetPools[i]).isActive(),
-                "DEXLFactory: one of the pool in targetPools is not active"
-            );
-            require(
-                DEXLPool(targetPools[i]).isNominated(_msgSender()),
-                "DEXLFactory: the caller is not nominated in one of the pools"
-            );
-            accumulator += _poolNomination[targetPools[i]].mulDiv(
-                DEXLPool(targetPools[i]).getTotalNominations(),
-                10e8
-            );
-        }
-        uint256 amountJTPEligible =  0;
-            // IFanToArtistStaking(_ftas)
-            // .calculateOverallStake(_lastRedeem[_msgSender()], block.timestamp) /
-            _dexlRewardRate;
-        uint256 amountJTP = amountJTPEligible.mulDiv(
-            accumulator,
+    function redeem(
+        uint256 raiseEndDate
+    ) external virtual override returns (uint256) {
+        require(_pools[_msgSender()], "DEXLFactory: the pool is not official");
+        uint256 amountJTPEligible = IJTP(_jtp).balanceOf(_ftas).mulDiv(
+            _poolNomination[_msgSender()],
             _totalNomination
         );
-        IJTP(_jtp).payArtist(_msgSender(), amountJTP);
+
+        uint256 amount = amountJTPEligible.mulDiv(
+            (block.timestamp -
+                Math.max(_lastRedeem[_msgSender()], raiseEndDate)),
+            _dexlRewardRate
+        );
+
+        IJTP(_jtp).pay(_msgSender(), amount);
         _lastRedeem[_msgSender()] = uint40(block.timestamp);
-        emit ArtistPaid(_msgSender(), amountJTP);
+        emit PoolRedeem(_msgSender(), amount);
+        return amount;
     }
 
     function castPreference(
