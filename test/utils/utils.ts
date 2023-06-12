@@ -68,6 +68,34 @@ async function getStakeFromEvent(receipt: ContractTransaction) {
     }
 }
 
+async function getStakeIncreaseFromEvent(previous: any, receipt: ContractTransaction) {
+    const args = (await receipt.wait()).events?.find(e => e.event == 'StakeIncreased')?.args;
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    return {
+        artist: args?.artist,
+        sender: args?.sender,
+        amount: previous?.amount + args?.amount.toNumber(),
+        end: previous?.end,
+        start: blockBefore.timestamp,
+        index: args?.newIndex.toNumber()
+    }
+}
+
+async function getStakeArtistFromEvent(previous: any, receipt: ContractTransaction) {
+    const args = (await receipt.wait()).events?.find(e => e.event == 'StakeChangedArtist')?.args;
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    return {
+        artist: args?.artist,
+        sender: args?.sender,
+        amount: previous?.amount,
+        end: args?.end,
+        start: blockBefore.timestamp,
+        index: args?.index
+    }
+}
+
 async function getStakeExtendedFromEvent(previous: any, receipt: ContractTransaction) {
     const args = (await receipt.wait()).events?.find(e => e.event == 'StakeEndChanged')?.args;
     return {
@@ -113,5 +141,7 @@ export {
     calcPoolRevenues,
     getIndexFromProposal,
     getStakeFromEvent,
-    getStakeExtendedFromEvent
+    getStakeExtendedFromEvent,
+    getStakeIncreaseFromEvent,
+    getStakeArtistFromEvent
 };

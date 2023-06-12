@@ -36,6 +36,18 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         address indexed sender,
         uint end
     );
+    event StakeIncreased(
+        address indexed artist,
+        address indexed sender,
+        uint amount,
+        uint newIndex
+    );
+    event StakeChangedArtist(
+        address indexed artist,
+        address indexed sender,
+        uint amount,
+        address indexed newArtist
+    );
 
     struct Stake {
         uint256 amount;
@@ -411,24 +423,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 _stake[artist][_msgSender()][index].amount + amount, //amount
                 prev - _stake[artist][_msgSender()][index].end //end
             );
-            emit StakeEndChanged(
-                artist,
-                _msgSender(),
-                index,
-                _stake[artist][_msgSender()][index].end
-            );
-            emit StakeRedeemed(
-                artist,
-                _msgSender(),
-                _stake[artist][_msgSender()][index].end
-            );
-            emit StakeCreated(
-                artist,
-                _msgSender(),
-                _stake[artist][_msgSender()][index + 1].amount,
-                index + 1,
-                prev
-            );
+            emit StakeIncreased(artist, _msgSender(), amount, index + 1);
         }
     }
 
@@ -490,23 +485,11 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             _stake[artist][_msgSender()][index].amount, //amount
             prev - _stake[artist][_msgSender()][index].end //end
         );
-        emit StakeEndChanged(
+        emit StakeChangedArtist(
             artist,
             _msgSender(),
-            index,
-            _stake[artist][_msgSender()][index].end
-        );
-        emit StakeRedeemed(
-            artist,
-            _msgSender(),
-            _stake[artist][_msgSender()][index].end
-        );
-        emit StakeCreated(
-            newArtist,
-            _msgSender(),
-            _stake[artist][_msgSender()][index].amount,
-            index + 1,
-            prev
+            _stake[newArtist][_msgSender()].length - 1,
+            newArtist
         );
     }
 

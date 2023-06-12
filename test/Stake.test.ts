@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine, parseDetailedStake, matchDetailedStakes, getStakeFromEvent, getStakeExtendedFromEvent } from './utils/utils';
+import { timeMachine, parseDetailedStake, matchDetailedStakes, getStakeFromEvent, getStakeExtendedFromEvent, getStakeArtistFromEvent, getStakeIncreaseFromEvent } from './utils/utils';
 import { ContractTransaction } from '@ethersproject/contracts';
 
 const cache = {};
@@ -112,7 +112,7 @@ describe('Stake Simulation', () => {
         matchDetailedStakes(parseDetailedStake(parsed), artists[0].address, user.address, 50, 30);
 
         const event2 = await ftas.connect(user).increaseAmountStaked(artists[0].address, 50);
-        const parsed2 = await getStakeFromEvent(event2);
+        const parsed2 = await getStakeIncreaseFromEvent(parsed, event2);
         expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(100);
         expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(0);
         matchDetailedStakes(parseDetailedStake(parsed2), artists[0].address, user.address, 100, parsed2.end - parsed2.start);
@@ -174,7 +174,7 @@ describe('Stake Simulation', () => {
         await timeMachine(5);
 
         const event2 = await ftas.connect(user).changeArtistStaked(artists[0].address, artists[1].address);
-        const parsed2 = await getStakeFromEvent(event2);
+        const parsed2 = await getStakeArtistFromEvent(parsed, event2);
         expect(await Web3MusicNativeToken.balanceOf(ftas.address)).to.equal(50);
         expect(await Web3MusicNativeToken.balanceOf(user.address)).to.equal(50);
 
