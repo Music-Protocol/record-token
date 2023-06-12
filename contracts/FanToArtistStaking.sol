@@ -396,7 +396,11 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             "FanToArtistStaking: no stake found"
         );
         uint index = _stake[artist][_msgSender()].length - 1;
-        
+        require(
+            _stake[artist][_msgSender()][index].end - _minStakePeriod >=
+                block.timestamp,
+            "FanToArtistStaking: can not increase the amount below the minimum stake period"
+        );
         if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()][index].redeemed = true;
             uint40 prev = _stake[artist][_msgSender()][index].end;
