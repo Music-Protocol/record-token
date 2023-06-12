@@ -15,7 +15,8 @@ async function main() {
   const DEXLRATE = 1;
   const daoQuorum = 10e7;
   const daoMajority = 50e7 + 1;
-
+  const signers = await ethers.getSigners();
+  const offChain =  signers[0].address; //TODO replace
   const factoryPool = await ethers.getContractFactory('DEXLPool');
   let pool = await factoryPool.deploy() as DEXLPool;
   await pool.deployed();
@@ -32,7 +33,7 @@ async function main() {
   let Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address, DEXLF.address);
   await Web3MusicNativeToken.deployed();
 
-  await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+  await fanToArtistStaking.initialize(Web3MusicNativeToken.address, offChain, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
   await DEXLF.initialize(fanToArtistStaking.address, pool.address, Web3MusicNativeToken.address, 864000, DEXLRATE);
 
   const managementFactory = await ethers.getContractFactory("Web3MusicNativeTokenManagement");
