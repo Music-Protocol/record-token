@@ -6,9 +6,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "hardhat/console.sol";
 
 contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
+    using Math for uint256;
+
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
@@ -57,6 +60,12 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         bool redeemed;
     }
 
+    struct ArtistRewardSettled {
+        uint256 amount;
+        uint256 rateIndex;
+        bool redeemed;
+    }
+
     struct ArtistReward {
         uint256 rate;
         uint40 start;
@@ -64,7 +73,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     }
 
     ArtistReward[] private _artistReward;
-    // to track all the
 
     IWeb3MusicNativeToken private _Web3MusicNativeToken;
 
@@ -72,7 +80,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     //_stake[artist][staker]
     //                      = Stake[]
     //                      .push(new Stake)
-
+    mapping(address => mapping(uint256 => ArtistRewardSettled))
+        private _artistRewardSettled;
+    mapping(address => uint256) private _artistRewardSettledLastDay;
     mapping(address => uint40) private _verifiedArtists; // 0 never added | 1 addedd | else is the timestamp of removal
 
     uint256 private _veWeb3MusicNativeTokenRewardRate; //change onylOwner
@@ -219,103 +229,96 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     //     return 0;
     // }
 
-    function _getSingleReward(
+    function _updateReward(
         address artist,
-        address user,
-        uint stakeIndex,
-        uint rewardIndex,
-        uint rewardDeep
-    ) internal returns (uint) {
-        require(
-            _stake[artist][user][stakeIndex].lastPayment <
-                _stake[artist][user][stakeIndex].end,
-            "FanToArtistStaking: a stake was already redeemed completely"
-        );
-        uint accumulator = 0;
-        if (_stake[artist][user][stakeIndex].lastPayment == 0)
-            require(
-                (_artistReward[rewardIndex].start <=
-                    _stake[artist][user][stakeIndex].start) &&
-                    (_artistReward[rewardIndex].end >=
-                        _stake[artist][user][stakeIndex].start),
-                "FanToArtistStaking: the reward index provided was wrong"
-            );
-        else
-            require(
-                (_artistReward[rewardIndex].start <=
-                    _stake[artist][user][stakeIndex].lastPayment) &&
-                    (_artistReward[rewardIndex].end >=
-                        _stake[artist][user][stakeIndex].lastPayment),
-                "FanToArtistStaking: the reward index provided was wrong"
-            );
-
-        while (rewardIndex < _artistReward.length && rewardDeep >= 1) {
-            uint40 start = _stake[artist][user][stakeIndex].start;
-            uint40 end = _stake[artist][user][stakeIndex].end;
-
-            if (_verifiedArtists[artist] > 1 && end < _verifiedArtists[artist])
-                end = _artistReward[rewardIndex].end;
-            else if (end > _artistReward[rewardIndex].end)
-                end = _artistReward[rewardIndex].end;
-            else if (end > block.timestamp) end = uint40(block.timestamp);
-
-            if (start < _artistReward[rewardIndex].start)
-                start = _artistReward[rewardIndex].start;
-            else if (start < _stake[artist][user][stakeIndex].lastPayment)
-                start = _stake[artist][user][stakeIndex].lastPayment;
-
-            accumulator +=
-                ((end - start) * _stake[artist][user][stakeIndex].amount) /
-                _artistReward[rewardIndex].rate;
-            if (
-                _stake[artist][user][stakeIndex].end <=
-                _artistReward[rewardIndex].end
-            ) rewardDeep = 1;
-            rewardIndex++;
-            rewardDeep--;
+        uint amount,
+        bool isIncrease
+    ) internal {
+        uint today = getDays();
+        if (_artistRewardSettled[artist][today].rateIndex == 0) {
+            //TODO invalidate index 0
+            _artistRewardSettled[artist][today] = ArtistRewardSettled({
+                amount: 0,
+                rateIndex: _artistReward.length - 1,
+                redeemed: false
+            });
         }
-        if (block.timestamp > _stake[artist][user][stakeIndex].end)
-            _stake[artist][user][stakeIndex].lastPayment = _stake[artist][user][
-                stakeIndex
-            ].end;
-        else
-            _stake[artist][user][stakeIndex].lastPayment = uint40(
-                block.timestamp
-            );
 
-        return accumulator;
+        if (isIncrease) _artistRewardSettled[artist][today].amount += amount;
+        else _artistRewardSettled[artist][today].amount -= amount;
+
+        if (_artistRewardSettledLastDay[artist] != today)
+            _artistRewardSettledLastDay[artist] = today;
     }
 
-    function getReward(
-        address artist,
-        address[] memory user,
-        uint[] memory stakeIndex,
-        uint[] memory rewardIndex,
-        uint[] memory rewardDeep
-    ) external {
+    // function _decreaseReward(
+    //     address artist,
+    //     uint amount
+    // ) internal view returns (uint) {
+    //     uint today = getDays();
+    // }
+
+    function checkRewardRate(
+        uint target,
+        uint rewardIndex
+    ) internal view returns (bool) {
+        if (
+            target >= _artistReward[rewardIndex].start &&
+            target <= _artistReward[rewardIndex].end
+        ) return true;
+        return false;
+    }
+
+    function getDays() internal view returns (uint256) {
+        return block.timestamp % 1 days;
+    }
+
+    function getReward(address artist, uint256[] memory daysToRedeem) external {
         require(
-            user.length > 0 &&
-                user.length == stakeIndex.length &&
-                user.length == rewardIndex.length &&
-                user.length == rewardDeep.length,
+            daysToRedeem.length > 0,
             "FanToArtistStaking: input validation failed, check the lengths of the arrays"
         );
         uint accumulator = 0;
-        for (uint i = 0; i < user.length; i++) {
+        for (uint i = 0; i < daysToRedeem.length; i++) {
             require(
-                stakeIndex[i] < _stake[artist][user[i]].length,
-                "FanToArtistStaking: no stake found with this index"
+                daysToRedeem[i] < getDays(),
+                "FanToArtistStaking: you can redeem only days before today"
             );
-            accumulator += _getSingleReward(
-                artist,
-                user[i],
-                stakeIndex[i],
-                rewardIndex[i],
-                rewardDeep[i]
+            _artistRewardSettled[artist][i].redeemed = true;
+            accumulator += _artistRewardSettled[artist][i].amount.mulDiv(
+                1 days,
+                _artistReward[_artistRewardSettled[artist][i].amount].rate
             );
         }
         _Web3MusicNativeToken.pay(artist, accumulator);
         emit ArtistPaid(artist, accumulator);
+    }
+
+    function fillEmptyRewards(
+        address[] memory artists,
+        uint256[] memory daysToFill,
+        uint256[] memory rewardRate
+    ) external {
+        require(
+            daysToFill.length > 0 &&
+                artists.length == daysToFill.length &&
+                rewardRate.length == artists.length,
+            "FanToArtistStaking: input validation failed, check the lengths of the arrays"
+        );
+        for (uint i = 0; i < artists.length; i++) {
+            uint lastDay = _artistRewardSettledLastDay[artists[i]];
+            require(
+                checkRewardRate(daysToFill[i] * 1 days, rewardRate[i]),
+                "FanToArtistStaking: rewardRate wrong for one of the selected days"
+            );
+            _artistRewardSettled[artists[i]][
+                daysToFill[i]
+            ] = ArtistRewardSettled({
+                amount: _artistRewardSettled[artists[i]][lastDay].amount,
+                redeemed: false,
+                rateIndex: rewardRate[i]
+            });
+        }
     }
 
     function addArtist(
@@ -374,6 +377,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     }
 
     function stake(
+        //TODO
         address artist,
         uint256 amount,
         uint40 end
@@ -403,6 +407,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     }
 
     function increaseAmountStaked(address artist, uint256 amount) external {
+        //TODO
         require(
             _stake[artist][_msgSender()].length > 0,
             "FanToArtistStaking: no stake found"
@@ -428,6 +433,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     }
 
     function extendStake(address artist, uint40 newEnd) external {
+        //TODO
         require(
             _stake[artist][_msgSender()].length > 0,
             "FanToArtistStaking: no stake found"
@@ -456,6 +462,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     }
 
     function changeArtistStaked(
+        //TODO
         address artist,
         address newArtist
     ) external onlyVerifiedArtist(newArtist) {
