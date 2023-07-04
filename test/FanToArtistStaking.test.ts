@@ -93,7 +93,7 @@ describe('FanToArtistStaking', () => {
             times.push(time);
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr1.address, 100, 0, anyValue);
+                .withArgs(artist1.address, addr1.address, 100, anyValue);
             stake1 = {
                 artist: artist1.address,
                 amount,
@@ -110,7 +110,7 @@ describe('FanToArtistStaking', () => {
             const blockNumBefore = await ethers.provider.getBlockNumber();
             const blockBefore = await ethers.provider.getBlock(blockNumBefore);
             await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
-            await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0);
+            await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
             stake1.redeemed = true;
 
             expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(0);
@@ -123,7 +123,7 @@ describe('FanToArtistStaking', () => {
 
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr1.address, amount, 1, anyValue);
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
             expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(100);
             expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
         });
@@ -151,8 +151,8 @@ describe('FanToArtistStaking', () => {
             });
 
             it('Should not be able to redeem a non existent stake', async () => {
-                await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, addr1.address, 123))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found with this index');
+                await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, addr1.address))
+                    .to.be.revertedWith('FanToArtistStaking: stake not found');
             });
 
             it('Should not be able to transferOwnership if not the Owner', async () => {
