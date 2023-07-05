@@ -32,7 +32,7 @@ describe('DAO', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime, 3);
 
         const cDAO = await ethers.getContractFactory('Web3MusicNetworkDAO');
         dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900) as Web3MusicNetworkDAO;
