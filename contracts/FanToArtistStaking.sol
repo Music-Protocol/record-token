@@ -87,6 +87,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     address private _offChain;
 
     uint256 private REWARD_LIMIT;
+    uint256 private CHANGE_REWARD_LIMIT;
 
     function initialize(
         address Web3MusicNativeToken_,
@@ -255,6 +256,12 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         require(
             rate != 0,
             "FanToArtistStaking: the artist reward rate can not be 0"
+        );
+        require(
+            _artistReward[_artistReward.length - 1].start +
+                CHANGE_REWARD_LIMIT >=
+                block.timestamp,
+            "FanToArtistStaking: the artist reward cannot be changed yet"
         );
         _artistReward[_artistReward.length - 1].end = uint40(block.timestamp);
         _artistReward.push(
