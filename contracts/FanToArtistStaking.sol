@@ -75,7 +75,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
 
     mapping(address => ArtistCheckpoint) private _artistCheckoints;
 
-    mapping(address => uint40) private _verifiedArtists; // 0 never added | 1 addedd | else is the timestamp of removal
+    mapping(address => bool) private _verifiedArtists; // 0 never added | 1 addedd | else is the timestamp of removal
 
     uint256 private _veWeb3MusicNativeTokenRewardRate; //change onylOwner
     uint40 private _minStakePeriod; //change onylOwner
@@ -96,7 +96,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         uint256 artistWeb3MusicNativeTokenRewardRate,
         uint40 min,
         uint40 max,
-        uint limit_
+        uint limit_,
+        uint changeRewardLimit_
     ) public initializer {
         require(
             Web3MusicNativeToken_ != address(0),
@@ -128,11 +129,12 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         _maxStakePeriod = max;
         _offChain = offChain_;
         REWARD_LIMIT = limit_;
+        CHANGE_REWARD_LIMIT = changeRewardLimit_;
     }
 
     modifier onlyVerifiedArtist(address artist) {
         require(
-            _verifiedArtists[artist] == 1,
+            _verifiedArtists[artist],
             "FanToArtistStaking: the artist is not a verified artist"
         );
         _;
@@ -243,8 +245,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         address artist,
         address sender
     ) external override onlyOwner {
-        if (_verifiedArtists[artist] == 1) {
-            _verifiedArtists[artist] = uint40(block.timestamp);
+        if (_verifiedArtists[artist]) {
+            _verifiedArtists[artist] = false;
+            _getReward(artist);
+            delete _artistCheckoints[artist];
             emit ArtistRemoved(artist, sender);
         }
     }
@@ -259,7 +263,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         );
         require(
             _artistReward[_artistReward.length - 1].start +
-                CHANGE_REWARD_LIMIT >=
+                CHANGE_REWARD_LIMIT <=
                 block.timestamp,
             "FanToArtistStaking: the artist reward cannot be changed yet"
         );
@@ -298,8 +302,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             artist != address(0),
             "FanToArtistStaking: the artist address can not be 0"
         );
-        if (_verifiedArtists[artist] != 1) {
-            _verifiedArtists[artist] = 1;
+        if (!_verifiedArtists[artist]) {
+            _verifiedArtists[artist] = true;
             _artistCheckoints[artist] = ArtistCheckpoint({
                 amountAcc: 0,
                 lastRedeem: uint40(block.timestamp),
@@ -461,7 +465,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     }
 
     function isVerified(address artist) external view returns (bool) {
-        return _verifiedArtists[artist] == 1;
+        return _verifiedArtists[artist];
     }
 
     // ----------VOTING POWER------------------

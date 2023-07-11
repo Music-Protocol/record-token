@@ -32,7 +32,7 @@ describe('DAO', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime, 3);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime, 3, 10);
 
         const cDAO = await ethers.getContractFactory('Web3MusicNetworkDAO');
         dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900) as Web3MusicNetworkDAO;
@@ -50,7 +50,7 @@ describe('DAO', () => {
                 promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10, 300)))
         );
         await fanToArtistStaking.connect(owner).setVotingPowerOf(users.map(u => u.address), users.map(u => 1000));
-        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length*1000);
+        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length * 1000);
         await Promise.all(promises);
         await timeMachine(6);
         await Web3MusicNativeToken.connect(owner).transferOwnership(dao.address);//give ownership of Web3MusicNativeToken to dao
