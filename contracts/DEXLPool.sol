@@ -163,7 +163,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         _raiseEndDate = uint40(block.timestamp) + pool.raiseEndDate;
         _couponAmount = pool.couponAmount;
         _initialDeposit = pool.initialDeposit;
-        _shareholders.add(pool.leader);
+        require(
+            _shareholders.add(pool.leader),
+            "DEXLPool: error during EnumerableSet add"
+        );
         _terminationDate = uint40(block.timestamp) + pool.terminationDate;
         _leaderCommission = pool.leaderCommission;
         // _transferrable = pool.transferrable;
@@ -294,7 +297,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             totalSupply() + shares <= _hardCap,
             "DEXLPool: you can not deposit more than hardcap"
         );
-        _shareholders.add(req.receiver);
+        require(
+            _shareholders.add(req.receiver),
+            "DEXLPool: error while adding to shareholder EnumerableSet"
+        );
         require(
             _shareholders.length() <= MAX_SHAREHOLDER,
             "DEXLPool: the maximum number of shareholder has already been reached"
@@ -533,14 +539,19 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         require(
             _ftas.isVerified(artist),
             "DEXLPool::artistNomination: the artist is not verified"
+        );        
+        require(
+            _artistNominated.add(artist),
+            "DEXLPool: error while adding an artist to EnumerableSet"
         );
-        _artistNominated.add(artist);
-
         emit ArtistNominated(artist);
     }
 
     function removeArtist(address artist) external onlyLeader activePool {
-        _artistNominated.remove(artist);
+        require(
+            _artistNominated.remove(artist),
+            "DEXLPool: error while removing an artist to EnumerableSet"
+        );
         emit ArtistRemoved(artist);
     }
 
@@ -549,7 +560,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             !_ftas.isVerified(artist),
             "DEXLPool::removeArtistNotNominated: the artist is verified"
         );
-        _artistNominated.remove(artist);
+        require(
+            _artistNominated.remove(artist),
+            "DEXLPool: error while removing an artist to EnumerableSet"
+        );
         emit ArtistRemoved(artist);
     }
 
@@ -566,7 +580,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         returns (bool)
     {
         require(false, "DEXLPool: function disabled");
-        _shareholders.add(to);
+        require(
+            _shareholders.add(to),
+            "DEXLPool: error while adding to shareholder EnumerableSet"
+        );
         return super.transfer(to, amount);
     }
 
@@ -597,7 +614,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         returns (bool)
     {
         require(false, "DEXLPool: function disabled");
-        _shareholders.add(to);
+        require(
+            _shareholders.add(to),
+            "DEXLPool: error while adding to shareholder EnumerableSet"
+        );
         return super.transferFrom(from, to, amount);
     }
 
