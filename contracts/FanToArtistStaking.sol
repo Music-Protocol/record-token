@@ -141,7 +141,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
 
     modifier onlyNotEnded(uint40 end) {
         require(
-            block.timestamp < end,
+            block.timestamp <= end,
             "FanToArtistStaking: the stake is already ended"
         );
         _;
