@@ -151,7 +151,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             ftas_ != address(0),
             "DEXLPool: the fanToArtistStaking address can not be 0"
         );
-        require(Web3MusicNativeToken_ != address(0), "DEXLPool: the Web3MusicNativeToken address can not be 0");
+        require(
+            Web3MusicNativeToken_ != address(0),
+            "DEXLPool: the Web3MusicNativeToken address can not be 0"
+        );
         super.__ERC4626_init(IERC20Upgradeable(pool.fundingTokenContract));
         _leader = pool.leader;
         _softCap = pool.softCap;
@@ -374,23 +377,24 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             block.timestamp > _proposals[index].endTime,
             "DEXLPool: the end time of the proposal is not reached"
         );
+        Proposal memory toExecute = _proposals[index];
+        delete _proposals[index];
         if (
-            _proposals[index].votesFor + _proposals[index].votesAgainst >
+            toExecute.votesFor + toExecute.votesAgainst >
             uint256(_quorum).mulDiv(totalSupply(), 10e8) &&
-            _proposals[index].votesFor >
+            toExecute.votesFor >
             uint256(_majority).mulDiv(
-                (_proposals[index].votesFor + _proposals[index].votesAgainst),
+                (toExecute.votesFor + toExecute.votesAgainst),
                 10e8
             )
         ) {
-            bytes memory request = _proposals[index].encodedRequest;
+            bytes memory request = toExecute.encodedRequest;
             if (keccak256(request) != keccak256(abi.encodePacked(""))) {
-                (bool success, ) = (_proposals[index].target).call(request);
+                (bool success, ) = (toExecute.target).call(request);
                 require(success, "something went wrong");
             }
         }
 
-        delete _proposals[index];
         emit ProposalExecuted(index, _msgSender());
     }
 
