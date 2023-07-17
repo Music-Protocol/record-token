@@ -200,26 +200,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         );
     }
 
-    // Function replaced by passign index of reward as parameter
-    //
-    // function _getRewardRateBinarySearch(
-    //     uint target
-    // ) internal view returns (uint) {
-    //     uint min = 0;
-    //     uint max = _artistReward.length - 1;
-    //     while (min <= max) {
-    //         uint mid = (min + max) / 2;
-    //         if (
-    //             _artistReward[mid].start < target &&
-    //             _artistReward[mid].end > target
-    //         ) return mid;
-    //         else if (_artistReward[mid].end < target) min = mid + 1;
-    //         else if (_artistReward[mid].start > target) max = mid - 1;
-    //         else require(false, "binarysearch error");
-    //     }
-    //     return 0;
-    // }
-
     function _getSingleReward(
         address artist,
         address user,
