@@ -297,10 +297,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
             totalSupply() + shares <= _hardCap,
             "DEXLPool: you can not deposit more than hardcap"
         );
-        require(
-            _shareholders.add(req.receiver),
-            "DEXLPool: error while adding to shareholder EnumerableSet"
-        );
+        _shareholders.add(req.receiver);
         require(
             _shareholders.length() <= MAX_SHAREHOLDER,
             "DEXLPool: the maximum number of shareholder has already been reached"
@@ -539,7 +536,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         require(
             _ftas.isVerified(artist),
             "DEXLPool::artistNomination: the artist is not verified"
-        );        
+        );
         require(
             _artistNominated.add(artist),
             "DEXLPool: error while adding an artist to EnumerableSet"
@@ -582,7 +579,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         require(false, "DEXLPool: function disabled");
         require(
             _shareholders.add(to),
-            "DEXLPool: error while adding to shareholder EnumerableSet"
+            "DEXLPool: error while adding to shareholder EnumerableSet2"
         );
         return super.transfer(to, amount);
     }
@@ -616,7 +613,7 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
         require(false, "DEXLPool: function disabled");
         require(
             _shareholders.add(to),
-            "DEXLPool: error while adding to shareholder EnumerableSet"
+            "DEXLPool: error while adding to shareholder EnumerableSet1"
         );
         return super.transferFrom(from, to, amount);
     }
