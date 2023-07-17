@@ -123,10 +123,10 @@ describe('DEXLFactory', () => {
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
         await stableCoin.connect(user1).approve(DEXLPool.address, 100);
         await DEXLPool.connect(user1).deposit(100, user1.address);
-        await DEXLPool.connect(leader).accept(user1.address);
+        await DEXLPool.connect(leader).accept(user1.address, 100);
         await stableCoin.connect(user2).approve(DEXLPool.address, 100);
         await DEXLPool.connect(user2).deposit(100, user2.address);
-        await DEXLPool.connect(leader).accept(user2.address);
+        await DEXLPool.connect(leader).accept(user2.address, 100);
 
         expect(await DEXLPool.balanceOf(leader.address)).to.equal(50);
         expect(await DEXLPool.balanceOf(user1.address)).to.equal(100);

@@ -272,8 +272,13 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     }
 
     function accept(
-        address requester
+        address requester,
+        uint256 assets
     ) public virtual onlyLeader returns (uint256) {
+        require(
+            _requests[requester].assets == assets,
+            "DEXLPool: assets of the request are different from the parameters"
+        );
         Request memory req = _requests[requester];
         uint256 shares = previewDeposit(req.assets);
 

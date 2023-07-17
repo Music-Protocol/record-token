@@ -116,7 +116,7 @@ describe('DEXLReward', () => {
                 return pools[i].connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return pools[i].connect(users[0]).accept(u.address);
+                return pools[i].connect(users[0]).accept(u.address, 100);
             }));
 
         }
