@@ -253,16 +253,18 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             uint40 start = _stake[artist][user][stakeIndex].start;
             uint40 end = _stake[artist][user][stakeIndex].end;
 
-            if (_verifiedArtists[artist] > 1 && end < _verifiedArtists[artist])
+            if (_verifiedArtists[artist] > 1 && end > _verifiedArtists[artist])
+                end = _verifiedArtists[artist];
+            if (end > _artistReward[rewardIndex].end)
                 end = _artistReward[rewardIndex].end;
-            else if (end > _artistReward[rewardIndex].end)
-                end = _artistReward[rewardIndex].end;
-            else if (end > block.timestamp) end = uint40(block.timestamp);
+            if (end > block.timestamp) end = uint40(block.timestamp);
 
             if (start < _artistReward[rewardIndex].start)
                 start = _artistReward[rewardIndex].start;
-            else if (start < _stake[artist][user][stakeIndex].lastPayment)
+            if (start < _stake[artist][user][stakeIndex].lastPayment)
                 start = _stake[artist][user][stakeIndex].lastPayment;
+
+            if (start >= end) continue;
 
             accumulator +=
                 ((end - start) * _stake[artist][user][stakeIndex].amount) /
