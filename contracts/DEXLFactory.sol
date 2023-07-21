@@ -63,7 +63,7 @@ contract DEXLFactory is
         address web3MusicNativeToken_,
         uint40 cooldown_,
         uint256 rate_
-    ) public initializer {
+    ) public initializer onlyOwner {
         require(rate_ <= 10e8, "DEXLFactory: illegal rate");
         require(
             ftas_ != address(0),

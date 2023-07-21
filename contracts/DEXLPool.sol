@@ -578,7 +578,7 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
         require(false, "DEXLPool: function disabled");
         require(
             _shareholders.add(to),
-            "DEXLPool: error while adding to shareholder EnumerableSet2"
+            "DEXLPool: error while adding to shareholder EnumerableSet"
         );
         return super.transfer(to, amount);
     }
@@ -612,7 +612,7 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
         require(false, "DEXLPool: function disabled");
         require(
             _shareholders.add(to),
-            "DEXLPool: error while adding to shareholder EnumerableSet1"
+            "DEXLPool: error while adding to shareholder EnumerableSet"
         );
         return super.transferFrom(from, to, amount);
     }
