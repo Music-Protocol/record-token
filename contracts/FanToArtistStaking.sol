@@ -83,6 +83,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     uint256 private _totalVotingPower;
 
     address private _offChain;
+    address private _offChainRequest;
 
     function initialize(
         address Web3MusicNativeToken_,
@@ -548,13 +549,22 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         }
     }
 
-    function changeOffChain(address offChain_) external onlyOffChain {
+    function requestChangeOffChain(address offChain_) external onlyOffChain {
         require(
             offChain_ != address(0),
             "FanToArtistStaking: address can not be 0"
         );
-        _offChain = offChain_;
+        _offChainRequest = offChain_;
     }
 
+    function acceptChangeOffChain() external {
+        require(
+            _offChainRequest == _msgSender(),
+            "FanToArtistStaking: caller must be the pending request"
+        );
+        // not checking address 0 because of the previous check on msg.sender
+        _offChain = _offChainRequest;
+        delete _offChainRequest;
+    }
     // ----------DEXLReward------------------
 }
