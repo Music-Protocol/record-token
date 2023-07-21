@@ -106,7 +106,7 @@ describe('DEXLPool', () => {
         it('should allow the leader to deposit again', async () => {
             await stableCoin.connect(leader).approve(POOL.address, 50);
             await POOL.connect(leader).deposit(50, leader.address);
-            await POOL.connect(leader).accept(leader.address);
+            await POOL.connect(leader).accept(leader.address, 50);
         });
 
         it('should set the right owner and be able to change the leader', async () => {
@@ -124,7 +124,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(10, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 10);
             }));
             expect(await stableCoin.balanceOf(POOL.address)).to.equal(initialDeposit + (users.length * 10));
             expect(await POOL.totalAssets()).to.equal(initialDeposit + (users.length * 10));
@@ -151,7 +151,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 100);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
 
@@ -173,7 +173,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 100);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
@@ -196,7 +196,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 100);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevAssets = (await POOL.totalAssets()) as BigNumber;
@@ -219,7 +219,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 100);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
 
@@ -246,7 +246,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 100);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
@@ -265,7 +265,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 100);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const prevTermDate = await POOL.getTerminationDate();
@@ -293,7 +293,7 @@ describe('DEXLPool', () => {
                 return POOL.connect(u).deposit(100, u.address);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(leader).accept(u.address);
+                return POOL.connect(leader).accept(u.address, 100);
             }));
             await timeMachine((raiseEndDate / 60) + 1);
             const hash = await getProposalHash(await POOL.connect(users[2]).proposeEarlyClosure('Porto io?'));
@@ -327,11 +327,11 @@ describe('DEXLPool', () => {
         const POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
         await stableCoin.connect(users[0]).approve(POOL.address, 50);
         await POOL.connect(users[0]).deposit(50, users[0].address);
-        await POOL.connect(leader).accept(users[0].address);
+        await POOL.connect(leader).accept(users[0].address, 50);
         await stableCoin.mint(leader.address, 10e5);
 
         await POOL.connect(leader).deposit(10e5, leader.address);
-        await expect(POOL.connect(leader).accept(leader.address))
+        await expect(POOL.connect(leader).accept(leader.address, 10e5))
             .to.be.revertedWith("DEXLPool: you can not deposit more than hardcap");
 
         await expect(POOL.connect(leader).withdraw(10, leader.address, leader.address))
