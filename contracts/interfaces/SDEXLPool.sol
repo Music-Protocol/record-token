@@ -15,7 +15,6 @@ struct Pool {
     uint32 couponAmount;
     uint32 quorum;
     uint32 majority;
-    // bool transferrable;
 }
 
 struct PoolReduced {
@@ -30,5 +29,4 @@ struct PoolReduced {
     uint32 couponAmount;
     uint32 quorum;
     uint32 majority;
-    // bool transferrable;
 }

@@ -73,7 +73,6 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     uint32 private constant MAX_SHAREHOLDER = 18;
     uint32 private constant MAX_ARTIST = 50;
 
-    bool private _transferrable;
     // a uint128 can be added without taking another slot
 
     EnumerableSet.AddressSet private _shareholders;
