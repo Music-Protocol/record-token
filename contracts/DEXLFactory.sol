@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 import "./DEXLPool.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -13,12 +13,7 @@ import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/SDEXLPool.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract DEXLFactory is
-    Ownable2Step,
-    IDEXLFactory,
-    Initializable,
-    ReentrancyGuard
-{
+contract DEXLFactory is Ownable, IDEXLFactory, Initializable, ReentrancyGuard {
     using Math for uint256;
 
     event PoolCreated(
@@ -73,10 +68,7 @@ contract DEXLFactory is
             implementation_ != address(0),
             "DEXLFactory: implementation address can not be 0"
         );
-        require(
-            web3MusicNativeToken_ != address(0),
-            "DEXLFactory: Web3MusicNativeToken address can not be 0"
-        );
+        require(web3MusicNativeToken_ != address(0), "DEXLFactory: Web3MusicNativeToken address can not be 0");
         _web3MusicNativeToken = IWeb3MusicNativeToken(web3MusicNativeToken_);
         _ftas = ftas_;
         _implementationDEXLPool = implementation_;
@@ -86,13 +78,8 @@ contract DEXLFactory is
 
     function transferOwnership(
         address to
-    ) public override(IDEXLFactory, Ownable2Step) onlyOwner {
+    ) public override(IDEXLFactory, Ownable) onlyOwner {
         super.transferOwnership(to);
-    }
-
-    function renounceOwnership() public override(Ownable) onlyOwner {
-        require(false, "function disabled");
-        super.renounceOwnership();
     }
 
     function changeRewardRate(uint256 rate_) public override onlyOwner {
@@ -223,12 +210,10 @@ contract DEXLFactory is
         uint256 raiseEndDate
     ) external virtual override returns (uint256) {
         require(_pools[_msgSender()], "DEXLFactory: the pool is not official");
-        uint256 amountWeb3MusicNativeTokenEligible = IWeb3MusicNativeToken(
-            _web3MusicNativeToken
-        ).balanceOf(_ftas).mulDiv(
-                _poolNomination[_msgSender()],
-                _totalNomination
-            );
+        uint256 amountWeb3MusicNativeTokenEligible = IWeb3MusicNativeToken(_web3MusicNativeToken).balanceOf(_ftas).mulDiv(
+            _poolNomination[_msgSender()],
+            _totalNomination
+        );
 
         uint256 amount = amountWeb3MusicNativeTokenEligible.mulDiv(
             (block.timestamp -

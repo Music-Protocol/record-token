@@ -6,12 +6,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/SDEXLPool.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "./interfaces/IDEXLFactory.sol";
 
-contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
+contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     using Math for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -73,6 +73,7 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
     uint32 private constant MAX_SHAREHOLDER = 18;
     uint32 private constant MAX_ARTIST = 50;
 
+    bool private _transferrable;
     // a uint128 can be added without taking another slot
 
     EnumerableSet.AddressSet private _shareholders;
@@ -162,10 +163,7 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
         _raiseEndDate = uint40(block.timestamp) + pool.raiseEndDate;
         _couponAmount = pool.couponAmount;
         _initialDeposit = pool.initialDeposit;
-        require(
-            _shareholders.add(pool.leader),
-            "DEXLPool: error during EnumerableSet add"
-        );
+        _shareholders.add(pool.leader);
         _terminationDate = uint40(block.timestamp) + pool.terminationDate;
         _leaderCommission = pool.leaderCommission;
         // _transferrable = pool.transferrable;
@@ -536,18 +534,13 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
             _ftas.isVerified(artist),
             "DEXLPool::artistNomination: the artist is not verified"
         );
-        require(
-            _artistNominated.add(artist),
-            "DEXLPool: error while adding an artist to EnumerableSet"
-        );
+        _artistNominated.add(artist);
+
         emit ArtistNominated(artist);
     }
 
     function removeArtist(address artist) external onlyLeader activePool {
-        require(
-            _artistNominated.remove(artist),
-            "DEXLPool: error while removing an artist to EnumerableSet"
-        );
+        _artistNominated.remove(artist);
         emit ArtistRemoved(artist);
     }
 
@@ -556,10 +549,7 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
             !_ftas.isVerified(artist),
             "DEXLPool::removeArtistNotNominated: the artist is verified"
         );
-        require(
-            _artistNominated.remove(artist),
-            "DEXLPool: error while removing an artist to EnumerableSet"
-        );
+        _artistNominated.remove(artist);
         emit ArtistRemoved(artist);
     }
 
@@ -576,10 +566,7 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
         returns (bool)
     {
         require(false, "DEXLPool: function disabled");
-        require(
-            _shareholders.add(to),
-            "DEXLPool: error while adding to shareholder EnumerableSet2"
-        );
+        _shareholders.add(to);
         return super.transfer(to, amount);
     }
 
@@ -610,10 +597,7 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
         returns (bool)
     {
         require(false, "DEXLPool: function disabled");
-        require(
-            _shareholders.add(to),
-            "DEXLPool: error while adding to shareholder EnumerableSet1"
-        );
+        _shareholders.add(to);
         return super.transferFrom(from, to, amount);
     }
 
@@ -658,10 +642,5 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
     ) public virtual override(ERC20Upgradeable) returns (bool) {
         require(false, "DEXLPool: function disabled");
         return super.decreaseAllowance(spender, subtractedValue);
-    }
-
-    function renounceOwnership() public override(OwnableUpgradeable) onlyOwner {
-        require(false, "function disabled");
-        super.renounceOwnership();
     }
 }

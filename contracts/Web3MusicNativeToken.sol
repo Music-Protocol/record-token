@@ -2,17 +2,12 @@
 
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 
-contract Web3MusicNativeToken is
-    IWeb3MusicNativeToken,
-    ERC20,
-    Ownable2Step,
-    Pausable
-{
+contract Web3MusicNativeToken is IWeb3MusicNativeToken, ERC20, Ownable, Pausable {
     address private immutable _fanToArtistStaking;
     address private immutable _dexlFactory;
 
@@ -51,14 +46,8 @@ contract Web3MusicNativeToken is
 
     function transferOwnership(
         address to
-    ) public override(IWeb3MusicNativeToken, Ownable2Step) onlyOwner {
+    ) public override(IWeb3MusicNativeToken, Ownable) onlyOwner {
         super.transferOwnership(to);
-    }
-
-    function renounceOwnership(
-    ) public override(Ownable) onlyOwner {
-        require(false, "function disabled");
-        super.renounceOwnership();
     }
 
     function pause() external override onlyOwner {

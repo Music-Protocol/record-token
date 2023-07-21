@@ -15,5 +15,7 @@ interface IFanToArtistStaking {
 
     function votingPowerOf(address user) external returns (uint256);
 
+    // function calculateOverallStake() external view returns (uint256);
+
     function changeArtistRewardRate(uint256 rate, address sender) external;
 }
