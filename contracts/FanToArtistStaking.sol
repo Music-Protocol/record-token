@@ -2,13 +2,13 @@
 
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "hardhat/console.sol";
 
-contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
+contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
@@ -170,8 +170,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
 
     function transferOwnership(
         address to
-    ) public override(IFanToArtistStaking, Ownable) onlyOwner {
+    ) public override(IFanToArtistStaking, Ownable2Step) onlyOwner {
         super.transferOwnership(to);
+    }
+
+    function renounceOwnership(
+    ) public override(Ownable) onlyOwner {
+        require(false, "function disabled");
+        super.renounceOwnership();
     }
 
     function _isStakingNow(

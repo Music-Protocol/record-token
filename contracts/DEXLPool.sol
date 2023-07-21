@@ -6,12 +6,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "./interfaces/SDEXLPool.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "./interfaces/IDEXLFactory.sol";
 
-contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
+contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
     using Math for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -658,5 +658,10 @@ contract DEXLPool is ERC4626Upgradeable, OwnableUpgradeable {
     ) public virtual override(ERC20Upgradeable) returns (bool) {
         require(false, "DEXLPool: function disabled");
         return super.decreaseAllowance(spender, subtractedValue);
+    }
+
+    function renounceOwnership() public override(OwnableUpgradeable) onlyOwner {
+        require(false, "function disabled");
+        super.renounceOwnership();
     }
 }
