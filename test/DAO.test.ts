@@ -50,10 +50,21 @@ describe('DAO', () => {
                 promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10, 300)))
         );
         await fanToArtistStaking.connect(owner).setVotingPowerOf(users.map(u => u.address), users.map(u => 1000));
-        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length*1000);
+        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length * 1000);
         await Promise.all(promises);
         await timeMachine(6);
         await Web3MusicNativeToken.connect(owner).transferOwnership(dao.address);//give ownership of Web3MusicNativeToken to dao
+        const calldata = web3.eth.abi.encodeFunctionCall({
+            name: 'acceptOwnership',
+            type: 'function',
+            inputs: []
+        }, []);
+        await dao.propose([Web3MusicNativeToken.address], [calldata], "transfer ownership");//give ownership of Web3MusicNativeToken to dao
+        await Promise.all(users.map(u =>
+            dao.connect(u).vote([Web3MusicNativeToken.address], [calldata], "transfer ownership", true))
+        );
+        await timeMachine(15);
+        await dao.execute([Web3MusicNativeToken.address], [calldata], "transfer ownership");
     });
 
     describe('vote testing', () => {
