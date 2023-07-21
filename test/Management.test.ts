@@ -15,6 +15,11 @@ describe('Web3MusicNativeTokenManagement', () => {
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let artist1: SignerWithAddress, artist2: SignerWithAddress;
     let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike, removeArtistRole: BytesLike;
+    const calldata = web3.eth.abi.encodeFunctionCall({
+        name: 'acceptOwnership',
+        type: 'function',
+        inputs: []
+    }, []);
 
     before(async () => { //same as deploy
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
@@ -40,9 +45,13 @@ describe('Web3MusicNativeTokenManagement', () => {
         Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address, DEXLF.address);
         await Web3MusicNativeTokenManagement.deployed();
         await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
+
+        await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address], [calldata]);
         await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
+        await Web3MusicNativeTokenManagement.custom([fanToArtistStaking.address], [calldata]);
         await DEXLF.transferOwnership(Web3MusicNativeTokenManagement.address);
         await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, Web3MusicNativeToken.address, 120, 1);
+        await Web3MusicNativeTokenManagement.custom([DEXLF.address], [calldata]);
 
 
         adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();
@@ -159,11 +168,13 @@ describe('Web3MusicNativeTokenManagement', () => {
 
             it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of Web3MusicNativeToken contract', async () => {
                 await Web3MusicNativeTokenManagement.connect(owner).transferWeb3MusicNativeToken(fakeDAO.address);
+                await Web3MusicNativeToken.connect(fakeDAO).acceptOwnership();
                 expect(await Web3MusicNativeToken.owner()).to.equal(fakeDAO.address);
             });
 
             after(async () => {
                 await Web3MusicNativeToken.connect(fakeDAO).transferOwnership(Web3MusicNativeTokenManagement.address);
+                await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address], [calldata]);
             });
             // This test work but is redundant, already tested on Web3MusicNativeToken.js -> Access Control 
             // it('An address with the correct role should not be able to perfom ', async()=>{ 
@@ -205,11 +216,13 @@ describe('Web3MusicNativeTokenManagement', () => {
 
             it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of FTAS contract', async () => {
                 await Web3MusicNativeTokenManagement.connect(owner).transferFanToArtistStaking(fakeDAO.address);
+                await fanToArtistStaking.connect(fakeDAO).acceptOwnership()
                 expect(await fanToArtistStaking.owner()).to.equal(fakeDAO.address);
             });
 
             after(async () => {
                 await fanToArtistStaking.connect(fakeDAO).transferOwnership(Web3MusicNativeTokenManagement.address);
+                await Web3MusicNativeTokenManagement.custom([fanToArtistStaking.address], [calldata]);
             });
 
         });
@@ -288,6 +301,7 @@ describe('Web3MusicNativeTokenManagement', () => {
         describe('Transfer Ownership', () => {
             it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of DEXLFactory contract', async () => {
                 await Web3MusicNativeTokenManagement.connect(owner).transferDEXLFactory(fakeDAO.address);
+                await DEXLF.connect(fakeDAO).acceptOwnership();
                 expect(await DEXLF.owner()).to.equal(fakeDAO.address);
             });
         });

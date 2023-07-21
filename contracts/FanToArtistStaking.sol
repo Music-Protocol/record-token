@@ -2,13 +2,13 @@
 
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "hardhat/console.sol";
 
-contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
+contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable {
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
@@ -83,6 +83,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     uint256 private _totalVotingPower;
 
     address private _offChain;
+    address private _offChainRequest;
 
     function initialize(
         address Web3MusicNativeToken_,
@@ -169,8 +170,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
 
     function transferOwnership(
         address to
-    ) public override(IFanToArtistStaking, Ownable) onlyOwner {
+    ) public override(IFanToArtistStaking, Ownable2Step) onlyOwner {
         super.transferOwnership(to);
+    }
+
+    function renounceOwnership(
+    ) public override(Ownable) onlyOwner {
+        require(false, "function disabled");
+        super.renounceOwnership();
     }
 
     function _isStakingNow(
@@ -198,26 +205,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             })
         );
     }
-
-    // Function replaced by passign index of reward as parameter
-    //
-    // function _getRewardRateBinarySearch(
-    //     uint target
-    // ) internal view returns (uint) {
-    //     uint min = 0;
-    //     uint max = _artistReward.length - 1;
-    //     while (min <= max) {
-    //         uint mid = (min + max) / 2;
-    //         if (
-    //             _artistReward[mid].start < target &&
-    //             _artistReward[mid].end > target
-    //         ) return mid;
-    //         else if (_artistReward[mid].end < target) min = mid + 1;
-    //         else if (_artistReward[mid].start > target) max = mid - 1;
-    //         else require(false, "binarysearch error");
-    //     }
-    //     return 0;
-    // }
 
     function _getSingleReward(
         address artist,
@@ -548,13 +535,22 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         }
     }
 
-    function changeOffChain(address offChain_) external onlyOffChain {
+    function requestChangeOffChain(address offChain_) external onlyOffChain {
         require(
             offChain_ != address(0),
             "FanToArtistStaking: address can not be 0"
         );
-        _offChain = offChain_;
+        _offChainRequest = offChain_;
     }
 
+    function acceptChangeOffChain() external {
+        require(
+            _offChainRequest == _msgSender(),
+            "FanToArtistStaking: caller must be the pending request"
+        );
+        // not checking address 0 because of the previous check on msg.sender
+        _offChain = _offChainRequest;
+        delete _offChainRequest;
+    }
     // ----------DEXLReward------------------
 }

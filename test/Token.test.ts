@@ -164,7 +164,8 @@ describe('Web3MusicNativeToken', () => {
         });
 
         it('The transfer of ownership should emit an event', async () => {
-            await expect(Web3MusicNativeToken.transferOwnership(fakeDAO.address))
+            await Web3MusicNativeToken.transferOwnership(fakeDAO.address);
+            await expect(Web3MusicNativeToken.connect(fakeDAO).acceptOwnership())
                 .to.emit(Web3MusicNativeToken, 'OwnershipTransferred')
                 .withArgs(owner.address, fakeDAO.address);
         });
