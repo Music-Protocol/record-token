@@ -48,6 +48,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
         uint amount,
         address indexed newArtist
     );
+    event OffChainRequest(address indexed oldValue, address indexed newValue);
+    event OffChainChanged(address indexed newValue);
 
     struct Stake {
         uint256 amount;
@@ -82,8 +84,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
     mapping(address => uint256) private _votingPower;
     uint256 private _totalVotingPower;
 
-    address private _offChain;
-    address private _offChainRequest;
+    address _offChain;
+    address _offChainRequest;
 
     function initialize(
         address Web3MusicNativeToken_,
@@ -541,6 +543,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
             "FanToArtistStaking: address can not be 0"
         );
         _offChainRequest = offChain_;
+        emit OffChainRequest(_offChain, offChain_);
     }
 
     function acceptChangeOffChain() external {
@@ -551,6 +554,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
         // not checking address 0 because of the previous check on msg.sender
         _offChain = _offChainRequest;
         delete _offChainRequest;
+        emit OffChainChanged(_offChain);
     }
     // ----------DEXLReward------------------
 }
