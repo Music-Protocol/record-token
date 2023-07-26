@@ -122,10 +122,10 @@ describe('DEXLFactory', () => {
         const pool = await getPoolFromEvent(await DEXLF.approveProposal(hash));
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
         await stableCoin.connect(user1).approve(DEXLPool.address, 100);
-        await DEXLPool.connect(user1).deposit(100, user1.address);
+        await DEXLPool.connect(user1)['deposit(uint256,address,bool)'](100, user1.address, true);
         await DEXLPool.connect(leader).accept(user1.address, 100);
         await stableCoin.connect(user2).approve(DEXLPool.address, 100);
-        await DEXLPool.connect(user2).deposit(100, user2.address);
+        await DEXLPool.connect(user2)['deposit(uint256,address,bool)'](100, user2.address, true);
         await DEXLPool.connect(leader).accept(user2.address, 100);
 
         expect(await DEXLPool.balanceOf(leader.address)).to.equal(50);
@@ -156,9 +156,9 @@ describe('DEXLFactory', () => {
         const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
 
         await stableCoin.connect(user1).approve(DEXLPool.address, 1000);
-        await DEXLPool.connect(user1).deposit(1000, user1.address);
+        await DEXLPool.connect(user1)['deposit(uint256,address,bool)'](100, user1.address, true);
         await stableCoin.connect(user2).approve(DEXLPool.address, 1000);
-        await DEXLPool.connect(user2).deposit(1000, user2.address);
+        await DEXLPool.connect(user2)['deposit(uint256,address,bool)'](100, user2.address, true);
         await timeMachine(6);
 
         await stableCoin.connect(user3).approve(DEXLPool.address, 600);

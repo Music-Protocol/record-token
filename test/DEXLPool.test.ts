@@ -105,7 +105,7 @@ describe('DEXLPool', () => {
 
         it('should allow the leader to deposit again', async () => {
             await stableCoin.connect(leader).approve(POOL.address, 50);
-            await POOL.connect(leader).deposit(50, leader.address);
+            await POOL.connect(leader)['deposit(uint256,address,bool)'](50, leader.address, true);
             await POOL.connect(leader).accept(leader.address, 50);
         });
 
@@ -121,7 +121,7 @@ describe('DEXLPool', () => {
                 return stableCoin.connect(u).approve(POOL.address, 10);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(10, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](10, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 10);
@@ -148,7 +148,7 @@ describe('DEXLPool', () => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(100, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 100);
@@ -170,7 +170,7 @@ describe('DEXLPool', () => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(100, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 100);
@@ -193,7 +193,7 @@ describe('DEXLPool', () => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(100, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 100);
@@ -211,12 +211,30 @@ describe('DEXLPool', () => {
             expect(await POOL.totalAssets()).to.be.equal(prevAssets.sub(100));
         });
 
+        it('should test double deposits', async () => {
+            const user1 = users[0];
+            await stableCoin.connect(user1).approve(POOL.address, 1000);
+            await POOL.connect(user1)['deposit(uint256,address,bool)'](100, user1.address, true);
+            await expect(POOL.connect(user1)['deposit(uint256,address,bool)'](101, user1.address, true)).to.be.revertedWith(
+                "DEXLPool: a request is already pending or the previous request has been accepted, change isNew"
+            );
+            await POOL.connect(user1)['deposit(uint256,address,bool)'](101, user1.address, false);
+
+            await POOL.connect(leader).accept(user1.address, 101);
+            await expect(POOL.connect(user1)['deposit(uint256,address,bool)'](10, user1.address, false)).to.be.revertedWith(
+                "DEXLPool: a request is already pending or the previous request has been accepted, change isNew"
+            )
+            await POOL.connect(user1)['deposit(uint256,address,bool)'](50, user1.address, true);
+            await POOL.connect(leader).accept(user1.address, 50);
+            expect(await POOL.balanceOf(user1.address)).to.eq(151);
+        });
+
         it('should revert if a referendum is approved', async () => {
             await Promise.all(users.map(u => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(100, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 100);
@@ -243,7 +261,7 @@ describe('DEXLPool', () => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(100, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 100);
@@ -262,7 +280,7 @@ describe('DEXLPool', () => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(100, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 100);
@@ -290,7 +308,7 @@ describe('DEXLPool', () => {
                 return stableCoin.connect(u).approve(POOL.address, 100);
             }));
             await Promise.all(users.map(u => {
-                return POOL.connect(u).deposit(100, u.address);
+                return POOL.connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return POOL.connect(leader).accept(u.address, 100);
@@ -326,11 +344,11 @@ describe('DEXLPool', () => {
         const temPool = await getPoolFromEvent(await DEXLF.approveProposal(hash));
         const POOL = (await ethers.getContractFactory("DEXLPool")).attach(temPool);
         await stableCoin.connect(users[0]).approve(POOL.address, 50);
-        await POOL.connect(users[0]).deposit(50, users[0].address);
+        await POOL.connect(users[0])['deposit(uint256,address,bool)'](50, users[0].address, true);
         await POOL.connect(leader).accept(users[0].address, 50);
         await stableCoin.mint(leader.address, 10e5);
 
-        await POOL.connect(leader).deposit(10e5, leader.address);
+        await POOL.connect(leader)['deposit(uint256,address,bool)'](10e5, leader.address, true);
         await expect(POOL.connect(leader).accept(leader.address, 10e5))
             .to.be.revertedWith("DEXLPool: you can not deposit more than hardcap");
 
@@ -340,8 +358,8 @@ describe('DEXLPool', () => {
         await expect(POOL.connect(leader).redeem(10, leader.address, leader.address))
             .to.be.revertedWith("DEXLPool: you can not redeem before the termination date");
         await timeMachine(10);
-        
-        await expect(POOL.connect(leader).deposit(10, leader.address))
+
+        await expect(POOL.connect(leader)['deposit(uint256,address,bool)'](10, leader.address, true))
             .to.be.revertedWith("DEXLPool: you can not join a pool after the raise end date");
         await expect(POOL.connect(leader).redistributeRevenue(0))
             .to.be.revertedWith("DEXLPool: the amount can not be 0");

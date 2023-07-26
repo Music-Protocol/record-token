@@ -245,14 +245,19 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
 
     function deposit(
         uint256 assets,
-        address receiver
-    ) public virtual override returns (uint256) {
+        address receiver,
+        bool isNew
+    ) public virtual returns (uint256) {
         // We do not check if a request has already been made
         // because a user may choose to replace it with another one.
         // totalSupply + shares > hardCap is checked on accept()
         require(
             block.timestamp < _raiseEndDate,
             "DEXLPool: you can not join a pool after the raise end date"
+        );
+        require(
+            _requests[_msgSender()].assets == 0 == isNew,
+            "DEXLPool: a request is already pending or the previous request has been accepted, change isNew"
         );
         _requests[_msgSender()] = Request({receiver: receiver, assets: assets});
         emit RequestCreated(_msgSender(), assets, receiver);
@@ -261,8 +266,9 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
 
     function mint(
         uint256 shares,
-        address receiver
-    ) public virtual override returns (uint256) {
+        address receiver,
+        bool isNew
+    ) public virtual returns (uint256) {
         // We do not check if a request has already been made
         // because a user may choose to replace it with another one.
         // totalSupply + shares > hardCap is checked on accept()
@@ -270,6 +276,10 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
         require(
             block.timestamp < _raiseEndDate,
             "DEXLPool: you can not join a pool after the raise end date"
+        );
+        require(
+            _requests[_msgSender()].assets == 0 == isNew,
+            "DEXLPool: a request is already pending or the previous request has been accepted, change isNew"
         );
         _requests[_msgSender()] = Request({receiver: receiver, assets: assets});
         emit RequestCreated(_msgSender(), assets, receiver);
@@ -565,6 +575,21 @@ contract DEXLPool is ERC4626Upgradeable, Ownable2StepUpgradeable {
 
     // OVERRIDEN METHODS OF TRANSFER
     // replace false with _transferrable if in the future we want to allow these methods
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) public virtual override returns (uint256) {
+        require(false, "DEXLPool: function disabled");
+        return super.deposit(assets, receiver);
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver
+    ) public virtual override returns (uint256) {
+        require(false, "DEXLPool: function disabled");
+        return super.mint(shares, receiver);
+    }
 
     function transfer(
         address to,

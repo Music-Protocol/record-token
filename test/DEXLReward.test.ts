@@ -113,7 +113,7 @@ describe('DEXLReward', () => {
                 return stableCoin.connect(u).approve(pools[i].address, 100);
             }));
             await Promise.all(users.map(u => {
-                return pools[i].connect(u).deposit(100, u.address);
+                return pools[i].connect(u)['deposit(uint256,address,bool)'](100, u.address, true);
             }));
             await Promise.all(users.map(u => {
                 return pools[i].connect(users[0]).accept(u.address, 100);
