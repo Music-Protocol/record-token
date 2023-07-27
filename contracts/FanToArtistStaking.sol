@@ -256,7 +256,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
             if (start >= end) continue;
 
             accumulator +=
-                ((end - start) * _stake[artist][user][stakeIndex].amount) /
+                (10e8 *
+                    ((end - start) * _stake[artist][user][stakeIndex].amount)) /
                 _artistReward[rewardIndex].rate;
             if (
                 _stake[artist][user][stakeIndex].end <=
@@ -274,7 +275,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
                 block.timestamp
             );
 
-        return accumulator;
+        return accumulator / 10e8;
     }
 
     function getReward(
@@ -341,6 +342,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
             rate != 0,
             "FanToArtistStaking: the artist reward rate can not be 0"
         );
+        require(
+            rate <= 3156000000000,
+            "FanToArtistStaking: the artist reward rate can not be higher than 3156000000000 (0.01% per year)"
+        );
         _artistReward[_artistReward.length - 1].end = uint40(block.timestamp);
         _artistReward.push(
             ArtistReward({
@@ -369,6 +374,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
         uint256 amount,
         uint40 end
     ) external onlyVerifiedArtist(artist) {
+        require(
+            amount >= 10e4,
+            "FanToArtistStaking: the amount is less than minimum"
+        );
         require(
             end > _minStakePeriod,
             "FanToArtistStaking: the end period is less than minimum"
