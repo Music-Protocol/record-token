@@ -42,12 +42,12 @@ describe('DAO', () => {
             fanToArtistStaking.addArtist(artist.address, owner.address)
         ));
         await Promise.allSettled(users.map(user =>
-            Web3MusicNativeToken.mint(user.address, 100)
+            Web3MusicNativeToken.mint(user.address, 100*10e4)
         ));
         const promises: Promise<ContractTransaction>[] = [];
         artists.forEach(artist =>
             users.forEach(user =>
-                promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10, 300)))
+                promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10*10e4, 300)))
         );
         await fanToArtistStaking.connect(owner).setVotingPowerOf(users.map(u => u.address), users.map(u => 1000));
         await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length * 1000);
