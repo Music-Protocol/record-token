@@ -61,7 +61,7 @@ describe('DEXLReward', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, DEXLF.address);
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, Web3MusicNativeToken.address, 120, DEXLRATE);
 
@@ -69,17 +69,15 @@ describe('DEXLReward', () => {
             fanToArtistStaking.addArtist(artist.address, owner.address)
         ));
         await Promise.allSettled(users.map(user =>
-            Web3MusicNativeToken.mint(user.address, 100)
+            Web3MusicNativeToken.mint(user.address, BigNumber.from(10).pow(20))
         ));
         const promises: Promise<ContractTransaction>[] = [];
         artists.forEach(artist =>
             users.forEach(user =>
-                promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10, 300)))
+                promises.push(fanToArtistStaking.connect(user).stake(artist.address, BigNumber.from(10).pow(19), 300)))
         );
         await Promise.all(promises);
-        await fanToArtistStaking.connect(owner).setVotingPowerOf(users.map(u => u.address), users.map(u => 1000));
-        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length * 1000);
-
+      
         await timeMachine(6);
 
 
@@ -152,11 +150,13 @@ describe('DEXLReward', () => {
         await timeMachine(2); //to vote again
         let pref = (await DEXLF.getPreferences(pools.map(p => p.address)));
         const totVP = await fanToArtistStaking.totalVotingPower();
+
         pref.forEach(p =>
-            expect(p).to.be.equal(1 / pools.length * totVP.toNumber())
+            expect(p).to.be.equal(totVP.div(pools.length))
         );
+
         expect(await DEXLF.getTotalNomination()).to.be.equal(totVP);
-        await Promise.all(users.map(u => DEXLF.connect(u).castPreference([pools[0].address], [10e8], pools.map(p => p.address), pools.map(p => pref[0].toNumber() / users.length))))
+        await Promise.all(users.map(u => DEXLF.connect(u).castPreference([pools[0].address], [10e8], pools.map(p => p.address), pools.map(p => pref[0].div(users.length)))))
         pref = (await DEXLF.getPreferences(pools.map(p => p.address)));
         expect(await DEXLF.getTotalNomination()).to.be.equal(totVP);
         expect(pref[0]).to.be.equal(totVP);
@@ -172,16 +172,16 @@ describe('DEXLReward', () => {
         let rewardRate = 1;
         await DEXLF.changeRewardRate(rewardRate);
         await pools[0].connect(artists[0]).payArtists();
-        const totalAmountStaked = (await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).toNumber();
-        const time1 = (await pools[0].getActivityTime()).toNumber();
-        const artistR1 = (await Web3MusicNativeToken.balanceOf(artists[0].address)).toNumber();
-        expect(artistR1).to.be.equal(totalAmountStaked * time1 / rewardRate);
+        const totalAmountStaked = (await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address));
+        const time1 = (await pools[0].getActivityTime());
+        const artistR1 = (await Web3MusicNativeToken.balanceOf(artists[0].address));
+        expect(artistR1).to.be.equal(totalAmountStaked.mul(time1).div(rewardRate));
         await timeMachine(90);
         rewardRate = 2;
         await DEXLF.changeRewardRate(rewardRate);
         await pools[0].connect(artists[0]).payArtists();
-        const time2 = (await pools[0].getActivityTime()).toNumber();
-        const artistR2 = (await Web3MusicNativeToken.balanceOf(artists[0].address)).toNumber();
-        expect(artistR2 - artistR1).to.be.equal(totalAmountStaked * (time2 - time1) / rewardRate);
+        const time2 = (await pools[0].getActivityTime());
+        const artistR2 = (await Web3MusicNativeToken.balanceOf(artists[0].address));
+        expect(artistR2.sub(artistR1)).to.be.equal(totalAmountStaked.mul(time2.sub(time1)).div(rewardRate));
     });
 });

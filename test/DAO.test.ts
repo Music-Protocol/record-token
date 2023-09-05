@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { ethers, web3 } from 'hardhat';
 import { Web3MusicNetworkDAO, Web3MusicNativeToken, FanToArtistStaking } from '../typechain-types/index';
@@ -32,7 +32,7 @@ describe('DAO', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         const cDAO = await ethers.getContractFactory('Web3MusicNetworkDAO');
         dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900) as Web3MusicNetworkDAO;
@@ -42,15 +42,13 @@ describe('DAO', () => {
             fanToArtistStaking.addArtist(artist.address, owner.address)
         ));
         await Promise.allSettled(users.map(user =>
-            Web3MusicNativeToken.mint(user.address, 100)
+            Web3MusicNativeToken.mint(user.address, BigNumber.from(10).pow(19).mul(10))
         ));
         const promises: Promise<ContractTransaction>[] = [];
         artists.forEach(artist =>
             users.forEach(user =>
-                promises.push(fanToArtistStaking.connect(user).stake(artist.address, 10, 300)))
+                promises.push(fanToArtistStaking.connect(user).stake(artist.address,  BigNumber.from(10).pow(19), 300)))
         );
-        await fanToArtistStaking.connect(owner).setVotingPowerOf(users.map(u => u.address), users.map(u => 1000));
-        await fanToArtistStaking.connect(owner).setTotalVotingPower(users.length * 1000);
         await Promise.all(promises);
         await timeMachine(6);
         await Web3MusicNativeToken.connect(owner).transferOwnership(dao.address);//give ownership of Web3MusicNativeToken to dao

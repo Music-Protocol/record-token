@@ -4,6 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { getTimestamp } from './utils/utils';
+import { BigNumber } from 'ethers';
 
 describe('FanToArtistStaking', () => {
     let Web3MusicNativeToken: Web3MusicNativeToken;
@@ -23,7 +24,7 @@ describe('FanToArtistStaking', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, 10, 86400);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400);
     });
 
     describe('Deployment', () => {
@@ -77,23 +78,23 @@ describe('FanToArtistStaking', () => {
     });
 
     describe('Staking', () => {
-        type Stake = { redeemed?: boolean, artist?: string, amount?: number, rewardArtist?: number }
+        type Stake = { redeemed?: boolean, artist?: string, amount?: BigNumber, rewardArtist?: number }
         let stake1: Stake = {}, stake2: Stake = {};
         let times: number[] = [];
         before(async () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
-            await Web3MusicNativeToken.mint(addr1.address, 100);
+            await Web3MusicNativeToken.mint(addr1.address, BigNumber.from(10).pow(20));
             await fanToArtistStaking.addArtist(artist2.address, owner.address);
             await fanToArtistStaking.changeArtistRewardRate(10, owner.address);
         });
 
         it('Should be able to stake only to a verified artist', async () => {
-            const amount = 100;
+            const amount = BigNumber.from(10).pow(20);
             const time = 50;
             times.push(time);
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr1.address, 100, 0, anyValue);
+                .withArgs(artist1.address, addr1.address, amount, 0, anyValue);
             stake1 = {
                 artist: artist1.address,
                 amount,
@@ -101,7 +102,7 @@ describe('FanToArtistStaking', () => {
                 // end: anyValue,
                 redeemed: false
             };
-            expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(100);
+            expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(BigNumber.from(10).pow(20));
             expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
         });
 
@@ -114,39 +115,39 @@ describe('FanToArtistStaking', () => {
             stake1.redeemed = true;
 
             expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(0);
-            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(100);
+            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(BigNumber.from(10).pow(20));
         });
 
         it('Should be able to stake again', async () => {
-            const amount = 100;
+            const amount = BigNumber.from(10).pow(20);
             const time = 86400;
 
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, 1, anyValue);
-            expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(100);
+            expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(amount);
             expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
         });
 
         describe('Reverts', () => {
             it('Should not be able to stake less than minimum', async () => {
-                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, 5))
+                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, BigNumber.from(10).pow(20), 5))
                     .to.be.revertedWith('FanToArtistStaking: the end period is less than minimum');
             });
 
             it('Should not be able to stake more than maximum', async () => {
-                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, 100, 86401))
+                await expect(fanToArtistStaking.connect(addr2).stake(artist2.address, BigNumber.from(10).pow(20), 86401))
                     .to.be.revertedWith('FanToArtistStaking: the stake period exceed the maximum');
             });
 
             it('Should not be able to stake more than maximum', async () => {
-                await Web3MusicNativeToken.mint(addr2.address, 100);
-                await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 1, 30))
+                await Web3MusicNativeToken.mint(addr2.address, BigNumber.from(10).pow(20));
+                await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, BigNumber.from(10).pow(20), 30))
                     .to.be.revertedWith('FanToArtistStaking: already staking');
             });
 
             it('Should not be able to stake a non verified artist', async () => {
-                await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, 100, 70))
+                await expect(fanToArtistStaking.connect(addr2).stake(artist3.address, BigNumber.from(10).pow(20), 70))
                     .to.be.revertedWith('FanToArtistStaking: the artist is not a verified artist');
             });
 
