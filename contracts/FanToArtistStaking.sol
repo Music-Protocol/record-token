@@ -84,12 +84,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
     mapping(address => uint256) private _votingPower;
     uint256 private _totalVotingPower;
 
-    address _offChain;
-    address _offChainRequest;
-
     function initialize(
         address Web3MusicNativeToken_,
-        address offChain_,
         uint256 veWeb3MusicNativeTokenRewardRate,
         uint256 artistWeb3MusicNativeTokenRewardRate,
         uint40 min,
@@ -98,10 +94,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
         require(
             Web3MusicNativeToken_ != address(0),
             "FanToArtistStaking: the Web3MusicNativeToken address can not be 0"
-        );
-        require(
-            offChain_ != address(0),
-            "FanToArtistStaking: the offChain address can not be 0"
         );
         require(
             artistWeb3MusicNativeTokenRewardRate != 0,
@@ -123,21 +115,12 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
         );
         _minStakePeriod = min;
         _maxStakePeriod = max;
-        _offChain = offChain_;
     }
 
     modifier onlyVerifiedArtist(address artist) {
         require(
             _verifiedArtists[artist] == 1,
             "FanToArtistStaking: the artist is not a verified artist"
-        );
-        _;
-    }
-
-    modifier onlyOffChain() {
-        require(
-            _msgSender() == _offChain,
-            "FanToArtistStaking: the caller is not offchain"
         );
         _;
     }
@@ -376,7 +359,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
     ) external onlyVerifiedArtist(artist) {
         require(
             amount >= 10e18,
-            "FanToArtistStaking: the stake period exceed the maximum"
+            "FanToArtistStaking: the stake minimum is not reached"
         );
         require(
             end > _minStakePeriod,
@@ -392,6 +375,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
         );
         if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _addStake(_msgSender(), artist, amount, end);
+            _votingPower[_msgSender()] += amount;
+            _totalVotingPower += amount;
             emit StakeCreated(
                 artist,
                 _msgSender(),
@@ -423,6 +408,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
                 _stake[artist][_msgSender()][index].amount + amount, //amount
                 prev - _stake[artist][_msgSender()][index].end //end
             );
+            _votingPower[_msgSender()] += amount;
+            _totalVotingPower += amount;
             emit StakeIncreased(artist, _msgSender(), amount, index + 1);
         }
     }
@@ -512,6 +499,8 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
                 _stake[artist][user][index].amount
             )
         ) _stake[artist][user][index].redeemed = true;
+        _votingPower[user] -= _stake[artist][user][index].amount;
+        _totalVotingPower -= _stake[artist][user][index].amount;
         emit StakeRedeemed(artist, user, index);
     }
 
@@ -527,43 +516,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
 
     function votingPowerOf(address user) external view returns (uint256) {
         return _votingPower[user];
-    }
-
-    function setTotalVotingPower(uint totalVotingPower_) external onlyOffChain {
-        _totalVotingPower = totalVotingPower_;
-    }
-
-    function setVotingPowerOf(
-        address[] memory user,
-        uint[] memory amount
-    ) external onlyOffChain {
-        require(
-            user.length > 0 && user.length == amount.length,
-            "FanToArtistStaking: input validation failed, check the lengths of the arrays"
-        );
-        for (uint i = 0; i < user.length; i++) {
-            _votingPower[user[i]] = amount[i];
-        }
-    }
-
-    function requestChangeOffChain(address offChain_) external onlyOffChain {
-        require(
-            offChain_ != address(0),
-            "FanToArtistStaking: address can not be 0"
-        );
-        _offChainRequest = offChain_;
-        emit OffChainRequest(_offChain, offChain_);
-    }
-
-    function acceptChangeOffChain() external {
-        require(
-            _offChainRequest == _msgSender(),
-            "FanToArtistStaking: caller must be the pending request"
-        );
-        // not checking address 0 because of the previous check on msg.sender
-        _offChain = _offChainRequest;
-        delete _offChainRequest;
-        emit OffChainChanged(_offChain);
     }
     // ----------DEXLReward------------------
 }
