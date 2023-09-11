@@ -35,7 +35,7 @@ describe('DAO', () => {
         await fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 
         const cDAO = await ethers.getContractFactory('Web3MusicNetworkDAO');
-        dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900) as Web3MusicNetworkDAO;
+        dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900, false) as Web3MusicNetworkDAO;
         await dao.deployed();
 
         await Promise.allSettled(artists.map(artist =>

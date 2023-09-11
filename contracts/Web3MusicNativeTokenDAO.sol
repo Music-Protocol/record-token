@@ -4,8 +4,9 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IFanToArtistStaking.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-contract Web3MusicNetworkDAO {
+contract Web3MusicNetworkDAO is Ownable2Step {
     using Math for uint256;
 
     event ProposalCreated(
@@ -27,6 +28,8 @@ contract Web3MusicNetworkDAO {
         uint256 amount,
         bool isFor
     );
+    event UserWhitelisted(address indexed target, bool whitelisted);
+    event WhitelistSwitched(bool whitelist);
 
     struct Proposal {
         uint256 maxVotingPower;
@@ -38,6 +41,9 @@ contract Web3MusicNetworkDAO {
     mapping(uint256 => Proposal) private _proposals;
     mapping(uint256 => mapping(address => bool)) private _votes; //hash collision of keccack256
 
+    mapping(address => bool) whitelistedAddresses;
+    bool whitelistEnabled;
+
     uint128 private immutable _quorum; // 0 to 10e8
     uint128 private immutable _majority; // 0 to 10e8
     uint128 private immutable _timeVotes;
@@ -48,9 +54,13 @@ contract Web3MusicNetworkDAO {
         address ftas_,
         uint128 quorum_,
         uint128 majority_,
-        uint128 time
+        uint128 time,
+        bool whitelist_
     ) {
-        require(ftas_ != address(0), "DAO: the Web3MusicNativeToken address can not be 0");
+        require(
+            ftas_ != address(0),
+            "DAO: the Web3MusicNativeToken address can not be 0"
+        );
         require(
             quorum_ <= 10e8,
             "DAO: the quorum must be less than or equal 10e8"
@@ -63,6 +73,7 @@ contract Web3MusicNetworkDAO {
         _quorum = quorum_;
         _majority = majority_;
         _timeVotes = time;
+        whitelistEnabled = whitelist_;
     }
 
     function _reachedQuorum(
@@ -144,6 +155,10 @@ contract Web3MusicNetworkDAO {
         string memory description,
         bool isFor
     ) external {
+        require(
+            whitelistEnabled == false || whitelistedAddresses[msg.sender],
+            "DAO: user not whitelisted"
+        );
         uint256 proposalId = hashProposal(
             targets,
             calldatas,
@@ -227,5 +242,18 @@ contract Web3MusicNetworkDAO {
             "DAO: proposal not found"
         );
         return _proposals[proposalId];
+    }
+
+    function manageWhitelist(
+        address target,
+        bool whitelist
+    ) external onlyOwner {
+        whitelistedAddresses[target] = whitelist;
+        emit UserWhitelisted(target, whitelist);
+    }
+
+    function switchWhitelist(bool whitelist) external onlyOwner {
+        whitelistEnabled = whitelist;
+        emit WhitelistSwitched(whitelist);
     }
 }
