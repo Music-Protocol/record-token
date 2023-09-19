@@ -39,7 +39,7 @@ describe('Web3MusicNativeTokenManagement', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fakeStaking.address, DEXLF.address);
         await Web3MusicNativeToken.deployed();
-        fanToArtistStaking.initialize(Web3MusicNativeToken.address, owner.address, 10, 10, 60, 86400);
+        fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 60, 86400);
 
         const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
         Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address, DEXLF.address);
