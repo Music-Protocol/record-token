@@ -41,12 +41,13 @@ async function main() {
   await Web3MusicNativeTokenManagement.deployed();
 
   const daoFactory = await ethers.getContractFactory('Web3MusicNetworkDAO');
-  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 864000) as Web3MusicNetworkDAO;
+  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 864000, true) as Web3MusicNetworkDAO;
   await dao.deployed();
 
   await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
   await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
   await DEXLF.transferOwnership(Web3MusicNativeTokenManagement.address);
+  await dao.transferOwnership(Web3MusicNativeTokenManagement.address);
 
   console.log('Web3MusicNativeTokenManagement address', Web3MusicNativeTokenManagement.address);
   console.log('Web3MusicNativeToken address', Web3MusicNativeToken.address);
