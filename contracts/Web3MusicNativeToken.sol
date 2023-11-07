@@ -24,28 +24,14 @@ contract Web3MusicNativeToken is
         _;
     }
 
-    modifier onlyTP() {
-        require(
-            _fanToArtistStaking == _msgSender(),
-            "Web3MusicNativeToken: caller is not the FanToArtistStaking contract"
-        );
-        _;
-    }
-
     constructor(
-        address staking_,
-        address factory_
+        address staking_
     ) ERC20("Web3MusicNativeToken", "W3M") {
         require(
             staking_ != address(0),
             "Web3MusicNativeToken: the address of FanToArtistStaking is 0"
         );
-        require(
-            factory_ != address(0),
-            "Web3MusicNativeToken: the address of DEXLFactory is 0"
-        );
         _fanToArtistStaking = staking_;
-        _dexlFactory = factory_; //rimuovo factory dal constructor?
     }
 
     function transferOwnership(
@@ -101,7 +87,7 @@ contract Web3MusicNativeToken is
         return true;
     }
 
-    function pay(address to, uint256 amount) external override onlyTP {
+    function pay(address to, uint256 amount) external override onlyStaking {
         _mint(to, amount);
     }
 }

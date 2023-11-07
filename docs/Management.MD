@@ -72,7 +72,6 @@ Web3MusicNativeTokenManagement.changeArtistRewardRate(newRate)
 ```
 # Key Takeaway
 Look at the bold part of the custom section. 
-<!-- If ownership of `DEXLFactory` is transferred to the `DAO` with the intention of having pools approved, the consequence is that it will no longer be possible to change the `DEXLRewardRate` as well. And every pool that will be approved will have the `DAO` as owner and not the `management`, it will **not** be possible to take over if necessary. The same applies to `FanToArtistStaking` with the whitelist of verified artists and the reward rate.  change only for FanToArtistStaking? --> 
 
 This contract is **not** upgradeable but all ownership can be transferred to a more advanced version
 
