@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
-import "./interfaces/IDEXLFactory.sol";
 
 contract Web3MusicNativeTokenManagement is AccessControl {
     event Mint(address indexed to, uint256 amount, address indexed sender);
@@ -22,9 +21,8 @@ contract Web3MusicNativeTokenManagement is AccessControl {
 
     IWeb3MusicNativeToken private _Web3MusicNativeToken;
     IFanToArtistStaking private _ftas;
-    IDEXLFactory private _dexl;
 
-    constructor(address Web3MusicNativeToken, address ftas, address dexl) {
+    constructor(address Web3MusicNativeToken, address ftas) {
         require(Web3MusicNativeToken != address(0), "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0");
         _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken);
         // Grant the minter role to a specified account
@@ -41,11 +39,6 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
         _grantRole(REMOVE_ARTIST_ROLE, msg.sender);
 
-        require(
-            dexl != address(0),
-            "Web3MusicNativeTokenManagement: DEXLFactory address can not be 0"
-        );
-        _dexl = IDEXLFactory(dexl);
         _grantRole(FACTORY_MANAGER, msg.sender);
     }
 
@@ -78,12 +71,6 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         _ftas.transferOwnership(to);
     }
 
-    function transferDEXLFactory(
-        address to
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _dexl.transferOwnership(to);
-    }
-
     function addArtist(address artist) external onlyRole(VERIFY_ARTIST_ROLE) {
         _ftas.addArtist(artist, _msgSender());
     }
@@ -100,22 +87,6 @@ contract Web3MusicNativeTokenManagement is AccessControl {
 
     function unpauseWeb3MusicNativeToken() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _Web3MusicNativeToken.unpause();
-    }
-
-    function approveProposal(
-        uint256 index
-    ) external onlyRole(FACTORY_MANAGER) returns (address) {
-        return _dexl.approveProposal(index);
-    }
-
-    function declineProposal(uint256 index) external onlyRole(FACTORY_MANAGER) {
-        _dexl.declineProposal(index);
-    }
-
-    function changeDEXLRewardRate(
-        uint256 rate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _dexl.changeRewardRate(rate);
     }
 
     function changeArtistRewardRate(
@@ -135,16 +106,6 @@ contract Web3MusicNativeTokenManagement is AccessControl {
             "Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0"
         );
         _ftas = IFanToArtistStaking(ftas);
-    }
-
-    function changeDEXLFactory(
-        address dexl
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            dexl != address(0),
-            "Web3MusicNativeTokenManagement: DEXLFactory address can not be 0"
-        );
-        _dexl = IDEXLFactory(dexl);
     }
 
     function custom(

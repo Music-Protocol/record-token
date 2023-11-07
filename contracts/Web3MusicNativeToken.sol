@@ -14,7 +14,6 @@ contract Web3MusicNativeToken is
     Pausable
 {
     address private immutable _fanToArtistStaking;
-    address private immutable _dexlFactory;
 
     //for the function callable only by FanToArtistStaking.sol
     modifier onlyStaking() {
@@ -27,7 +26,7 @@ contract Web3MusicNativeToken is
 
     modifier onlyTP() {
         require(
-            _fanToArtistStaking == _msgSender() || _dexlFactory == _msgSender(),
+            _fanToArtistStaking == _msgSender(),
             "Web3MusicNativeToken: caller is not the FanToArtistStaking contract"
         );
         _;
@@ -46,7 +45,7 @@ contract Web3MusicNativeToken is
             "Web3MusicNativeToken: the address of DEXLFactory is 0"
         );
         _fanToArtistStaking = staking_;
-        _dexlFactory = factory_;
+        _dexlFactory = factory_; //rimuovo factory dal constructor?
     }
 
     function transferOwnership(

@@ -6,7 +6,6 @@ The `Web3MusicNativeTokenManagement` smart contract is based on the following **
 ### Roles
 There are 4 roles in addition to the default admin role:
 - `MINTER` and `BURNER` for the respective functions of Web3MusicNativeToken
-- `FACTORY_MANAGER` for accepting or rejecting DEXLPool proposals
 - `VERIFY_ARTIST` to add/remove verified artists
 
 ## Contract Properties
@@ -14,16 +13,15 @@ Note that this contract is initialized via the constructor and is therefore **no
 
 ## code snippets
 ### deployment
-In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**Web3MusicNativeToken**, **FanToArtistStaking** and **DEXLFactory**)
+In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**Web3MusicNativeToken**, **FanToArtistStaking**)
 ```
 ...
 const managementFactory = await ethers.getContractFactory("Web3MusicNativeTokenManagement");
-const Web3MusicNativeTokenManagement = await managementFactory.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address, DEXLF.address);
+const Web3MusicNativeTokenManagement = await managementFactory.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
 await Web3MusicNativeTokenManagement.deployed()
 ...
 await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
 await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
-await DEXLF.transferOwnership(Web3MusicNativeTokenManagement.address);
 ```
 
 ### Roles
@@ -61,33 +59,20 @@ Web3MusicNativeTokenManagement.addArtist(artist1.address)
 Web3MusicNativeTokenManagement.removeArtist(artist1.address)
 ```
 
-### approve or decline a DEXLPool
-to be able to accept or reject a proposed pool the management contract must be the owner of the contract called, `DEXLFactory` in this case, and the caller must have the role `VERIFY_ARTIST_ROLE`
 ```
 Web3MusicNativeTokenManagement.approveProposal(proposalHash)
 Web3MusicNativeTokenManagement.declineProposal(proposalHash)
 ```
 
 ### change reward rate
-To be able to change reward rates you need to have the `ADMIN` role and the management has to be the owner of the contracts called (`DEXLFactory` or `FanToArtistStaking`), if ownership is transferred to the `DAO` it will no longer be possible to change rates or approve/reject DEXLPool via the Factory. 
+To be able to change reward rates you need to have the `ADMIN` role and the management has to be the owner of the contracts called (`FanToArtistStaking`)
 Look at the respective documents (also detailed) to understand how to set the reward rate to achieve the desired result.
 ```
-Web3MusicNativeTokenManagement.changeDEXLRewardRate(newRate)
 Web3MusicNativeTokenManagement.changeArtistRewardRate(newRate)
 ```
-
-
-### custom
-This function can only be called by those who have the role of `ADMIN`, this function has the power to perform **any** operation including those listed above, since there are no controls. The purpose of this function is to communicate with DEXLPools in order to take over them and propose funding.
-```
-Web3MusicNativeTokenManagement.custom(arrayOfDEXLPoolAddress, arrayOfCallData)
-```
-**This function could be modified to accept only DEXLPool addresses verified by a call to DEXLFactory and use a DEXLPool interface and set the message sender as leader. But then it will be necessary to transfer all contracts to a Web3MusicNativeTokenManagementV2 if it is necessary to interact with functions not implemented in this contract**
-
-
 # Key Takeaway
 Look at the bold part of the custom section. 
-If ownership of `DEXLFactory` is transferred to the `DAO` with the intention of having pools approved, the consequence is that it will no longer be possible to change the `DEXLRewardRate` as well. And every pool that will be approved will have the `DAO` as owner and not the `management`, it will **not** be possible to take over if necessary. The same applies to `FanToArtistStaking` with the whitelist of verified artists and the reward rate.
+<!-- If ownership of `DEXLFactory` is transferred to the `DAO` with the intention of having pools approved, the consequence is that it will no longer be possible to change the `DEXLRewardRate` as well. And every pool that will be approved will have the `DAO` as owner and not the `management`, it will **not** be possible to take over if necessary. The same applies to `FanToArtistStaking` with the whitelist of verified artists and the reward rate.  change only for FanToArtistStaking? --> 
 
 This contract is **not** upgradeable but all ownership can be transferred to a more advanced version
 
