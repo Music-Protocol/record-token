@@ -40,7 +40,7 @@ describe('Web3MusicNativeTokenManagement', () => {
         await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address], [calldata]);
         await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
         await Web3MusicNativeTokenManagement.custom([fanToArtistStaking.address], [calldata]);
-        await Web3MusicNativeTokenManagement.custom([calldata]);
+        // await Web3MusicNativeTokenManagement.custom([calldata]);
 
 
         adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();

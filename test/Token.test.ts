@@ -11,7 +11,7 @@ describe('Web3MusicNativeToken', () => {
         [owner, addr1, fakeStaking, fakeDAO] = await ethers.getSigners();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fakeStaking.address, fakeStaking.address) as Web3MusicNativeToken;
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fakeStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
     });
 
@@ -26,7 +26,7 @@ describe('Web3MusicNativeToken', () => {
 
         it('Should revert if the FanToArtistStaking address is 0', async () => {
             const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-            await expect(cWeb3MusicNativeToken.deploy('0x0000000000000000000000000000000000000000', fakeStaking.address))
+            await expect(cWeb3MusicNativeToken.deploy('0x0000000000000000000000000000000000000000'))
                 .to.be.rejectedWith('Web3MusicNativeToken: the address of FanToArtistStaking is 0');
         });
     });

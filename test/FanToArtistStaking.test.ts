@@ -22,7 +22,7 @@ describe('FanToArtistStaking', () => {
         await fanToArtistStaking.deployed();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address, fanToArtistStaking.address);
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
         await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400);
     });
