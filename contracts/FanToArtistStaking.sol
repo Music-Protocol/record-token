@@ -517,5 +517,4 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable2Step, Initializable 
     function votingPowerOf(address user) external view returns (uint256) {
         return _votingPower[user];
     }
-    // ----------DEXLReward------------------
 }

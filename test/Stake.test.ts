@@ -31,7 +31,7 @@ describe('Stake Simulation', () => {
         await ftas.deployed();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(ftas.address, ftas.address);
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(ftas.address);
         await Web3MusicNativeToken.deployed();
         await ftas.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
 

@@ -11,11 +11,11 @@ The contract is initialized with a constructor and not with a pattern function I
 
 ## code snippets
 ### deployment
-In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**FanToArtistStaking** and **DEXLFactory**)
+In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**FanToArtistStaking**)
 ```
 ...
 const Web3MusicNativeTokenFactory = await ethers.getContractFactory('Web3MusicNativeToken');
-Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address, DEXLFactory.address);
+Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address);
 await Web3MusicNativeToken.deployed();
 ...
 await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
@@ -37,7 +37,7 @@ await Web3MusicNativeToken.burnFrom(targetAddress, 10e18);
 The `lock` function is restricted to the use of only the address of the `fanToArtistStaking` contract, which, being immutable, can never be changed, guaranteeing that the smart contract is secure.
 
 ### pay
-this function has the same kind of restriction that the lock function has but also for another address, that of the DEXLFactory to allow it to distribute the DEXLReward
+<!-- this function has the same kind of restriction that the lock function has but also for another address REMOVE PAY FUNCTION? -->
 
 # Key Takeaway
-The contract as it is now will not be able to be proxy upgraded, and the 2 contracts to which it is linked (fanToArtistStaking and DEXLFactory) can never be changed.
+The contract as it is now will not be able to be proxy upgraded, and the contract to which it is linked (fanToArtistStaking) can never be changed.

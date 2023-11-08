@@ -2,16 +2,14 @@ import { expect } from 'chai';
 import { BytesLike } from 'ethers';
 import { ethers, web3 } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { DEXLFactory, DEXLPool, FanToArtistStaking, Web3MusicNativeToken, Web3MusicNativeTokenManagement } from '../typechain-types/index';
+import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNativeTokenManagement } from '../typechain-types/index';
 import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
-import { PoolReducedStruct } from '../typechain-types/contracts/DEXLFactory';
 import { getIndexFromProposal, getPoolFromEvent } from './utils/utils';
 
 describe('Web3MusicNativeTokenManagement', () => {
     let Web3MusicNativeToken: Web3MusicNativeToken;
     let Web3MusicNativeTokenManagement: Web3MusicNativeTokenManagement;
     let fanToArtistStaking: FanToArtistStaking;
-    let DEXLF: DEXLFactory;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let artist1: SignerWithAddress, artist2: SignerWithAddress;
     let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike, removeArtistRole: BytesLike;
@@ -24,34 +22,25 @@ describe('Web3MusicNativeTokenManagement', () => {
     before(async () => { //same as deploy
         [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
-        const Pool = await ethers.getContractFactory('DEXLPool');
-        const POOLADDRESS = await Pool.deploy() as DEXLPool;
-        await POOLADDRESS.deployed();
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         fanToArtistStaking = await FTAS.deploy();
         await fanToArtistStaking.deployed();
 
-        const dProp = await ethers.getContractFactory('DEXLFactory');
-        DEXLF = await dProp.deploy() as DEXLFactory;
-        await DEXLF.deployed();
-
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fakeStaking.address, DEXLF.address);
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fakeStaking.address);
         await Web3MusicNativeToken.deployed();
         fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 60, 86400);
 
         const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
-        Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address, DEXLF.address);
+        Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
         await Web3MusicNativeTokenManagement.deployed();
         await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
 
         await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address], [calldata]);
         await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
         await Web3MusicNativeTokenManagement.custom([fanToArtistStaking.address], [calldata]);
-        await DEXLF.transferOwnership(Web3MusicNativeTokenManagement.address);
-        await DEXLF.initialize(fanToArtistStaking.address, POOLADDRESS.address, Web3MusicNativeToken.address, 120, 1);
-        await Web3MusicNativeTokenManagement.custom([DEXLF.address], [calldata]);
+        // await Web3MusicNativeTokenManagement.custom([calldata]);
 
 
         adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();
@@ -225,134 +214,6 @@ describe('Web3MusicNativeTokenManagement', () => {
                 await Web3MusicNativeTokenManagement.custom([fanToArtistStaking.address], [calldata]);
             });
 
-        });
-    });
-
-    describe('DEXLFactory', () => {
-        it('Should be able to approve a proposal', async () => {
-            const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
-            const stableCoin = await StableCoin.deploy() as any;
-            await stableCoin.deployed();
-            await stableCoin.initialize(
-                "USD Coin",
-                "USDC",
-                "USD",
-                6,
-                owner.address,
-                owner.address,
-                owner.address,
-                owner.address
-            );
-            await stableCoin.configureMinter(owner.address, 1000000e6);
-            await stableCoin.mint(addr1.address, 1000);
-            await stableCoin.connect(addr1).approve(DEXLF.address, 50);
-            let poolS: PoolReducedStruct = {
-                fundingTokenContract: stableCoin.address,
-                softCap: 100,
-                hardCap: 200,
-                initialDeposit: 50,
-                raiseEndDate: 120, //2 min
-                terminationDate: 900, // 15 min 
-                votingTime: 600, // 10 min
-                leaderCommission: 10e7,
-                couponAmount: 20e7, // 20%
-                quorum: 30e7, // 30%
-                majority: 50e7, // 50%
-            };
-            const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
-
-            await Web3MusicNativeTokenManagement.approveProposal(hash);
-        });
-
-        it('Should be able to decline a proposal', async () => {
-            const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
-            const stableCoin = await StableCoin.deploy() as any;
-            await stableCoin.deployed();
-            await stableCoin.initialize(
-                "USD Coin",
-                "USDC",
-                "USD",
-                6,
-                owner.address,
-                owner.address,
-                owner.address,
-                owner.address
-            );
-            await stableCoin.configureMinter(owner.address, 1000000e6);
-            await stableCoin.mint(addr1.address, 1000);
-            await stableCoin.connect(addr1).approve(DEXLF.address, 50);
-            let poolS: PoolReducedStruct = {
-                fundingTokenContract: stableCoin.address,
-                softCap: 100,
-                hardCap: 200,
-                initialDeposit: 50,
-                raiseEndDate: 120, //2 min
-                terminationDate: 900, // 15 min 
-                votingTime: 600, // 10 min
-                leaderCommission: 10e7,
-                couponAmount: 20e7, // 20%
-                quorum: 30e7, // 30%
-                majority: 50e7, // 50%
-            };
-            const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
-            await Web3MusicNativeTokenManagement.declineProposal(hash);
-        });
-
-        describe('Transfer Ownership', () => {
-            it('An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of DEXLFactory contract', async () => {
-                await Web3MusicNativeTokenManagement.connect(owner).transferDEXLFactory(fakeDAO.address);
-                await DEXLF.connect(fakeDAO).acceptOwnership();
-                expect(await DEXLF.owner()).to.equal(fakeDAO.address);
-            });
-        });
-
-        it('Should be able to call a custom function', async () => {
-            const StableCoin = await ethers.getContractFactory(stableCoinContract.abi, stableCoinContract.bytecode);
-            const stableCoin = await StableCoin.deploy() as any;
-            await stableCoin.deployed();
-            await stableCoin.initialize(
-                "USD Coin",
-                "USDC",
-                "USD",
-                6,
-                owner.address,
-                owner.address,
-                owner.address,
-                owner.address
-            );
-            await stableCoin.configureMinter(owner.address, 1000000e6);
-            await stableCoin.mint(addr1.address, 1000);
-            await stableCoin.connect(addr1).approve(DEXLF.address, 50);
-            let poolS: PoolReducedStruct = {
-                fundingTokenContract: stableCoin.address,
-                softCap: 100,
-                hardCap: 200,
-                initialDeposit: 50,
-                raiseEndDate: 120, //2 min
-                terminationDate: 900, // 15 min 
-                votingTime: 600, // 10 min
-                leaderCommission: 10e7,
-                couponAmount: 20e7, // 20%
-                quorum: 30e7, // 30%
-                majority: 50e7, // 50%
-            };
-            const hash = await getIndexFromProposal(await DEXLF.connect(addr1).proposePool(poolS, "description"));
-            const eventi = ((await (await Web3MusicNativeTokenManagement.approveProposal(hash)).wait()).events)?.filter(e => e.address == DEXLF.address).at(0)!;
-            let abi = [" event PoolCreated (address indexed leader, address indexed pool, uint256 index)"];
-            let iface = new ethers.utils.Interface(abi)
-            const pool = (iface.parseLog(eventi)).args['pool'];
-            const DEXLPool = (await ethers.getContractFactory("DEXLPool")).attach(pool);
-            const calldata = web3.eth.abi.encodeFunctionCall({
-                name: 'setLeader',
-                type: 'function',
-                inputs: [{
-                    type: 'address',
-                    name: 'leader_'
-                }]
-            }, [owner.address]);
-            expect(await DEXLPool.getLeader()).to.equal(addr1.address);
-            await Web3MusicNativeTokenManagement.custom([DEXLPool.address], [calldata]);
-            expect(await DEXLPool.getLeader()).to.equal(owner.address);
         });
     });
 

@@ -105,12 +105,5 @@ fanToArtistStaking.votingPowerOfAt(user0.address, dateInSec)
 Returns an integer representing the amount staked multiplied by the total seconds and divided by the veWeb3MusicNativeTokenRate. 
 Example, If you stake 10Web3MusicNativeToken for 100 seconds and the veWeb3MusicNativeTokenRate is 1, you will earn immediatly the voting power 10*100/1 = 1000 veWeb3MusicNativeToken
 
-
-### dexlreward
-calculateOverallStake is another support function but for the Factory contract that deals with redistributing the DEXLReward. this function returns the number of tokens staked multiplied by the seconds of each user to each artist
-```
- fanToArtistStaking.calculateOverallStake(timestamp.min, timestamp.max)
-```
-
 # key takeaways
 Keep in mind that although it is possible to upgrade, it is not possible to change the structure of the existing data, and consequently not all new functions can be integrated.
