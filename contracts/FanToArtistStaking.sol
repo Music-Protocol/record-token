@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 
 contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     using Math for uint256;
- 
+
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
