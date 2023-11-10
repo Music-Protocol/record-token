@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { getTimestamp } from './utils/utils';
+import { getTimestamp, timeMachine } from './utils/utils';
 
 describe('FanToArtistStaking', () => {
     let Web3MusicNativeToken: Web3MusicNativeToken;
@@ -84,6 +84,7 @@ describe('FanToArtistStaking', () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
             await Web3MusicNativeToken.mint(addr1.address, 100);
             await fanToArtistStaking.addArtist(artist2.address, owner.address);
+            await timeMachine(600);
             await fanToArtistStaking.changeArtistRewardRate(10, owner.address);
         });
 

@@ -172,7 +172,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     }
 
     function _getReward(address artist) internal {
-        console.log("GET REWARD");
+        // console.log("GET REWARD");
 
         _calcSinceLastPosition(artist, 0, true);
         _Web3MusicNativeToken.pay(artist, _artistCheckoints[artist].amountAcc);
@@ -184,14 +184,14 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         uint256 amount,
         bool isAdd
     ) internal {
-        console.log(
-            "entering with amount ",
-            _artistCheckoints[artist].amountAcc
-        );
-        console.log(
-            "entering with token ",
-            _artistCheckoints[artist].tokenAmount
-        );
+        // console.log(
+        //     "entering with amount ",
+        //     _artistCheckoints[artist].amountAcc
+        // );
+        // console.log(
+        //     "entering with token ",
+        //     _artistCheckoints[artist].tokenAmount
+        // );
         uint accumulator = 0;
         if (_artistCheckoints[artist].tokenAmount != 0) {
             for (
@@ -208,9 +208,9 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 if (start < _artistCheckoints[artist].lastRedeem)
                     start = _artistCheckoints[artist].lastRedeem;
                 if (_artistReward[index].end < start) break;
-                console.log("duration ", end - start);
-                console.log("amount ", _artistCheckoints[artist].tokenAmount);
-                console.log("rate ", _artistReward[index].rate);
+                // console.log("duration ", end - start);
+                // console.log("amount ", _artistCheckoints[artist].tokenAmount);
+                // console.log("rate ", _artistReward[index].rate);
 
                 accumulator += (_artistCheckoints[artist].tokenAmount *
                     (end - start)).mulDiv(_artistReward[index].rate, 10e9);
@@ -222,16 +222,16 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         else _artistCheckoints[artist].tokenAmount -= amount;
 
         _artistCheckoints[artist].lastRedeem = uint40(block.timestamp);
-        console.log("accumulator ", accumulator);
+        // console.log("accumulator ", accumulator);
 
-        console.log(
-            "finishing with amount ",
-            _artistCheckoints[artist].amountAcc
-        );
-        console.log(
-            "finishing with token ",
-            _artistCheckoints[artist].tokenAmount
-        );
+        // console.log(
+        //     "finishing with amount ",
+        //     _artistCheckoints[artist].amountAcc
+        // );
+        // console.log(
+        //     "finishing with token ",
+        //     _artistCheckoints[artist].tokenAmount
+        // );
         console.log("");
 
         // console.log("OUT ", _artistCheckoints[artist].tokenAmount);
@@ -324,7 +324,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         uint256 amount,
         uint40 end
     ) external onlyVerifiedArtist(artist) {
-        console.log("STAKE");
+        // console.log("STAKE");
 
         require(
             !_isStakingNow(artist, _msgSender()),
@@ -445,7 +445,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         address artist,
         address user
     ) external onlyEnded(_stake[artist][user].end) {
-        console.log("REDEEM");
+        // console.log("REDEEM");
 
         require(
             _isStakingNow(artist, user),
