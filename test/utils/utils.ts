@@ -1,8 +1,9 @@
 import { ethers } from 'hardhat';
-import { FanToArtistStaking, DEXLFactory } from '../../typechain-types/index';
+import { FanToArtistStaking } from '../../typechain-types/index';
 import { expect } from 'chai';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { string } from 'hardhat/internal/core/params/argumentTypes';
+import { BigNumber } from 'ethers';
 
 async function timeMachine(minutes: number) {
     const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -19,7 +20,7 @@ function parseDetailedStake(element: any) {
     }
 };
 
-function parseDatesStakes(elements: FanToArtistStaking.DetailedStakeStructOutput[]) {
+function parseDatesStakes(elements: any[]) {
     return elements.map(o => {
         return {
             amount: o.stake.amount.toNumber(),
@@ -29,24 +30,24 @@ function parseDatesStakes(elements: FanToArtistStaking.DetailedStakeStructOutput
     });
 }
 
-function matchDetailedStakes(element: any, artist: string, user: string, amount: number, time: any) {
+function matchDetailedStakes(element: any, artist: string, user: string, amount: any, time: any) {
     expect(element.artist).to.equal(artist);
     expect(element.user).to.equal(user);
     expect(element.amount).to.equal(amount);
     expect(element.duration).to.equal(time);
 }
 
-const matchPool = (response: DEXLFactory.PoolStructOutput, source: any) => {
-    expect(response.leader).to.equal(source.leader);
-    expect(response.fundingTokenContract).to.equal(source.fundingTokenContract);
-    expect(response.leaderCommission).to.equal(source.leaderCommission);
-    expect(response.softCap).to.equal(source.softCap);
-    expect(response.hardCap).to.equal(source.hardCap);
-    expect(response.couponAmount).to.equal(source.couponAmount);
-    expect(response.initialDeposit).to.equal(source.initialDeposit);
-    expect(response.deployable).to.equal(source.deployable);
-    expect(Number(response.terminationDate) - Number(response.raiseEndDate)).to.equal(source.terminationDate - source.raiseEndDate);
-}
+// const matchPool = (source: any) => { DELETE?
+//     expect(response.leader).to.equal(source.leader);
+//     expect(response.fundingTokenContract).to.equal(source.fundingTokenContract);
+//     expect(response.leaderCommission).to.equal(source.leaderCommission);
+//     expect(response.softCap).to.equal(source.softCap);
+//     expect(response.hardCap).to.equal(source.hardCap);
+//     expect(response.couponAmount).to.equal(source.couponAmount);
+//     expect(response.initialDeposit).to.equal(source.initialDeposit);
+//     expect(response.deployable).to.equal(source.deployable);
+//     expect(Number(response.terminationDate) - Number(response.raiseEndDate)).to.equal(source.terminationDate - source.raiseEndDate);
+// }
 
 async function getTimestamp() {
     const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -61,7 +62,7 @@ async function getStakeFromEvent(receipt: ContractTransaction) {
     return {
         artist: args?.artist,
         sender: args?.sender,
-        amount: args?.amount.toNumber(),
+        amount: args?.amount,
         end: args?.end,
         start: blockBefore.timestamp,
         index: args?.index.toNumber()
@@ -75,7 +76,7 @@ async function getStakeIncreaseFromEvent(previous: any, receipt: ContractTransac
     return {
         artist: args?.artist,
         sender: args?.sender,
-        amount: previous?.amount + args?.amount.toNumber(),
+        amount: BigNumber.from(previous?.amount).add(args?.amount),
         end: previous?.end,
         start: blockBefore.timestamp,
         index: args?.newIndex.toNumber()

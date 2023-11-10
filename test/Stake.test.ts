@@ -5,8 +5,7 @@ import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/ind
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine, parseDetailedStake, matchDetailedStakes, getStakeFromEvent, getStakeExtendedFromEvent, getStakeArtistFromEvent, getStakeIncreaseFromEvent } from './utils/utils';
 import { ContractTransaction } from '@ethersproject/contracts';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumberish } from 'ethers';
 
 const cache = {};
 
@@ -42,9 +41,9 @@ describe('Stake Simulation', () => {
         await ftas.deployed();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(ftas.address, ftas.address);
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(ftas.address);
         await Web3MusicNativeToken.deployed();
-        await ftas.initialize(Web3MusicNativeToken.address, owner.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime, 3, 10);
+        await ftas.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime, 3, 10);
 
         await Promise.allSettled([artists.forEach(artist =>
             ftas.addArtist(artist.address, owner.address)

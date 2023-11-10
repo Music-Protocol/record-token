@@ -8,4 +8,4 @@ _transfer(from, _msgSender(), amount);
 Thus when a user makes a stake, he does not need to provide allowance to the fanToArtistStaking contract, which will hold the Web3MusicNativeToken tokens within it until the transfer, which will occur at stake maturity.
 
 ### pay
-This function is used by two smart contracts(FanToArtistStaking, DEXLFactory) and is intended to undermine an amount at a certain address.
+This function is used by one smart contract(FanToArtistStaking) and is intended to undermine an amount at a certain address.

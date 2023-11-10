@@ -2,14 +2,18 @@
 
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
+contract FanToArtistStaking is
+    IFanToArtistStaking,
+    Ownable2Step,
+    Initializable
+{
     using Math for uint256;
 
     event ArtistAdded(address indexed artist, address indexed sender);
@@ -84,14 +88,11 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     mapping(address => uint256) private _votingPower;
     uint256 private _totalVotingPower;
 
-    address private _offChain;
-
     uint256 private REWARD_LIMIT;
     uint256 private CHANGE_REWARD_LIMIT;
 
     function initialize(
         address Web3MusicNativeToken_,
-        address offChain_,
         uint256 veWeb3MusicNativeTokenRewardRate,
         uint256 artistWeb3MusicNativeTokenRewardRate,
         uint40 min,
@@ -102,10 +103,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         require(
             Web3MusicNativeToken_ != address(0),
             "FanToArtistStaking: the Web3MusicNativeToken address can not be 0"
-        );
-        require(
-            offChain_ != address(0),
-            "FanToArtistStaking: the offChain address can not be 0"
         );
         require(
             artistWeb3MusicNativeTokenRewardRate != 0,
@@ -127,7 +124,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         );
         _minStakePeriod = min;
         _maxStakePeriod = max;
-        _offChain = offChain_;
         REWARD_LIMIT = limit_;
         CHANGE_REWARD_LIMIT = changeRewardLimit_;
     }
@@ -136,14 +132,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         require(
             _verifiedArtists[artist],
             "FanToArtistStaking: the artist is not a verified artist"
-        );
-        _;
-    }
-
-    modifier onlyOffChain() {
-        require(
-            _msgSender() == _offChain,
-            "FanToArtistStaking: the caller is not offchain"
         );
         _;
     }
@@ -232,7 +220,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         //     "finishing with token ",
         //     _artistCheckoints[artist].tokenAmount
         // );
-        console.log("");
 
         // console.log("OUT ", _artistCheckoints[artist].tokenAmount);
     }
@@ -315,7 +302,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
 
     function transferOwnership(
         address to
-    ) public override(IFanToArtistStaking, Ownable) onlyOwner {
+    ) public override(IFanToArtistStaking, Ownable2Step) onlyOwner {
         super.transferOwnership(to);
     }
 
@@ -324,8 +311,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         uint256 amount,
         uint40 end
     ) external onlyVerifiedArtist(artist) {
-        // console.log("STAKE");
-
         require(
             !_isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: already staking"
@@ -345,6 +330,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
                 end: uint40(block.timestamp + end),
                 redeemed: false
             });
+            _votingPower[_msgSender()] += amount;
             _calcSinceLastPosition(artist, amount, true);
             emit StakeCreated(
                 artist,
@@ -367,6 +353,7 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         );
         if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()].amount += amount;
+            _votingPower[_msgSender()] += amount;
             _calcSinceLastPosition(artist, amount, true);
             emit StakeIncreased(artist, _msgSender(), amount);
         }
@@ -445,8 +432,6 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
         address artist,
         address user
     ) external onlyEnded(_stake[artist][user].end) {
-        // console.log("REDEEM");
-
         require(
             _isStakingNow(artist, user),
             "FanToArtistStaking: stake not found"
@@ -459,7 +444,10 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
             _Web3MusicNativeToken.transfer(user, _stake[artist][user].amount),
             "FanToArtistStaking: error while redeeming"
         );
+        _stake[artist][user].redeemed = true;
+        console.log("inizio");
         _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
+        _votingPower[_msgSender()] -= _stake[artist][user].amount;
         delete _stake[artist][user];
         emit StakeRedeemed(artist, user);
     }
@@ -477,31 +465,4 @@ contract FanToArtistStaking is IFanToArtistStaking, Ownable, Initializable {
     function votingPowerOf(address user) external view returns (uint256) {
         return _votingPower[user];
     }
-
-    function setTotalVotingPower(uint totalVotingPower_) external onlyOffChain {
-        _totalVotingPower = totalVotingPower_;
-    }
-
-    function setVotingPowerOf(
-        address[] memory user,
-        uint[] memory amount
-    ) external onlyOffChain {
-        require(
-            user.length > 0 && user.length == amount.length,
-            "FanToArtistStaking: input validation failed, check the lengths of the arrays"
-        );
-        for (uint i = 0; i < user.length; i++) {
-            _votingPower[user[i]] = amount[i];
-        }
-    }
-
-    function changeOffChain(address offChain_) external onlyOffChain {
-        require(
-            offChain_ != address(0),
-            "FanToArtistStaking: address can not be 0"
-        );
-        _offChain = offChain_;
-    }
-
-    // ----------DEXLReward------------------
 }

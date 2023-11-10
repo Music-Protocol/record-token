@@ -2,14 +2,18 @@
 
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 
-contract Web3MusicNativeToken is IWeb3MusicNativeToken, ERC20, Ownable, Pausable {
+contract Web3MusicNativeToken is
+    IWeb3MusicNativeToken,
+    ERC20,
+    Ownable2Step,
+    Pausable
+{
     address private immutable _fanToArtistStaking;
-    address private immutable _dexlFactory;
 
     //for the function callable only by FanToArtistStaking.sol
     modifier onlyStaking() {
@@ -20,34 +24,26 @@ contract Web3MusicNativeToken is IWeb3MusicNativeToken, ERC20, Ownable, Pausable
         _;
     }
 
-    modifier onlyTP() {
-        require(
-            _fanToArtistStaking == _msgSender() || _dexlFactory == _msgSender(),
-            "Web3MusicNativeToken: caller is not the FanToArtistStaking contract"
-        );
-        _;
-    }
-
     constructor(
-        address staking_,
-        address factory_
+        address staking_
     ) ERC20("Web3MusicNativeToken", "W3M") {
         require(
             staking_ != address(0),
             "Web3MusicNativeToken: the address of FanToArtistStaking is 0"
         );
-        require(
-            factory_ != address(0),
-            "Web3MusicNativeToken: the address of DEXLFactory is 0"
-        );
         _fanToArtistStaking = staking_;
-        _dexlFactory = factory_;
     }
 
     function transferOwnership(
         address to
-    ) public override(IWeb3MusicNativeToken, Ownable) onlyOwner {
+    ) public override(IWeb3MusicNativeToken, Ownable2Step) onlyOwner {
         super.transferOwnership(to);
+    }
+
+    function renounceOwnership(
+    ) public override(Ownable) onlyOwner {
+        require(false, "function disabled");
+        super.renounceOwnership();
     }
 
     function pause() external override onlyOwner {
@@ -91,7 +87,7 @@ contract Web3MusicNativeToken is IWeb3MusicNativeToken, ERC20, Ownable, Pausable
         return true;
     }
 
-    function pay(address to, uint256 amount) external override onlyTP {
+    function pay(address to, uint256 amount) external override onlyStaking {
         _mint(to, amount);
     }
 }

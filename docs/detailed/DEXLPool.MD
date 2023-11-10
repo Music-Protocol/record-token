@@ -1,2 +1,0 @@
-### vote mapping
-In this case as well as in the DAO, in order to keep track of votes and to avoid voting twice, a second mapping is created which does not only use the index of the proposal but is combined with its start or end date.
