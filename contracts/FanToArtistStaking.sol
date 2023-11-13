@@ -447,7 +447,7 @@ contract FanToArtistStaking is
         _stake[artist][user].redeemed = true;
         console.log("inizio");
         _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
-        _votingPower[_msgSender()] -= _stake[artist][user].amount;
+        _votingPower[user] -= _stake[artist][user].amount;
         delete _stake[artist][user];
         emit StakeRedeemed(artist, user);
     }
