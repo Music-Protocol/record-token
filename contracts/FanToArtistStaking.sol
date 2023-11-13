@@ -331,6 +331,7 @@ contract FanToArtistStaking is
                 redeemed: false
             });
             _votingPower[_msgSender()] += amount;
+            _totalVotingPower += amount;
             _calcSinceLastPosition(artist, amount, true);
             emit StakeCreated(
                 artist,
@@ -354,6 +355,7 @@ contract FanToArtistStaking is
         if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()].amount += amount;
             _votingPower[_msgSender()] += amount;
+            _totalVotingPower += amount;
             _calcSinceLastPosition(artist, amount, true);
             emit StakeIncreased(artist, _msgSender(), amount);
         }
@@ -448,6 +450,7 @@ contract FanToArtistStaking is
         console.log("inizio");
         _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
         _votingPower[user] -= _stake[artist][user].amount;
+        _totalVotingPower -= _stake[artist][user].amount;
         delete _stake[artist][user];
         emit StakeRedeemed(artist, user);
     }
