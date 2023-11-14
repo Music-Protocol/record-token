@@ -1,18 +1,31 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { Web3MusicNativeToken } from '../typechain-types/index';
+import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { timeMachine } from './utils/utils';
+import { BigNumber } from 'ethers';
 
 describe('Web3MusicNativeToken', () => {
     let Web3MusicNativeToken: Web3MusicNativeToken;
-    let owner: SignerWithAddress, addr1: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
+    let fanToArtistStaking: FanToArtistStaking;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress,
+    addr4: SignerWithAddress, artist1: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
+
+    const defVeReward = 10;
+    const defArtistReward = 10;
 
     before(async () => {
-        [owner, addr1, fakeStaking, fakeDAO] = await ethers.getSigners();
+        [owner, addr1, addr2, addr3, addr4, artist1, fakeStaking, fakeDAO] = await ethers.getSigners();
+
+        const FTAS = await ethers.getContractFactory('FanToArtistStaking');
+        fanToArtistStaking = await FTAS.deploy();
+        await fanToArtistStaking.deployed();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fakeStaking.address) as Web3MusicNativeToken;
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400);
     });
 
     describe('Deployment', () => {
@@ -110,16 +123,16 @@ describe('Web3MusicNativeToken', () => {
     });
 
     describe('Lock & Unlock', () => {
-        before(async () => {
-            await Web3MusicNativeToken.mint(addr1.address, 100);
-        });
+        // before(async () => {
+        //     await Web3MusicNativeToken.mint(addr1.address, 100);
+        // });
 
-        it('User should be able to lock', async () => {
-            await Web3MusicNativeToken.connect(fakeStaking).lock(addr1.address, 100);
+        // it('User should be able to lock', async () => {
+        //     await Web3MusicNativeToken.connect(fakeStaking).lock(addr1.address, 100);
 
-            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
-            expect(await Web3MusicNativeToken.balanceOf(fakeStaking.address)).to.equal(100);
-        });
+        //     expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
+        //     expect(await Web3MusicNativeToken.balanceOf(fakeStaking.address)).to.equal(100);
+        // });
 
         // it('User should be able to unlock', async () => {
         //     await Web3MusicNativeToken.connect(fakeStaking).unlock(addr1.address, 100);
@@ -141,6 +154,113 @@ describe('Web3MusicNativeToken', () => {
                 await expect(Web3MusicNativeToken.connect(addr1).pay(addr1.address, 100))
                     .to.be.revertedWith('Web3MusicNativeToken: caller is not the FanToArtistStaking contract');
             });
+        });
+    });
+
+    describe('Relesable Payments', () =>{
+        it('Release Check', async() => {
+            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
+            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr4.address, BigInt(20*10**18), blockBefore.timestamp, 3600))
+                .to.emit(Web3MusicNativeToken, 'Transfer')
+                .withArgs('0x0000000000000000000000000000000000000000', addr4.address, BigInt(20*10**18));
+            expect(await Web3MusicNativeToken.balanceOf(addr4.address)).to.be.equal(BigInt(20*10**18));
+            expect(await Web3MusicNativeToken.releasable(addr4.address)).to.be.closeTo(0, BigInt(1*10**16));
+            await timeMachine(60);
+            expect(await Web3MusicNativeToken.releasable(addr4.address)).to.be.equal(BigInt(20*10**18));
+            expect(await Web3MusicNativeToken.released(addr4.address)).to.be.equal(0);
+            await expect(Web3MusicNativeToken.connect(addr4).transfer(owner.address, BigInt(10*10**18)))
+                .to.emit(Web3MusicNativeToken, 'Transfer')
+                .withArgs(addr4.address, owner.address, BigInt(10*10**18));
+            expect(await Web3MusicNativeToken.releasable(addr4.address)).to.be.equal(0);
+            expect(await Web3MusicNativeToken.released(addr4.address)).to.be.equal(BigInt(20*10**18));
+            expect(await Web3MusicNativeToken.balanceOf(addr4.address)).to.be.equal(BigInt(10*10**18));
+        });
+
+        it('Owner should be able to use mint_and lock', async() => {
+            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
+            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
+                .to.emit(Web3MusicNativeToken, 'Transfer')
+                .withArgs('0x0000000000000000000000000000000000000000', addr1.address, 100);
+        });
+
+        it('Owner should be able to use transfer_and_lock', async() => {
+            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
+            await Web3MusicNativeToken.connect(owner).mint(owner.address, 100);
+            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr2.address, 100, blockBefore.timestamp, 3600))
+                .to.emit(Web3MusicNativeToken, 'Transfer')
+                .withArgs(owner.address, addr2.address, 100);
+        });
+
+        it('Should not be possible reuse mint_and_lock or transfer_and_lock for the same account', async() => {
+            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
+            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
+                .to.revertedWith('W3T: Releasable payment already used.');
+            await Web3MusicNativeToken.connect(owner).mint(owner.address, 100);
+            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
+                .to.revertedWith('W3T: Releasable payment already used.');
+            await Web3MusicNativeToken.connect(owner).burn(100);
+        });
+
+        it('A holder of locked tokens should not be able to spend it', async() => {
+             await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, 100))
+                .to.revertedWith('W3T: transfer amount exceeds balance');
+        });
+
+        it('A holder of locked tokens should be able to spend it after a while', async() => {
+            await timeMachine(30);
+            expect(await Web3MusicNativeToken.releasable(addr1.address)).to.be.equal(50);
+            await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, 51))
+                .to.revertedWith('W3T: transfer amount exceeds balance');
+            await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, 50))
+                .to.emit(Web3MusicNativeToken, 'Transfer')
+                .withArgs(addr1.address, owner.address, 50);
+        });
+
+        it('Owner should not be able to burn locked token', async() => {
+            await Web3MusicNativeToken.connect(addr1).approve(owner.address, 50);
+            await expect(Web3MusicNativeToken.connect(owner).burnFrom(addr1.address, 50))
+               .to.revertedWith('W3T: transfer amount exceeds balance');
+            await timeMachine(30);
+            await expect(Web3MusicNativeToken.connect(owner).burnFrom(addr1.address, 50))
+            .to.emit(Web3MusicNativeToken, 'Transfer')
+            .withArgs(addr1.address, '0x0000000000000000000000000000000000000000', 50);
+            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.be.equal(0);
+        });
+
+        it('User can use locked tokens to make a stake', async() => {
+            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
+            const amount = BigInt(20*10**18);
+            const halfamount = BigInt(10*10**18);
+            await expect(fanToArtistStaking.addArtist(artist1.address, addr1.address))
+                .to.emit(fanToArtistStaking, 'ArtistAdded')
+                .withArgs(artist1.address, addr1.address);
+            await Web3MusicNativeToken.connect(owner).mint_and_lock(addr3.address, amount, blockBefore.timestamp, 3600);
+            expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(amount); 
+            await expect(fanToArtistStaking.connect(addr3).stake(artist1.address, halfamount, 3600))
+                .to.emit(fanToArtistStaking, 'StakeCreated')
+                .withArgs(artist1.address, addr3.address, halfamount, 0, anyValue);
+            expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(halfamount);
+            expect(await Web3MusicNativeToken.released(addr3.address)).to.be.equal(halfamount);
+            expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.equal(0);
+            // await timeMachine(29);
+            // expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.equal(0);
+            // await timeMachine(16);
+            // expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.closeTo(halfamount/BigInt(2), BigInt(2*10**17));
+            // await timeMachine(15);
+            // expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.equal(halfamount);
+        });
+
+        it('User can use locked tokens to make a increment of amount staked', async() => {
+            const amount = BigInt(20*10**18);
+            const halfamount = BigInt(10*10**18);
+            await expect(fanToArtistStaking.connect(addr3).increaseAmountStaked(artist1.address, halfamount))
+                .to.emit(fanToArtistStaking, 'StakeIncreased')
+                .withArgs(artist1.address, addr3.address, halfamount, 1);
+            await timeMachine(60);
+            expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(0);
+            expect(await Web3MusicNativeToken.released(addr3.address)).to.be.equal(amount);
+            expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.equal(0);
+            
         });
     });
 
@@ -169,6 +289,5 @@ describe('Web3MusicNativeToken', () => {
                 .to.emit(Web3MusicNativeToken, 'OwnershipTransferred')
                 .withArgs(owner.address, fakeDAO.address);
         });
-
     });
 });

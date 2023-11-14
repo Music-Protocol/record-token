@@ -11,9 +11,13 @@ interface IWeb3MusicNativeToken is IERC20 {
 
     function mint(address to, uint256 amount) external;
 
+    function mint_and_lock(address _beneficiary, uint256 _amount, uint64 _start, uint64 _duration) external;
+
     function burn(uint256 amount) external;
 
     function burnFrom(address account, uint256 amount) external;
+
+    function transfer_and_lock(address _beneficiary, uint256 _amount, uint64 _start, uint64 _duration) external;
 
     function transferOwnership(address to) external;
 
