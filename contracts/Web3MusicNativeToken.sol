@@ -151,10 +151,6 @@ contract Web3MusicNativeToken is
         emit TokenLocked(_beneficiary, _amount);
     }
 
-    function getMinted() public view returns (uint256) {
-        return minted;
-    }
-
     function release(address beneficiary) internal {
             uint256 amount = releasable(beneficiary);
             releasablePayments[beneficiary].released += amount;

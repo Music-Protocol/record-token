@@ -67,8 +67,6 @@ describe('Web3MusicNativeToken', () => {
         });
 
         it('It is not possible to mint more than one billion tokens', async () => {
-            console.log(await Web3MusicNativeToken.totalSupply());
-            console.log(await Web3MusicNativeToken.getMinted());
             await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, BigInt(999999999000000000000000000))).emit(Web3MusicNativeToken, "Transfer");
             expect(await Web3MusicNativeToken.totalSupply()).to.equal(await Web3MusicNativeToken.balanceOf(owner.address));
 
