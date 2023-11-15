@@ -65,6 +65,18 @@ describe('Web3MusicNativeToken', () => {
             await expect(Web3MusicNativeToken.connect(addr1).burnFrom(addr1.address, 1))
                 .to.be.revertedWith('Ownable: caller is not the owner');
         });
+
+        it('It is not possible to mint more than one billion tokens', async () => {
+            console.log(await Web3MusicNativeToken.totalSupply());
+            console.log(await Web3MusicNativeToken.getMinted());
+            await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, BigInt(999999999000000000000000000))).emit(Web3MusicNativeToken, "Transfer");
+            expect(await Web3MusicNativeToken.totalSupply()).to.equal(await Web3MusicNativeToken.balanceOf(owner.address));
+
+            await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, BigInt(2*10**18)))
+                .to.be.revertedWith("W3T: Maximum limit of minable tokens reached");
+                
+            await expect(Web3MusicNativeToken.connect(owner).burn(BigInt(999999999000000000000000000))).emit(Web3MusicNativeToken, "Transfer");
+        });
     });
 
     describe('Behaviour', () => {
@@ -260,7 +272,6 @@ describe('Web3MusicNativeToken', () => {
             expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(0);
             expect(await Web3MusicNativeToken.released(addr3.address)).to.be.equal(amount);
             expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.equal(0);
-            
         });
     });
 

@@ -14,6 +14,9 @@ contract Web3MusicNativeToken is
     Pausable
 {
     using SafeMath for uint256;
+
+    uint256 max_mint = 1000000000000000000000000000;            
+    uint256 minted = 0;
     address private immutable _fanToArtistStaking;
     mapping (address => ReleasablePayment) releasablePayments;
 
@@ -83,6 +86,7 @@ contract Web3MusicNativeToken is
             release(from);
             require((balanceOf(from) - (releasablePayments[from].tokens - releasablePayments[from].released)) >= amount, "W3T: transfer amount exceeds balance");
         }
+        if(from == address(0)) require(minted + amount <= max_mint, "W3T: Maximum limit of minable tokens reached");
         super._beforeTokenTransfer(from, to, amount);
     }
 
@@ -98,6 +102,8 @@ contract Web3MusicNativeToken is
                 (,releasablePayments[from].released) = releasablePayments[from].released.tryAdd(excess);
             }
         }
+        if(from == address(0)) minted += amount;
+        if(to == address(0)) minted -= amount;
         super._afterTokenTransfer(from, to, amount);
     }
 
@@ -143,6 +149,10 @@ contract Web3MusicNativeToken is
         releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration, true);
         transfer(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
+    }
+
+    function getMinted() public view returns (uint256) {
+        return minted;
     }
 
     function release(address beneficiary) internal {
