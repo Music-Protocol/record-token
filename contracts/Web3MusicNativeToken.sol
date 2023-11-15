@@ -22,7 +22,6 @@ contract Web3MusicNativeToken is
         uint256 tokens;
         uint64 start;
         uint64 duration;
-        bool initiated;
     }
 
     event TokenReleased(
@@ -114,7 +113,7 @@ contract Web3MusicNativeToken is
             releasablePayments[_beneficiary].tokens == 0,
             "W3T: Releasable payment already used."
         );
-        releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration, true);
+        releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration);
         _mint(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
@@ -140,7 +139,7 @@ contract Web3MusicNativeToken is
             releasablePayments[_beneficiary].tokens == 0,
             "W3T: Releasable payment already used."
         );
-        releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration, true);
+        releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration);
         transfer(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
