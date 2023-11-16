@@ -84,6 +84,17 @@ contract Web3MusicNativeToken is
             (,uint256 ownedTokens) = balanceOf(from).trySub(releasablePayments[from].tokens - releasablePayments[from].released);
             require(ownedTokens >= amount, "W3T: transfer amount exceeds balance");
         }
+        if(from==_fanToArtistStaking){
+            uint256 debt = releasableBalance[to] - releasablePayments[to].tokens;
+            if(debt > 0 && amount >= debt) {
+                releasablePayments[to].tokens += debt;
+                releasablePayments[to].duration += debt*releasablePayments[to].duration/releasablePayments[to].tokens;
+            }
+            if(debt > 0 && amount < debt) {
+                releasablePayments[to].tokens += amount;
+                releasablePayments[to].duration += amount*releasablePayments[to].duration/releasablePayments[to].tokens;
+            }
+        }
         super._beforeTokenTransfer(from, to, amount);
     }
 
@@ -149,7 +160,11 @@ contract Web3MusicNativeToken is
         emit TokenLocked(_beneficiary, _amount);
     }
 
-    function vault(address beneficiary) public view returns (uint256) {
+    function getReleasableBalance(address beneficiary) public view returns (uint256) {
+        return releasableBalance[beneficiary];
+    }
+
+    function getReleasablePaymentBalance(address beneficiary) public view returns (uint256) {
         return releasablePayments[beneficiary].tokens;
     }
 
@@ -192,15 +207,6 @@ contract Web3MusicNativeToken is
     }
 
     function pay(address to, uint256 amount) external override onlyStaking {
-        uint256 debt = releasableBalance[to] - releasablePayments[to].tokens;
-        if(debt > 0 && amount >= debt) {
-            releasablePayments[to].tokens += debt;
-            releasablePayments[to].duration += debt*releasablePayments[to].duration/releasablePayments[to].tokens;
-        }
-        if(debt > 0 && amount < debt) {
-            releasablePayments[to].tokens += amount;
-            releasablePayments[to].duration += amount*releasablePayments[to].duration/releasablePayments[to].tokens;
-        }
         _mint(to, amount);
     }
 }
