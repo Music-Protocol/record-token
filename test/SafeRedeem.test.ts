@@ -26,7 +26,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2 }
     }
 
-    it.only('Tryng redeem', async () => {
+    it('Tryng redeem', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2 } = await loadFixture(deploy);
         const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
 
@@ -41,13 +41,13 @@ describe("Redeem of releasable tokens after creating a stake", function () {
             .withArgs(artist1.address, addr1.address, 50n*10n**18n, 0, anyValue);
         
         console.log(await Web3MusicNativeToken.getReleasableBalance(addr1.address));
-        console.log(await Web3MusicNativeToken.getReleasablePaymentBalance(addr1.address));
+        console.log(await Web3MusicNativeToken.getReleasableTokens(addr1.address));
 
         await timeMachine(1);
         await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0);
 
         console.log(await Web3MusicNativeToken.getReleasableBalance(addr1.address));
-        console.log(await Web3MusicNativeToken.getReleasablePaymentBalance(addr1.address));
+        console.log(await Web3MusicNativeToken.getReleasableTokens(addr1.address));
 
         console.log(await Web3MusicNativeToken.balanceOf(addr1.address));
     });

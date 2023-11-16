@@ -16,13 +16,13 @@ contract Web3MusicNativeToken is
     using SafeMath for uint256;
     address private immutable _fanToArtistStaking;
     mapping (address => ReleasablePayment) releasablePayments;
-    mapping (address => uint256) releasableBalance;
 
     struct ReleasablePayment {
-        uint256 released;
+        uint256 releasableBalance;
         uint256 tokens;
-        uint256 start;
-        uint256 duration;
+        uint256 released;
+        uint64 start;
+        uint64 duration;
     }
 
     event TokenReleased(
@@ -85,14 +85,14 @@ contract Web3MusicNativeToken is
             require(ownedTokens >= amount, "W3T: transfer amount exceeds balance");
         }
         if(from==_fanToArtistStaking){
-            uint256 debt = releasableBalance[to] - releasablePayments[to].tokens;
+            uint256 debt = releasablePayments[to].releasableBalance - releasablePayments[to].tokens;
             if(debt > 0 && amount >= debt) {
                 releasablePayments[to].tokens += debt;
-                releasablePayments[to].duration += debt*releasablePayments[to].duration/releasablePayments[to].tokens;
+                releasablePayments[to].duration += uint64(debt*releasablePayments[to].duration/releasablePayments[to].tokens);
             }
             if(debt > 0 && amount < debt) {
                 releasablePayments[to].tokens += amount;
-                releasablePayments[to].duration += amount*releasablePayments[to].duration/releasablePayments[to].tokens;
+                releasablePayments[to].duration += uint64(amount*releasablePayments[to].duration/releasablePayments[to].tokens);
             }
         }
         super._beforeTokenTransfer(from, to, amount);
@@ -106,9 +106,8 @@ contract Web3MusicNativeToken is
         if(to == _fanToArtistStaking && releasablePayments[from].tokens > 0){
             (,uint256 ownedTokens) = balanceOf(from).trySub(releasablePayments[from].tokens - releasablePayments[from].released);
             if (ownedTokens < amount) {
-                (,uint256 excess) = amount.trySub(ownedTokens);
-                (,releasablePayments[from].duration) = releasablePayments[from].duration.trySub(excess*releasablePayments[from].duration/releasablePayments[from].tokens);
-                (,releasablePayments[from].tokens) = releasablePayments[from].tokens.trySub(excess);
+                releasablePayments[from].duration -= uint64((amount - ownedTokens)*releasablePayments[from].duration/releasablePayments[from].tokens);
+                releasablePayments[from].tokens -= amount - ownedTokens;
             }
         }
         super._afterTokenTransfer(from, to, amount);
@@ -127,8 +126,7 @@ contract Web3MusicNativeToken is
             releasablePayments[_beneficiary].tokens == 0,
             "W3T: Releasable payment already used."
         );
-        releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration);
-        releasableBalance[_beneficiary] = _amount;
+        releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration);
         _mint(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
@@ -154,17 +152,16 @@ contract Web3MusicNativeToken is
             releasablePayments[_beneficiary].tokens == 0,
             "W3T: Releasable payment already used."
         );
-        releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration);
-        releasableBalance[_beneficiary] = _amount;
+        releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration);
         transfer(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
 
     function getReleasableBalance(address beneficiary) public view returns (uint256) {
-        return releasableBalance[beneficiary];
+        return releasablePayments[beneficiary].releasableBalance;
     }
 
-    function getReleasablePaymentBalance(address beneficiary) public view returns (uint256) {
+    function getReleasableTokens(address beneficiary) public view returns (uint256) {
         return releasablePayments[beneficiary].tokens;
     }
 
@@ -183,11 +180,11 @@ contract Web3MusicNativeToken is
     }
 
     function releasable(address beneficiary) public view returns (uint256) {
-        (,uint256 releasableTokens) = _vestingSchedule(releasablePayments[beneficiary], block.timestamp).trySub(released(beneficiary));
+        (,uint256 releasableTokens) = _vestingSchedule(releasablePayments[beneficiary], uint64(block.timestamp)).trySub(released(beneficiary));
         return releasableTokens;
     }
 
-    function _vestingSchedule(ReleasablePayment memory releasablePayment, uint256 timestamp) private pure returns (uint256) {
+    function _vestingSchedule(ReleasablePayment memory releasablePayment, uint64 timestamp) private pure returns (uint256) {
         if (timestamp < releasablePayment.start) {
             return 0;
         } else if (timestamp >= releasablePayment.start + releasablePayment.duration) {
