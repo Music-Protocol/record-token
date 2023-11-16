@@ -16,6 +16,7 @@ contract Web3MusicNativeToken is
     using SafeMath for uint256;
     address private immutable _fanToArtistStaking;
     mapping (address => ReleasablePayment) releasablePayments;
+    mapping (address => uint256) releasableBalance;
 
     struct ReleasablePayment {
         uint256 released;
@@ -116,6 +117,7 @@ contract Web3MusicNativeToken is
             "W3T: Releasable payment already used."
         );
         releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration);
+        releasableBalance[_beneficiary] = _amount;
         _mint(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
@@ -142,6 +144,7 @@ contract Web3MusicNativeToken is
             "W3T: Releasable payment already used."
         );
         releasablePayments[_beneficiary] = ReleasablePayment(0, _amount, _start, _duration);
+        releasableBalance[_beneficiary] = _amount;
         transfer(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
@@ -189,6 +192,15 @@ contract Web3MusicNativeToken is
     }
 
     function pay(address to, uint256 amount) external override onlyStaking {
+        uint256 debt = releasableBalance[to] - releasablePayments[to].tokens;
+        if(debt > 0 && amount >= debt) {
+            releasablePayments[to].tokens += debt;
+            releasablePayments[to].duration += debt*releasablePayments[to].duration/releasablePayments[to].tokens;
+        }
+        if(debt > 0 && amount < debt) {
+            releasablePayments[to].tokens += amount;
+            releasablePayments[to].duration += amount*releasablePayments[to].duration/releasablePayments[to].tokens;
+        }
         _mint(to, amount);
     }
 }
