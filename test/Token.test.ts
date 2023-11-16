@@ -244,7 +244,7 @@ describe('Web3MusicNativeToken', () => {
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr3.address, oneThird, 0, anyValue);
 
-            expect(await Web3MusicNativeToken.vault(addr3.address)).to.be.equal(twoThird);
+            expect(await Web3MusicNativeToken.getReleasablePaymentBalance(addr3.address)).to.be.equal(twoThird);
             expect(await Web3MusicNativeToken.duration(addr3.address)).to.be.equal(2400);
             expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(BigInt(twoThird));
             expect(await Web3MusicNativeToken.released(addr3.address)).to.be.equal(0);
@@ -261,7 +261,7 @@ describe('Web3MusicNativeToken', () => {
                 .to.emit(fanToArtistStaking, 'StakeIncreased')
                 .withArgs(artist1.address, addr3.address, oneThird, 1);
   
-            expect(await Web3MusicNativeToken.vault(addr3.address)).to.be.equal(oneThird);
+            expect(await Web3MusicNativeToken.getReleasablePaymentBalance(addr3.address)).to.be.equal(oneThird);
             expect(await Web3MusicNativeToken.duration(addr3.address)).to.be.equal(1200);
             expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(oneThird);
             expect(await Web3MusicNativeToken.released(addr3.address)).to.be.equal(0);
