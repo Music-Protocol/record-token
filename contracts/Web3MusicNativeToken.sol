@@ -26,6 +26,7 @@ contract Web3MusicNativeToken is
         uint256 released;
         uint64 start;
         uint64 duration;
+        uint64 updatedDuration;
     }
 
     event TokenReleased(
@@ -91,11 +92,12 @@ contract Web3MusicNativeToken is
             uint256 debt = releasablePayments[to].releasableBalance - releasablePayments[to].tokens;
             if(debt > 0 && amount >= debt) {
                 releasablePayments[to].tokens += debt;
-                releasablePayments[to].duration += uint64(debt*releasablePayments[to].duration/releasablePayments[to].tokens);
+                releasablePayments[to].updatedDuration += uint64(debt*releasablePayments[to].duration/releasablePayments[to].releasableBalance);
+                if(releasablePayments[to].updatedDuration > releasablePayments[to].duration) releasablePayments[to].updatedDuration = releasablePayments[to].duration;
             }
             if(debt > 0 && amount < debt) {
                 releasablePayments[to].tokens += amount;
-                releasablePayments[to].duration += uint64(amount*releasablePayments[to].duration/releasablePayments[to].tokens);
+                releasablePayments[to].updatedDuration += uint64(amount*releasablePayments[to].duration/releasablePayments[to].releasableBalance);
             }
         }
         super._beforeTokenTransfer(from, to, amount);
@@ -109,7 +111,7 @@ contract Web3MusicNativeToken is
         if(to == _fanToArtistStaking && releasablePayments[from].tokens > 0){
             (,uint256 ownedTokens) = balanceOf(from).trySub(releasablePayments[from].tokens - releasablePayments[from].released);
             if (ownedTokens < amount) {
-                releasablePayments[from].duration -= uint64((amount - ownedTokens)*releasablePayments[from].duration/releasablePayments[from].tokens);
+                releasablePayments[from].updatedDuration -= uint64((amount - ownedTokens)*releasablePayments[from].duration/releasablePayments[from].releasableBalance);
                 releasablePayments[from].tokens -= amount - ownedTokens;
             }
         }
@@ -132,7 +134,7 @@ contract Web3MusicNativeToken is
             "W3T: Releasable payment already used."
         );
         require(minted + _amount <= max_mint, "W3T: Maximum limit of minable tokens reached");
-        releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration);
+        releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration, _duration);
         _mint(_beneficiary, _amount);
         minted += _amount;
         emit TokenLocked(_beneficiary, _amount);
@@ -159,11 +161,12 @@ contract Web3MusicNativeToken is
             releasablePayments[_beneficiary].tokens == 0,
             "W3T: Releasable payment already used."
         );
-        releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration);
+        releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration, _duration);
         transfer(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
 
+    // -------------------Debug Functions----------------------------------------------
     function getMinted() public view returns (uint256) {
         return minted;
     }
@@ -176,9 +179,14 @@ contract Web3MusicNativeToken is
         return releasablePayments[beneficiary].tokens;
     }
 
+    function updatedDuration(address beneficiary) public view returns (uint256) {
+        return releasablePayments[beneficiary].updatedDuration;
+    }
+    
     function duration(address beneficiary) public view returns (uint256) {
         return releasablePayments[beneficiary].duration;
     }
+    // --------------------------------------------------------------------------------
     
     function release(address beneficiary) internal {
             uint256 amount = releasable(beneficiary);
@@ -198,10 +206,10 @@ contract Web3MusicNativeToken is
     function _vestingSchedule(ReleasablePayment memory releasablePayment, uint64 timestamp) private pure returns (uint256) {
         if (timestamp < releasablePayment.start) {
             return 0;
-        } else if (timestamp >= releasablePayment.start + releasablePayment.duration) {
+        } else if (timestamp >= releasablePayment.start + releasablePayment.updatedDuration) {
             return releasablePayment.tokens;
         } else {
-            return (releasablePayment.tokens * (timestamp - releasablePayment.start)) / releasablePayment.duration;
+            return (releasablePayment.tokens * (timestamp - releasablePayment.start)) / releasablePayment.updatedDuration;
         }
     }
 
