@@ -194,23 +194,23 @@ describe('Web3MusicNativeToken', () => {
         it('Should not be possible reuse mint_and_lock or transfer_and_lock for the same account', async() => {
             const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
             await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
-                .to.revertedWith('W3T: Releasable payment already used.');
+                .to.revertedWith('Web3MusicNativeToken: Releasable payment already used.');
             await Web3MusicNativeToken.connect(owner).mint(owner.address, 100);
             await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
-                .to.revertedWith('W3T: Releasable payment already used.');
+                .to.revertedWith('Web3MusicNativeToken: Releasable payment already used.');
             await Web3MusicNativeToken.connect(owner).burn(100);
         });
 
         it('A holder of locked tokens should not be able to spend it', async() => {
              await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, 100))
-                .to.revertedWith('W3T: transfer amount exceeds balance');
+                .to.revertedWith('Web3MusicNativeToken: transfer amount exceeds balance');
         });
 
         it('A holder of locked tokens should be able to spend it after a while', async() => {
             await timeMachine(30);
             expect(await Web3MusicNativeToken.releasable(addr1.address)).to.be.equal(50);
             await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, 51))
-                .to.revertedWith('W3T: transfer amount exceeds balance');
+                .to.revertedWith('Web3MusicNativeToken: transfer amount exceeds balance');
             await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, 50))
                 .to.emit(Web3MusicNativeToken, 'Transfer')
                 .withArgs(addr1.address, owner.address, 50);
@@ -219,7 +219,7 @@ describe('Web3MusicNativeToken', () => {
         it('Owner should not be able to burn locked token', async() => {
             await Web3MusicNativeToken.connect(addr1).approve(owner.address, 50);
             await expect(Web3MusicNativeToken.connect(owner).burnFrom(addr1.address, 50))
-               .to.revertedWith('W3T: transfer amount exceeds balance');
+               .to.revertedWith('Web3MusicNativeToken: transfer amount exceeds balance');
             await timeMachine(30);
             await expect(Web3MusicNativeToken.connect(owner).burnFrom(addr1.address, 50))
                 .to.emit(Web3MusicNativeToken, 'Transfer')
