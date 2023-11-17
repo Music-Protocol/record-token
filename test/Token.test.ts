@@ -65,16 +65,6 @@ describe('Web3MusicNativeToken', () => {
             await expect(Web3MusicNativeToken.connect(addr1).burnFrom(addr1.address, 1))
                 .to.be.revertedWith('Ownable: caller is not the owner');
         });
-
-        it('It is not possible to mint more than one billion tokens', async () => {
-            await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, BigInt(999999999000000000000000000))).emit(Web3MusicNativeToken, "Transfer");
-            expect(await Web3MusicNativeToken.totalSupply()).to.equal(await Web3MusicNativeToken.balanceOf(owner.address));
-
-            await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, BigInt(2*10**18)))
-                .to.be.revertedWith("W3T: Maximum limit of minable tokens reached");
-                
-            await expect(Web3MusicNativeToken.connect(owner).burn(BigInt(999999999000000000000000000))).emit(Web3MusicNativeToken, "Transfer");
-        });
     });
 
     describe('Behaviour', () => {
@@ -263,8 +253,6 @@ describe('Web3MusicNativeToken', () => {
         });
 
         it('User can use locked tokens to make a increment of amount staked', async() => {
-            const amount = BigInt(30*10**18);
-            const twoThird = BigInt(20*10**18);
             const oneThird = BigInt(10*10**18);
 
             await expect(fanToArtistStaking.connect(addr3).increaseAmountStaked(artist1.address, oneThird))

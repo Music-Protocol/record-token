@@ -115,7 +115,6 @@ contract Web3MusicNativeToken is
             }
         }
         if(from == address(0)) minted += amount;
-        if(to == address(0)) minted -= amount;
         super._afterTokenTransfer(from, to, amount);
     }
 
@@ -161,6 +160,10 @@ contract Web3MusicNativeToken is
         releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration);
         transfer(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
+    }
+
+    function getMinted() public view returns (uint256) {
+        return minted;
     }
 
     function getReleasableBalance(address beneficiary) public view returns (uint256) {
