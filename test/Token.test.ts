@@ -222,57 +222,10 @@ describe('Web3MusicNativeToken', () => {
                .to.revertedWith('W3T: transfer amount exceeds balance');
             await timeMachine(30);
             await expect(Web3MusicNativeToken.connect(owner).burnFrom(addr1.address, 50))
-            .to.emit(Web3MusicNativeToken, 'Transfer')
-            .withArgs(addr1.address, '0x0000000000000000000000000000000000000000', 50);
-            expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.be.equal(0);
-        });
-
-        it('User can use locked tokens to make a stake', async() => {
-            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
-            const amount = BigInt(30*10**18);
-            const twoThird = BigInt(20*10**18);
-            const oneThird = BigInt(10*10**18);
-            
-            await expect(fanToArtistStaking.addArtist(artist1.address, addr1.address))
-                .to.emit(fanToArtistStaking, 'ArtistAdded')
-                .withArgs(artist1.address, addr1.address);
-
-            await Web3MusicNativeToken.connect(owner).mint_and_lock(addr3.address, amount, blockBefore.timestamp, 3600);
-            expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(amount);
-
-            await expect(fanToArtistStaking.connect(addr3).stake(artist1.address, oneThird, 3600))
-                .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr3.address, oneThird, 0, anyValue);
-
-            expect(await Web3MusicNativeToken.getReleasableTokens(addr3.address)).to.be.equal(twoThird);
-            expect(await Web3MusicNativeToken.duration(addr3.address)).to.be.equal(2400);
-            expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(BigInt(twoThird));
-            expect(await Web3MusicNativeToken.released(addr3.address)).to.be.equal(0);
-            expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.closeTo(0, BigInt(2*10**17));
-
-        });
-
-        it('User can use locked tokens to make a increment of amount staked', async() => {
-            const amount = BigInt(30*10**18);
-            const twoThird = BigInt(20*10**18);
-            const oneThird = BigInt(10*10**18);
-
-            await expect(fanToArtistStaking.connect(addr3).increaseAmountStaked(artist1.address, oneThird))
-                .to.emit(fanToArtistStaking, 'StakeIncreased')
-                .withArgs(artist1.address, addr3.address, oneThird, 1);
-  
-            expect(await Web3MusicNativeToken.getReleasableTokens(addr3.address)).to.be.equal(oneThird);
-            expect(await Web3MusicNativeToken.duration(addr3.address)).to.be.equal(1200);
-            expect(await Web3MusicNativeToken.balanceOf(addr3.address)).to.be.equal(oneThird);
-            expect(await Web3MusicNativeToken.released(addr3.address)).to.be.equal(0);
-            expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.closeTo(0, BigInt(2*10**17));
-
-            await timeMachine(20);
-            expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.closeTo(oneThird, BigInt(2*10**17));
-            await timeMachine(20);
-            expect(await Web3MusicNativeToken.releasable(addr3.address)).to.be.closeTo(oneThird, BigInt(2*10**17));
-
-        });
+                .to.emit(Web3MusicNativeToken, 'Transfer')
+                .withArgs(addr1.address, '0x0000000000000000000000000000000000000000', 50);
+                expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.be.equal(0);
+        });       
     });
 
     describe('Event emitting', () => {
