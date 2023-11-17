@@ -98,7 +98,6 @@ contract Web3MusicNativeToken is
                 releasablePayments[to].duration += uint64(amount*releasablePayments[to].duration/releasablePayments[to].tokens);
             }
         }
-        if(from == address(0)) require(minted + amount <= max_mint, "W3T: Maximum limit of minable tokens reached");
         super._beforeTokenTransfer(from, to, amount);
     }
 
@@ -114,12 +113,13 @@ contract Web3MusicNativeToken is
                 releasablePayments[from].tokens -= amount - ownedTokens;
             }
         }
-        if(from == address(0)) minted += amount;
         super._afterTokenTransfer(from, to, amount);
     }
 
     function mint(address to, uint256 amount) external override onlyOwner {
+        require(minted + amount <= max_mint, "W3T: Maximum limit of minable tokens reached");
         _mint(to, amount);
+        minted += amount;
     }
 
     function mint_and_lock(address _beneficiary, uint256 _amount, uint64 _start, uint64 _duration) external override onlyOwner {
@@ -131,8 +131,10 @@ contract Web3MusicNativeToken is
             releasablePayments[_beneficiary].tokens == 0,
             "W3T: Releasable payment already used."
         );
+        require(minted + _amount <= max_mint, "W3T: Maximum limit of minable tokens reached");
         releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration);
         _mint(_beneficiary, _amount);
+        minted += _amount;
         emit TokenLocked(_beneficiary, _amount);
     }
 
