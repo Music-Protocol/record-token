@@ -83,12 +83,12 @@ contract Web3MusicNativeToken is
         address to,
         uint256 amount
     ) internal override whenNotPaused {
-        if(from!=address(0) && to!=_fanToArtistStaking){
+        if(from != address(0) && to != _fanToArtistStaking){
             release(from);
             (,uint256 ownedTokens) = balanceOf(from).trySub(releasablePayments[from].tokens - releasablePayments[from].released);
-            require(ownedTokens >= amount, "W3T: transfer amount exceeds balance");
+            require(ownedTokens >= amount, "Web3MusicNativeToken: transfer amount exceeds balance");
         }
-        if(from==_fanToArtistStaking){
+        if(from == _fanToArtistStaking){
             uint256 debt = releasablePayments[to].releasableBalance - releasablePayments[to].tokens;
             if(debt > 0 && amount >= debt) {
                 releasablePayments[to].tokens += debt;
@@ -100,22 +100,16 @@ contract Web3MusicNativeToken is
                 releasablePayments[to].updatedDuration += uint64(amount*releasablePayments[to].duration/releasablePayments[to].releasableBalance);
             }
         }
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
-    function _afterTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override whenNotPaused {
-        if(to == _fanToArtistStaking && releasablePayments[from].tokens > 0){
-            (,uint256 ownedTokens) = balanceOf(from).trySub(releasablePayments[from].tokens - releasablePayments[from].released);
-            if (ownedTokens < amount) {
-                releasablePayments[from].updatedDuration -= uint64((amount - ownedTokens)*releasablePayments[from].duration/releasablePayments[from].releasableBalance);
-                releasablePayments[from].tokens -= amount - ownedTokens;
+        if(to == _fanToArtistStaking) {
+            require(balanceOf(from) >= amount, "Web3MusicNativeToken: transfer amount exceeds balance");
+            uint256 unlockedTokens = balanceOf(from) -(releasablePayments[from].tokens - releasablePayments[from].released);
+            if( amount > unlockedTokens ) { 
+                uint256 excess = amount - unlockedTokens;
+                releasablePayments[from].tokens -= excess;
+                releasablePayments[from].updatedDuration -= uint64(excess*releasablePayments[from].duration/releasablePayments[from].releasableBalance);
             }
         }
-        super._afterTokenTransfer(from, to, amount);
+        super._beforeTokenTransfer(from, to, amount);
     }
 
     function mint(address to, uint256 amount) external override onlyOwner {
@@ -127,11 +121,11 @@ contract Web3MusicNativeToken is
     function mint_and_lock(address _beneficiary, uint256 _amount, uint64 _start, uint64 _duration) external override onlyOwner {
         require(
             _amount > 0, 
-            "W3T: Amount can not be 0 or less in mint_and_lock."
+            "Web3MusicNativeToken: Amount can not be 0 or less in mint_and_lock."
         );
         require(
             releasablePayments[_beneficiary].tokens == 0,
-            "W3T: Releasable payment already used."
+            "Web3MusicNativeToken: Releasable payment already used."
         );
         require(minted + _amount <= max_mint, "W3T: Maximum limit of minable tokens reached");
         releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration, _duration);
@@ -155,11 +149,11 @@ contract Web3MusicNativeToken is
     function transfer_and_lock(address _beneficiary, uint256 _amount, uint64 _start, uint64 _duration) external override onlyOwner {
         require(
             _amount > 0, 
-            "W3T: Amount can not be 0 or less in transfer_and_lock."
+            "Web3MusicNativeToken: Amount can not be 0 or less in transfer_and_lock."
         );
         require(
             releasablePayments[_beneficiary].tokens == 0,
-            "W3T: Releasable payment already used."
+            "Web3MusicNativeToken: Releasable payment already used."
         );
         releasablePayments[_beneficiary] = ReleasablePayment(_amount, _amount, 0, _start, _duration, _duration);
         transfer(_beneficiary, _amount);
