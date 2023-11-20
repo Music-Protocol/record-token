@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 
 contract Web3MusicNativeToken is
@@ -13,7 +12,6 @@ contract Web3MusicNativeToken is
     Ownable2Step,
     Pausable
 {
-    using SafeMath for uint256;
 
     uint256 max_mint = 1000000000000000000000000000;
     uint256 minted = 0;
@@ -80,10 +78,9 @@ contract Web3MusicNativeToken is
             releasablePayments[from].tokens > 0
         ) {
             release(from);
-            (, uint256 ownedTokens) = balanceOf(from).trySub(
-                releasablePayments[from].tokens -
-                    releasablePayments[from].released
-            );
+            uint256 ownedTokens = balanceOf(from) -
+                (releasablePayments[from].tokens -
+                    releasablePayments[from].released);
             require(
                 ownedTokens >= amount,
                 "Web3MusicNativeToken: transfer amount exceeds balance"
@@ -236,6 +233,7 @@ contract Web3MusicNativeToken is
     function duration(address beneficiary) public view returns (uint256) {
         return releasablePayments[beneficiary].duration;
     }
+
     // --------------------------------------------------------------------------------
 
     function release(address beneficiary) internal {
@@ -249,10 +247,10 @@ contract Web3MusicNativeToken is
     }
 
     function releasable(address beneficiary) public view returns (uint256) {
-        (, uint256 releasableTokens) = _vestingSchedule(
+        uint256 releasableTokens = _vestingSchedule(
             releasablePayments[beneficiary],
             uint64(block.timestamp)
-        ).trySub(released(beneficiary));
+        ) - released(beneficiary);
         return releasableTokens;
     }
 
