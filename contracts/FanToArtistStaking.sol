@@ -52,7 +52,6 @@ contract FanToArtistStaking is
         uint256 amount;
         uint40 start; //block.timestamp
         uint40 end;
-        bool redeemed;
     }
 
     struct ArtistReward {
@@ -77,7 +76,7 @@ contract FanToArtistStaking is
     //                      = Stake[]
     //                      .push(new Stake)
 
-    mapping(address => ArtistCheckpoint) private _artistCheckoints;
+    mapping(address => ArtistCheckpoint) private _artistCheckpoints;
 
     mapping(address => bool) private _verifiedArtists; // 0 never added | 1 addedd | else is the timestamp of removal
 
@@ -136,14 +135,6 @@ contract FanToArtistStaking is
         _;
     }
 
-    modifier onlyNotEnded(uint40 end) {
-        require(
-            block.timestamp < end,
-            "FanToArtistStaking: the stake is already ended"
-        );
-        _;
-    }
-
     modifier onlyEnded(uint40 end) {
         require(
             end < block.timestamp,
@@ -160,11 +151,9 @@ contract FanToArtistStaking is
     }
 
     function _getReward(address artist) internal {
-        // console.log("GET REWARD");
-
         _calcSinceLastPosition(artist, 0, true);
-        _Web3MusicNativeToken.pay(artist, _artistCheckoints[artist].amountAcc);
-        _artistCheckoints[artist].amountAcc = 0;
+        _Web3MusicNativeToken.pay(artist, _artistCheckpoints[artist].amountAcc);
+        _artistCheckpoints[artist].amountAcc = 0;
     }
 
     function _calcSinceLastPosition(
@@ -172,16 +161,8 @@ contract FanToArtistStaking is
         uint256 amount,
         bool isAdd
     ) internal {
-        // console.log(
-        //     "entering with amount ",
-        //     _artistCheckoints[artist].amountAcc
-        // );
-        // console.log(
-        //     "entering with token ",
-        //     _artistCheckoints[artist].tokenAmount
-        // );
         uint accumulator = 0;
-        if (_artistCheckoints[artist].tokenAmount != 0) {
+        if (_artistCheckpoints[artist].tokenAmount != 0) {
             for (
                 uint i = 0;
                 i < REWARD_LIMIT && _artistReward.length - i > 0;
@@ -193,35 +174,20 @@ contract FanToArtistStaking is
 
                 if (end > _artistReward[index].end)
                     end = _artistReward[index].end;
-                if (start < _artistCheckoints[artist].lastRedeem)
-                    start = _artistCheckoints[artist].lastRedeem;
+                if (start < _artistCheckpoints[artist].lastRedeem)
+                    start = _artistCheckpoints[artist].lastRedeem;
                 if (_artistReward[index].end < start) break;
-                // console.log("duration ", end - start);
-                // console.log("amount ", _artistCheckoints[artist].tokenAmount);
-                // console.log("rate ", _artistReward[index].rate);
 
-                accumulator += (_artistCheckoints[artist].tokenAmount *
+                accumulator += (_artistCheckpoints[artist].tokenAmount *
                     (end - start)).mulDiv(_artistReward[index].rate, 10e9);
             }
         }
 
-        _artistCheckoints[artist].amountAcc += accumulator;
-        if (isAdd) _artistCheckoints[artist].tokenAmount += amount;
-        else _artistCheckoints[artist].tokenAmount -= amount;
+        _artistCheckpoints[artist].amountAcc += accumulator;
+        if (isAdd) _artistCheckpoints[artist].tokenAmount += amount;
+        else _artistCheckpoints[artist].tokenAmount -= amount;
 
-        _artistCheckoints[artist].lastRedeem = uint40(block.timestamp);
-        // console.log("accumulator ", accumulator);
-
-        // console.log(
-        //     "finishing with amount ",
-        //     _artistCheckoints[artist].amountAcc
-        // );
-        // console.log(
-        //     "finishing with token ",
-        //     _artistCheckoints[artist].tokenAmount
-        // );
-
-        // console.log("OUT ", _artistCheckoints[artist].tokenAmount);
+        _artistCheckpoints[artist].lastRedeem = uint40(block.timestamp);
     }
 
     function getReward(address artist) external {
@@ -235,7 +201,7 @@ contract FanToArtistStaking is
         if (_verifiedArtists[artist]) {
             _verifiedArtists[artist] = false;
             _getReward(artist);
-            delete _artistCheckoints[artist];
+            delete _artistCheckpoints[artist];
             emit ArtistRemoved(artist, sender);
         }
     }
@@ -291,7 +257,7 @@ contract FanToArtistStaking is
         );
         if (!_verifiedArtists[artist]) {
             _verifiedArtists[artist] = true;
-            _artistCheckoints[artist] = ArtistCheckpoint({
+            _artistCheckpoints[artist] = ArtistCheckpoint({
                 amountAcc: 0,
                 lastRedeem: uint40(block.timestamp),
                 tokenAmount: 0
@@ -327,8 +293,7 @@ contract FanToArtistStaking is
             _stake[artist][_msgSender()] = Stake({
                 amount: amount,
                 start: uint40(block.timestamp),
-                end: uint40(block.timestamp + end),
-                redeemed: false
+                end: uint40(block.timestamp + end)
             });
             _votingPower[_msgSender()] += amount;
             _totalVotingPower += amount;
@@ -408,23 +373,24 @@ contract FanToArtistStaking is
             "FanToArtistStaking: the new artist is the same as the old one"
         );
 
-        _stake[artist][_msgSender()] = Stake({
+        _stake[newArtist][_msgSender()] = Stake({
             amount: _stake[artist][_msgSender()].amount,
             start: uint40(block.timestamp),
-            end: _stake[artist][_msgSender()].end,
-            redeemed: false
+            end: _stake[artist][_msgSender()].end
         });
 
-        _calcSinceLastPosition(
-            artist,
-            _stake[newArtist][_msgSender()].amount,
-            false
-        );
         _calcSinceLastPosition(
             newArtist,
             _stake[newArtist][_msgSender()].amount,
             true
         );
+
+        _calcSinceLastPosition(
+            artist,
+            _stake[artist][_msgSender()].amount,
+            false
+        );
+
         delete _stake[artist][_msgSender()];
 
         emit StakeChangedArtist(artist, _msgSender(), newArtist);
@@ -439,15 +405,9 @@ contract FanToArtistStaking is
             "FanToArtistStaking: stake not found"
         );
         require(
-            !_stake[artist][user].redeemed,
-            "FanToArtistStaking: this stake has already been redeemed"
-        );
-        require(
             _Web3MusicNativeToken.transfer(user, _stake[artist][user].amount),
             "FanToArtistStaking: error while redeeming"
         );
-        _stake[artist][user].redeemed = true;
-        console.log("inizio");
         _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
         _votingPower[user] -= _stake[artist][user].amount;
         _totalVotingPower -= _stake[artist][user].amount;
