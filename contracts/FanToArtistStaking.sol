@@ -360,10 +360,6 @@ contract FanToArtistStaking is
             _isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: no stake found"
         );
-        require( //TODO this can be improved, increase instead of revert???
-            !_isStakingNow(newArtist, _msgSender()),
-            "FanToArtistStaking: already staking the new artist"
-        );
         require(
             _stake[artist][_msgSender()].end > block.timestamp,
             "FanToArtistStaking: last stake cant be changed"
@@ -373,18 +369,43 @@ contract FanToArtistStaking is
             "FanToArtistStaking: the new artist is the same as the old one"
         );
 
-        _stake[newArtist][_msgSender()] = Stake({
-            amount: _stake[artist][_msgSender()].amount,
-            start: uint40(block.timestamp),
-            end: _stake[artist][_msgSender()].end
-        });
-
+        if (_isStakingNow(newArtist, _msgSender())) {
+            require(
+                _stake[newArtist][_msgSender()].end > block.timestamp,
+                "FanToArtistStaking: last stake cant be changed"
+            );
+            //adds the tokens on the stake of the new artist
+            _stake[newArtist][_msgSender()].amount += _stake[artist][
+                _msgSender()
+            ].amount;
+            //determines the longest duration
+            uint40 longestDuration = _stake[newArtist][_msgSender()].end -
+                _stake[newArtist][_msgSender()].start;
+            if (
+                longestDuration <
+                _stake[artist][_msgSender()].end -
+                    _stake[artist][_msgSender()].start
+            )
+                longestDuration =
+                    _stake[artist][_msgSender()].end -
+                    _stake[artist][_msgSender()].start;
+            //uses the function timestamp for start
+            _stake[newArtist][_msgSender()].start = uint40(block.timestamp);
+            _stake[newArtist][_msgSender()].end =
+                _stake[newArtist][_msgSender()].start +
+                longestDuration;
+        } else {
+            _stake[newArtist][_msgSender()] = Stake({
+                amount: _stake[artist][_msgSender()].amount,
+                start: uint40(block.timestamp),
+                end: _stake[artist][_msgSender()].end
+            });
+        }
         _calcSinceLastPosition(
             newArtist,
-            _stake[newArtist][_msgSender()].amount,
+            _stake[artist][_msgSender()].amount,
             true
         );
-
         _calcSinceLastPosition(
             artist,
             _stake[artist][_msgSender()].amount,
