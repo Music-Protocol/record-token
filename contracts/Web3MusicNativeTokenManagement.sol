@@ -12,6 +12,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     event Burn(address indexed from, uint256 amount, address indexed sender);
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant TGE_ROLE = keccak256("TGE_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant FACTORY_MANAGER = keccak256("FACTORY_MANAGER");
     bytes32 public constant VERIFY_ARTIST_ROLE =
@@ -23,11 +24,15 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     IFanToArtistStaking private _ftas;
 
     constructor(address Web3MusicNativeToken, address ftas) {
-        require(Web3MusicNativeToken != address(0), "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0");
+        require(
+            Web3MusicNativeToken != address(0),
+            "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0"
+        );
         _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken);
         // Grant the minter role to a specified account
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(TGE_ROLE, msg.sender);
         _grantRole(BURNER_ROLE, msg.sender);
 
         require(
@@ -47,6 +52,25 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         emit Mint(to, amount, _msgSender());
     }
 
+    function mint_and_lock(
+        address to,
+        uint256 amount,
+        uint64 start,
+        uint64 duration
+    ) external onlyRole(TGE_ROLE) {
+        _Web3MusicNativeToken.mint_and_lock(to, amount, start, duration);
+    }
+
+    function transfer_and_lock(
+        address to,
+        uint256 amount,
+        uint64 start,
+        uint64 duration
+    ) external onlyRole(TGE_ROLE) {
+        _Web3MusicNativeToken.transferFrom(msg.sender, address(this), amount);
+        _Web3MusicNativeToken.transfer_and_lock(to, amount, start, duration);
+    }
+
     // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(Web3MusicNativeTokenManament)
     function burn(uint256 amount) external onlyRole(BURNER_ROLE) {
         _Web3MusicNativeToken.burn(amount);
@@ -61,7 +85,9 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         emit Burn(account, amount, _msgSender());
     }
 
-    function transferWeb3MusicNativeToken(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function transferWeb3MusicNativeToken(
+        address to
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _Web3MusicNativeToken.transferOwnership(to);
     }
 
@@ -85,7 +111,10 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         _Web3MusicNativeToken.pause();
     }
 
-    function unpauseWeb3MusicNativeToken() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpauseWeb3MusicNativeToken()
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         _Web3MusicNativeToken.unpause();
     }
 
@@ -95,8 +124,13 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         _ftas.changeArtistRewardRate(rate, _msgSender());
     }
 
-    function changeWeb3MusicNativeToken(address Web3MusicNativeToken) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(Web3MusicNativeToken != address(0), "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0");
+    function changeWeb3MusicNativeToken(
+        address Web3MusicNativeToken
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            Web3MusicNativeToken != address(0),
+            "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0"
+        );
         _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken);
     }
 

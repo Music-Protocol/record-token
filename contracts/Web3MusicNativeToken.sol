@@ -111,19 +111,20 @@ contract Web3MusicNativeToken is
                 );
             }
         }
-        if (to == _fanToArtistStaking) {
-            if (releasablePayments[from].releasableBalance > 0) {
-                uint256 unlockedTokens = balanceOf(from) -
-                    (releasablePayments[from].tokens -
-                        releasablePayments[from].released);
-                if (amount > unlockedTokens) {
-                    uint256 excess = amount - unlockedTokens;
-                    releasablePayments[from].tokens -= excess;
-                    releasablePayments[from].updatedDuration -= uint64(
-                        (excess * releasablePayments[from].duration) /
-                            releasablePayments[from].releasableBalance
-                    );
-                }
+        if (
+            to == _fanToArtistStaking &&
+            releasablePayments[from].releasableBalance > 0
+        ) {
+            uint256 unlockedTokens = balanceOf(from) -
+                (releasablePayments[from].tokens -
+                    releasablePayments[from].released);
+            if (amount > unlockedTokens) {
+                uint256 excess = amount - unlockedTokens;
+                releasablePayments[from].tokens -= excess;
+                releasablePayments[from].updatedDuration -= uint64(
+                    (excess * releasablePayments[from].duration) /
+                        releasablePayments[from].releasableBalance
+                );
             }
         }
         super._beforeTokenTransfer(from, to, amount);

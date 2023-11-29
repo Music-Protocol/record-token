@@ -12,7 +12,7 @@ describe('Web3MusicNativeTokenManagement', () => {
     let fanToArtistStaking: FanToArtistStaking;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
     let artist1: SignerWithAddress, artist2: SignerWithAddress;
-    let adminRole: BytesLike, minterRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike, removeArtistRole: BytesLike;
+    let adminRole: BytesLike, minterRole: BytesLike, tgeRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike, removeArtistRole: BytesLike;
     const calldata = web3.eth.abi.encodeFunctionCall({
         name: 'acceptOwnership',
         type: 'function',
@@ -45,6 +45,7 @@ describe('Web3MusicNativeTokenManagement', () => {
 
         adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();
         minterRole = await Web3MusicNativeTokenManagement.MINTER_ROLE();
+        tgeRole = await Web3MusicNativeTokenManagement.TGE_ROLE();
         burnerRole = await Web3MusicNativeTokenManagement.BURNER_ROLE();
         verifyArtistRole = await Web3MusicNativeTokenManagement.VERIFY_ARTIST_ROLE();
         removeArtistRole = await Web3MusicNativeTokenManagement.REMOVE_ARTIST_ROLE();
@@ -62,12 +63,14 @@ describe('Web3MusicNativeTokenManagement', () => {
         it('The deployer of the contract should have all the roles', async () => {
             expect(await Web3MusicNativeTokenManagement.hasRole(adminRole, owner.address)).to.be.true;
             expect(await Web3MusicNativeTokenManagement.hasRole(minterRole, owner.address)).to.be.true;
+            expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
             expect(await Web3MusicNativeTokenManagement.hasRole(burnerRole, owner.address)).to.be.true;
             expect(await Web3MusicNativeTokenManagement.hasRole(verifyArtistRole, owner.address)).to.be.true;
         });
         it('Another user should have no role', async () => {
             expect(await Web3MusicNativeTokenManagement.hasRole(adminRole, addr1.address)).to.be.false;
             expect(await Web3MusicNativeTokenManagement.hasRole(minterRole, addr1.address)).to.be.false;
+            expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
             expect(await Web3MusicNativeTokenManagement.hasRole(burnerRole, addr1.address)).to.be.false;
             expect(await Web3MusicNativeTokenManagement.hasRole(verifyArtistRole, addr1.address)).to.be.false;
         });
