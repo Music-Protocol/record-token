@@ -32,7 +32,7 @@ describe("FanToArtistStaking2", function () {
     }
 
     it('User should be able to stake and reedem', async () => {
-        const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, amount } = await loadFixture(deploy);;
+        const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, amount } = await loadFixture(deploy);
         
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
@@ -53,7 +53,7 @@ describe("FanToArtistStaking2", function () {
     });
 
     it('User should be able to change artist', async () => {
-        const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist2, amount } = await loadFixture(deploy);;
+        const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist2, amount } = await loadFixture(deploy);
         
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60));
 
@@ -93,10 +93,26 @@ describe("FanToArtistStaking2", function () {
     });
 
     it('User should not be able to change REWARD_LIMIT', async () => {
-        const { fanToArtistStaking, addr1 } = await loadFixture(deploy);;
+        const { fanToArtistStaking, addr1 } = await loadFixture(deploy);
         
         await expect(fanToArtistStaking.connect(addr1).changeArtistRewardLimit(50))
             .to.revertedWith("Ownable: caller is not the owner");
     });
 
+    it('User should not be able to stake 0 tokens', async () => {
+        const { fanToArtistStaking, addr1, artist1} = await loadFixture(deploy);;
+        
+        await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 0, 3600))
+            .to.revertedWith("FanToArtistStaking: the amount can not be zero");
+    });
+
+    it('User should not be able to increase stake 0 tokens', async () => {
+        const { fanToArtistStaking, addr1, artist1} = await loadFixture(deploy);
+
+        await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, 1, 3600))
+        
+        await expect(fanToArtistStaking.connect(addr1).increaseAmountStaked(artist1.address, 0))
+            .to.revertedWith("FanToArtistStaking: the amount can not be zero");
+    });
+    
 });
