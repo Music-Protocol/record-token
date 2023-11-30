@@ -282,6 +282,10 @@ contract FanToArtistStaking is
             "FanToArtistStaking: already staking"
         );
         require(
+            amount > 0,
+            "FanToArtistStaking: the amount can not be zero"
+        );
+        require(
             end > _minStakePeriod,
             "FanToArtistStaking: the end period is less than minimum"
         );
@@ -311,6 +315,10 @@ contract FanToArtistStaking is
         require(
             _isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: no stake found"
+        );
+        require(
+            amount > 0,
+            "FanToArtistStaking: the amount can not be zero"
         );
         require(
             _stake[artist][_msgSender()].end - _minStakePeriod >=
