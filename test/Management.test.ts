@@ -321,7 +321,7 @@ describe("Web3MusicNativeTokenManagement", () => {
       it("When an artist is added through ftas should emit an event", async () => {
         await expect(
           Web3MusicNativeTokenManagement.connect(addr1).addArtist(
-            artist1.address
+            [artist1.address]
           )
         ).to.emit(fanToArtistStaking, "ArtistAdded"); //emit event correct
       });
@@ -329,22 +329,34 @@ describe("Web3MusicNativeTokenManagement", () => {
       it("When an artist is removed through ftas should emit an event", async () => {
         await expect(
           Web3MusicNativeTokenManagement.connect(addr1).removeArtist(
-            artist1.address
+            [artist1.address]
           )
         ).to.emit(fanToArtistStaking, "ArtistRemoved"); //emit event correct
       });
 
+      it("Artists can be added by group", async () => {
+        await Web3MusicNativeTokenManagement.connect(addr1).addArtist([artist1.address, artist2.address]);
+        expect(await fanToArtistStaking.isVerified(artist1.address)).to.be.true;
+        expect(await fanToArtistStaking.isVerified(artist2.address)).to.be.true;
+      });
+
+      it("Artists can be removed by group", async () => {
+        await Web3MusicNativeTokenManagement.connect(addr1).removeArtist([artist1.address, artist2.address]);
+        expect(await fanToArtistStaking.isVerified(artist1.address)).to.be.false;
+        expect(await fanToArtistStaking.isVerified(artist2.address)).to.be.false;
+      });
+      
       it("Should revert", async () => {
         await expect(
           Web3MusicNativeTokenManagement.connect(artist1).addArtist(
-            artist1.address
+            [artist1.address]
           )
         ).to.be.revertedWith(
           `AccessControl: account ${artist1.address.toLowerCase()} is missing role ${verifyArtistRole}`
         );
         await expect(
           Web3MusicNativeTokenManagement.connect(artist1).removeArtist(
-            artist1.address
+            [artist1.address]
           )
         ).to.be.revertedWith(
           `AccessControl: account ${artist1.address.toLowerCase()} is missing role ${removeArtistRole}`
