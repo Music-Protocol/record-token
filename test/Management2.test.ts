@@ -15,8 +15,17 @@ describe("TGE Management", function () {
         inputs: []
     }, []);
 
+    const daoCalldata3 = web3.eth.abi.encodeFunctionCall({
+        name: 'switchWhitelist',
+        type: 'function',
+        inputs: [{
+            type: 'bool',
+            name: 'whitelist'
+            }]
+        }, ['false']);
+
     async function deploy() {
-        const [owner, addr1, artist1] = await ethers.getSigners();
+        const [owner, addr1, addr2, artist1] = await ethers.getSigners();
         const defVeReward = 10;
         const defArtistReward = 10;
         const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
@@ -34,15 +43,45 @@ describe("TGE Management", function () {
         const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
         const Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
         await Web3MusicNativeTokenManagement.deployed();
+
+        const cDAO = await ethers.getContractFactory('Web3MusicNetworkDAO');
+        const dao = await cDAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900, true);
+        await dao.deployed();
+
         await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
         await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
-        await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address, fanToArtistStaking.address], [calldata, calldata]);
+        await dao.transferOwnership(Web3MusicNativeTokenManagement.address);
+        await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address, fanToArtistStaking.address, dao.address], [calldata, calldata, calldata]);
 
         const adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();
         const tgeRole = await Web3MusicNativeTokenManagement.TGE_ROLE();
         const verifyArtistRole = await Web3MusicNativeTokenManagement.VERIFY_ARTIST_ROLE();
 
-        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, owner, addr1, artist1, blockBefore, adminRole, tgeRole, verifyArtistRole}
+        const daoCalldata1 = web3.eth.abi.encodeFunctionCall({
+            name: 'manageWhitelist',
+            type: 'function',
+            inputs: [{
+                type: 'address',
+                name: 'target'
+                },{
+                type: 'bool',
+                name: 'whitelist'
+                }]
+            }, [addr1.address, 'true']);
+
+        const daoCalldata2 = web3.eth.abi.encodeFunctionCall({
+            name: 'manageWhitelist',
+            type: 'function',
+            inputs: [{
+                type: 'address',
+                name: 'target'
+                },{
+                type: 'bool',
+                name: 'whitelist'
+                }]
+            }, [addr2.address, 'false']);
+
+        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, dao, owner, addr1, addr2, artist1, blockBefore, adminRole, tgeRole, verifyArtistRole, daoCalldata1, daoCalldata2}
     }
 
     it('TgeRole is setted correctly', async () => {
@@ -86,4 +125,18 @@ describe("TGE Management", function () {
         });
     })
 
+    describe("Manage DAO whitelist", async () => {
+        it("Manage whitelist", async () => {
+            const { Web3MusicNativeTokenManagement, dao, owner, daoCalldata1, daoCalldata2} = await loadFixture(deploy);
+
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address, dao.address],[daoCalldata1, daoCalldata2]))
+                .to.emit(dao, 'UserWhitelisted');
+        })
+        it("Disable whitelist", async () => {
+            const { Web3MusicNativeTokenManagement, dao, owner} = await loadFixture(deploy);
+    
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address],[daoCalldata3]))
+                .to.emit(dao, 'WhitelistSwitched');
+        })
+    });
 });
