@@ -50,7 +50,6 @@ describe("Web3MusicNativeTokenManagement", () => {
     fanToArtistStaking.initialize(
       Web3MusicNativeToken.address,
       10,
-      10,
       60,
       86400,
       3,

@@ -9,7 +9,6 @@ describe("FanToArtistStaking2", function () {
     
     async function deploy() {
         const [owner, addr1, addr2, addr3, artist1, artist2, artist3] = await ethers.getSigners();
-        const defVeReward = 10;
         const defArtistReward = 10;
         const amount = 10n*10n**18n;
         const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
@@ -20,7 +19,7 @@ describe("FanToArtistStaking2", function () {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
 
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
 

@@ -11,7 +11,6 @@ describe('FanToArtistStaking', () => {
     let fanToArtistStaking: FanToArtistStaking;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress, artist3: SignerWithAddress;
 
-    const defVeReward = 10;
     const defArtistReward = 10;
 
     before(async () => {
@@ -24,7 +23,7 @@ describe('FanToArtistStaking', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
     });
 
     describe('Deployment', () => {
@@ -64,10 +63,6 @@ describe('FanToArtistStaking', () => {
 
 
     describe('Rates', () => {
-        it('Should be able to change the veWeb3MusicNativeToken reward rate', async () => {
-            expect(await fanToArtistStaking.getStakingVeRate()).to.equal(10);
-        });
-
         it('Should be able to change the artist reward rate', async () => {
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(10);
             await expect(fanToArtistStaking.changeArtistRewardRate(50, owner.address))

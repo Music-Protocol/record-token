@@ -17,7 +17,6 @@ describe("DAO", () => {
   let owner: SignerWithAddress;
   let artists: SignerWithAddress[]; //6
   let users: SignerWithAddress[]; //13
-  const defVeReward = 10;
   const defArtistReward = 10;
   const minStakeTime = 10;
   const maxStakeTime = 864000;
@@ -41,7 +40,6 @@ describe("DAO", () => {
     await Web3MusicNativeToken.deployed();
     await fanToArtistStaking.initialize(
       Web3MusicNativeToken.address,
-      defVeReward,
       defArtistReward,
       minStakeTime,
       maxStakeTime,
