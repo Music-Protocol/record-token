@@ -15,7 +15,6 @@ describe('Stake Simulation', () => {
     let owner: SignerWithAddress;
     let artists: SignerWithAddress[]; //6
     let users: SignerWithAddress[]; //13
-    const defVeReward = 10;
     let defArtistReward = 10e8;
     let artistRewardPerc = (defArtistReward / 10e9);
     const minStakeTime = 10;
@@ -43,7 +42,7 @@ describe('Stake Simulation', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(ftas.address);
         await Web3MusicNativeToken.deployed();
-        await ftas.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, minStakeTime, maxStakeTime, 3, 10);
+        await ftas.initialize(Web3MusicNativeToken.address, defArtistReward, minStakeTime, maxStakeTime, 3, 10);
 
         await Promise.allSettled([artists.forEach(artist =>
             ftas.addArtist(artist.address, owner.address)

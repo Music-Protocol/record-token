@@ -80,7 +80,6 @@ contract FanToArtistStaking is
 
     mapping(address => bool) private _verifiedArtists; // 0 never added | 1 addedd | else is the timestamp of removal
 
-    uint256 private _veWeb3MusicNativeTokenRewardRate; //change onylOwner
     uint40 private _minStakePeriod; //change onylOwner
     uint40 private _maxStakePeriod; //change onylOwner
 
@@ -92,7 +91,6 @@ contract FanToArtistStaking is
 
     function initialize(
         address Web3MusicNativeToken_,
-        uint256 veWeb3MusicNativeTokenRewardRate,
         uint256 artistWeb3MusicNativeTokenRewardRate,
         uint40 min,
         uint40 max,
@@ -107,13 +105,8 @@ contract FanToArtistStaking is
             artistWeb3MusicNativeTokenRewardRate != 0,
             "FanToArtistStaking: the artist reward rate can not be 0"
         );
-        require(
-            veWeb3MusicNativeTokenRewardRate != 0,
-            "FanToArtistStaking: the voting reward rate can not be 0"
-        );
         require(max > min, "FanToArtistStaking: min cant be greater than max");
         _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken_);
-        _veWeb3MusicNativeTokenRewardRate = veWeb3MusicNativeTokenRewardRate;
         _artistReward.push(
             ArtistReward({
                 start: 0,
@@ -237,10 +230,6 @@ contract FanToArtistStaking is
 
     function changeArtistRewardLimit(uint limit_) external onlyOwner {
         REWARD_LIMIT = limit_;
-    }
-
-    function getStakingVeRate() external view returns (uint256) {
-        return _veWeb3MusicNativeTokenRewardRate;
     }
 
     function getArtistRewardRate() external view returns (uint256) {
