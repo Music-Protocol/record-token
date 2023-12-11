@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { getTimestamp } from './utils/utils';
+import { getTimestamp, timeMachine } from './utils/utils';
 import { BigNumber } from 'ethers';
 
 describe('FanToArtistStaking', () => {
@@ -11,7 +11,6 @@ describe('FanToArtistStaking', () => {
     let fanToArtistStaking: FanToArtistStaking;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress, artist3: SignerWithAddress;
 
-    const defVeReward = 10;
     const defArtistReward = 10;
 
     before(async () => {
@@ -24,7 +23,7 @@ describe('FanToArtistStaking', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
     });
 
     describe('Deployment', () => {
@@ -64,10 +63,6 @@ describe('FanToArtistStaking', () => {
 
 
     describe('Rates', () => {
-        it('Should be able to change the veWeb3MusicNativeToken reward rate', async () => {
-            expect(await fanToArtistStaking.getStakingVeRate()).to.equal(10);
-        });
-
         it('Should be able to change the artist reward rate', async () => {
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(10);
             await expect(fanToArtistStaking.changeArtistRewardRate(50, owner.address))
@@ -85,6 +80,7 @@ describe('FanToArtistStaking', () => {
             await fanToArtistStaking.addArtist(artist1.address, owner.address);
             await Web3MusicNativeToken.mint(addr1.address, BigNumber.from(10).pow(20));
             await fanToArtistStaking.addArtist(artist2.address, owner.address);
+            await timeMachine(600);
             await fanToArtistStaking.changeArtistRewardRate(10, owner.address);
         });
 
@@ -94,7 +90,7 @@ describe('FanToArtistStaking', () => {
             times.push(time);
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr1.address, amount, 0, anyValue);
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
             stake1 = {
                 artist: artist1.address,
                 amount,
@@ -111,7 +107,7 @@ describe('FanToArtistStaking', () => {
             const blockNumBefore = await ethers.provider.getBlockNumber();
             const blockBefore = await ethers.provider.getBlock(blockNumBefore);
             await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
-            await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0);
+            await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
             stake1.redeemed = true;
 
             expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(0);
@@ -124,7 +120,7 @@ describe('FanToArtistStaking', () => {
 
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
-                .withArgs(artist1.address, addr1.address, amount, 1, anyValue);
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
             expect(await Web3MusicNativeToken.balanceOf(fanToArtistStaking.address)).to.equal(amount);
             expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
         });
@@ -152,8 +148,8 @@ describe('FanToArtistStaking', () => {
             });
 
             it('Should not be able to redeem a non existent stake', async () => {
-                await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, addr1.address, 123))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found with this index');
+                await expect(fanToArtistStaking.connect(addr1).redeem(artist3.address, addr1.address))
+                    .to.be.revertedWith('FanToArtistStaking: stake not found');
             });
 
             it('Should not be able to transferOwnership if not the Owner', async () => {
