@@ -12,6 +12,9 @@ contract Web3MusicNativeToken is
     Ownable2Step,
     Pausable
 {
+
+    uint256 max_mint = 1000000000000000000000000000;
+    uint256 minted = 0;
     address private immutable _fanToArtistStaking;
     mapping(address => ReleasablePayment) releasablePayments;
 
@@ -128,6 +131,11 @@ contract Web3MusicNativeToken is
     }
 
     function mint(address to, uint256 amount) external override onlyOwner {
+        require(
+            minted + amount <= max_mint,
+            "W3T: Maximum limit of minable tokens reached"
+        );
+        minted += amount;
         _mint(to, amount);
     }
 
@@ -145,6 +153,10 @@ contract Web3MusicNativeToken is
             releasablePayments[_beneficiary].tokens == 0,
             "Web3MusicNativeToken: Releasable payment already used."
         );
+        require(
+            minted + _amount <= max_mint,
+            "W3T: Maximum limit of minable tokens reached"
+        );
         releasablePayments[_beneficiary] = ReleasablePayment(
             _amount,
             _amount,
@@ -153,6 +165,7 @@ contract Web3MusicNativeToken is
             _duration,
             _duration
         );
+        minted += _amount;
         _mint(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
@@ -196,6 +209,10 @@ contract Web3MusicNativeToken is
     }
 
     // -------------------Debug Functions----------------------------------------------
+    function getMinted() public view returns (uint256) {
+        return minted;
+    }
+
     function getReleasableBalance(
         address beneficiary
     ) public view returns (uint256) {
