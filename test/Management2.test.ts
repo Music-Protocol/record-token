@@ -26,8 +26,6 @@ describe("TGE Management", function () {
 
     async function deploy() {
         const [owner, addr1, addr2, artist1] = await ethers.getSigners();
-        const defVeReward = 10;
-        const defArtistReward = 10;
         const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
@@ -38,7 +36,7 @@ describe("TGE Management", function () {
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
 
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 10);
 
         const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
         const Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
@@ -93,7 +91,7 @@ describe("TGE Management", function () {
     it("mint_and_lock is available", async () => {
         const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore} = await loadFixture(deploy);
 
-        await Web3MusicNativeTokenManagement.connect(owner).addArtist(artist1.address);
+        await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
 
         expect(await Web3MusicNativeTokenManagement.connect(owner).mint_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
             .to.emit(Web3MusicNativeToken, 'TokenLocked')
@@ -103,7 +101,7 @@ describe("TGE Management", function () {
     it("transfer_and_lock is available", async () => {
         const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore} = await loadFixture(deploy);
 
-        await Web3MusicNativeTokenManagement.connect(owner).addArtist(artist1.address);
+        await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
         await Web3MusicNativeTokenManagement.connect(owner).mint(owner.address, 1n);
         await Web3MusicNativeToken.connect(owner).approve(Web3MusicNativeTokenManagement.address, 1n);
 

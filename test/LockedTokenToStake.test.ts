@@ -22,7 +22,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 86400, 3, 10);
 
         await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, amount, blockBefore.timestamp, 3600))
             .to.emit(Web3MusicNativeToken, "Transfer");
@@ -39,7 +39,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount/3n, 0, anyValue);
+            .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
         
         expect(await Web3MusicNativeToken.updatedDuration(addr1.address)).to.be.closeTo(2400, 3);
     });
@@ -49,11 +49,11 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount/3n, 0, anyValue);
+            .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
         
         await expect(fanToArtistStaking.connect(addr1).increaseAmountStaked(artist1.address, amount/3n))
             .to.emit(fanToArtistStaking, 'StakeIncreased')
-            .withArgs(artist1.address, addr1.address, amount/3n, 1);
+            .withArgs(artist1.address, addr1.address, amount/3n);
 
         expect(await Web3MusicNativeToken.updatedDuration(addr1.address)).to.be.closeTo(1200, 3);
     });
@@ -63,13 +63,13 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount, 0, anyValue);
+            .withArgs(artist1.address, addr1.address, amount, anyValue);
 
         await timeMachine(1);
 
-        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0))
+        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
             .to.emit(fanToArtistStaking, 'StakeRedeemed')
-            .withArgs(artist1.address, addr1.address, 0);
+            .withArgs(artist1.address, addr1.address);
 
         await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount)).to.revertedWith("Web3MusicNativeToken: transfer amount exceeds balance");
 
@@ -88,13 +88,13 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount*3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount*3n, 0, anyValue);
+            .withArgs(artist1.address, addr1.address, amount*3n, anyValue);
 
         await timeMachine(1);
 
-        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0))
+        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
             .to.emit(fanToArtistStaking, 'StakeRedeemed')
-            .withArgs(artist1.address, addr1.address, 0);
+            .withArgs(artist1.address, addr1.address);
 
         await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount*3n)).to.revertedWith("Web3MusicNativeToken: transfer amount exceeds balance");
         await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount*2n)).to.emit(Web3MusicNativeToken, "Transfer");
@@ -110,15 +110,15 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(fanToArtistStaking.connect(addr2).stake(artist1.address, amount*2n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr2.address, amount*2n, 0, anyValue);
+            .withArgs(artist1.address, addr2.address, amount*2n, anyValue);
 
         await expect(Web3MusicNativeToken.connect(addr2).transfer(owner.address, amount*2n)).to.revertedWith('ERC20: transfer amount exceeds balance');
 
         await timeMachine(1);
 
-        await expect(fanToArtistStaking.connect(addr2).redeem(artist1.address, addr2.address, 0))
+        await expect(fanToArtistStaking.connect(addr2).redeem(artist1.address, addr2.address))
             .to.emit(fanToArtistStaking, 'StakeRedeemed')
-            .withArgs(artist1.address, addr2.address, 0);
+            .withArgs(artist1.address, addr2.address);
 
         await expect(Web3MusicNativeToken.connect(addr2).transfer(owner.address, amount*2n)).to.emit(Web3MusicNativeToken, "Transfer");
     });
@@ -128,15 +128,15 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 7200))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount, 0, anyValue);
+            .withArgs(artist1.address, addr1.address, amount, anyValue);
 
         await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount)).to.revertedWith('ERC20: transfer amount exceeds balance');
 
         await timeMachine(120);
 
-        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0))
+        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
             .to.emit(fanToArtistStaking, 'StakeRedeemed')
-            .withArgs(artist1.address, addr1.address, 0);
+            .withArgs(artist1.address, addr1.address);
 
         await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount)).to.emit(Web3MusicNativeToken, "Transfer");
     });
@@ -147,13 +147,13 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount*3n, 7200))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount*3n, 0, anyValue);
+            .withArgs(artist1.address, addr1.address, amount*3n, anyValue);
 
         await timeMachine(120);
 
-        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address, 0))
+        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
             .to.emit(fanToArtistStaking, 'StakeRedeemed')
-            .withArgs(artist1.address, addr1.address, 0);
+            .withArgs(artist1.address, addr1.address);
 
         await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount*3n)).to.emit(Web3MusicNativeToken, "Transfer");
     });
