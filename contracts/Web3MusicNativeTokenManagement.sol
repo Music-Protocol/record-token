@@ -14,7 +14,6 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant TGE_ROLE = keccak256("TGE_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-    bytes32 public constant FACTORY_MANAGER = keccak256("FACTORY_MANAGER");
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
     bytes32 public constant REMOVE_ARTIST_ROLE =
@@ -39,12 +38,15 @@ contract Web3MusicNativeTokenManagement is AccessControl {
             ftas != address(0),
             "Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0"
         );
+        _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken);
         _ftas = IFanToArtistStaking(ftas);
+        // Grant the minter role to a specified account
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(BURNER_ROLE, msg.sender);
         //Grant role to add and remove address on FanToArtistStaking->verifiedArtists[]
         _grantRole(VERIFY_ARTIST_ROLE, msg.sender);
         _grantRole(REMOVE_ARTIST_ROLE, msg.sender);
-
-        _grantRole(FACTORY_MANAGER, msg.sender);
     }
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
@@ -97,14 +99,20 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         _ftas.transferOwnership(to);
     }
 
-    function addArtist(address artist) external onlyRole(VERIFY_ARTIST_ROLE) {
-        _ftas.addArtist(artist, _msgSender());
+    function addArtist(
+        address[] calldata artist
+    ) external onlyRole(VERIFY_ARTIST_ROLE) {
+        for (uint i = 0; i < artist.length; i++) {
+            _ftas.addArtist(artist[i], _msgSender());
+        }
     }
 
     function removeArtist(
-        address artist
+        address[] calldata artist
     ) external onlyRole(REMOVE_ARTIST_ROLE) {
-        _ftas.removeArtist(artist, _msgSender());
+        for (uint i = 0; i < artist.length; i++) {
+            _ftas.removeArtist(artist[i], _msgSender());
+        }
     }
 
     function pauseWeb3MusicNativeToken() external onlyRole(DEFAULT_ADMIN_ROLE) {
