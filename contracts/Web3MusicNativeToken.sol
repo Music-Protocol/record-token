@@ -135,8 +135,8 @@ contract Web3MusicNativeToken is
             minted + amount <= max_mint,
             "W3T: Maximum limit of minable tokens reached"
         );
-        _mint(to, amount);
         minted += amount;
+        _mint(to, amount);
     }
 
     function mint_and_lock(
@@ -165,8 +165,8 @@ contract Web3MusicNativeToken is
             _duration,
             _duration
         );
-        _mint(_beneficiary, _amount);
         minted += _amount;
+        _mint(_beneficiary, _amount);
         emit TokenLocked(_beneficiary, _amount);
     }
 
