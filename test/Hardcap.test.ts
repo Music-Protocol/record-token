@@ -21,7 +21,7 @@ describe("Hardcap", function () {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 10, 86400);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 86400, 3, 10);
 
         return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2 }
     }
@@ -50,9 +50,9 @@ describe("Hardcap", function () {
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount, 0, anyValue);
+            .withArgs(artist1.address, addr1.address, amount, anyValue);
 
-        await expect(fanToArtistStaking.connect(artist1).getReward(artist1.address, [addr1.address], [0], [0], [10])).to.emit(Web3MusicNativeToken, 'Transfer');
+        await expect(fanToArtistStaking.connect(artist1).getReward(artist1.address)).to.emit(Web3MusicNativeToken, 'Transfer');
     });
 
 });
