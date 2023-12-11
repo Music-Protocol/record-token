@@ -1,107 +1,79 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect } from "chai";
-import { BytesLike } from "ethers";
-import { ethers, web3 } from "hardhat";
-import {
-  FanToArtistStaking,
-  Web3MusicNativeToken,
-  Web3MusicNativeTokenManagement,
-} from "../typechain-types/index";
+import { expect } from 'chai';
+import { BytesLike } from 'ethers';
+import { ethers, web3 } from 'hardhat';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNativeTokenManagement } from '../typechain-types/index';
+import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
+import { getIndexFromProposal, getPoolFromEvent } from './utils/utils';
 
-describe("Web3MusicNativeTokenManagement", () => {
-  let Web3MusicNativeToken: Web3MusicNativeToken;
-  let Web3MusicNativeTokenManagement: Web3MusicNativeTokenManagement;
-  let fanToArtistStaking: FanToArtistStaking;
-  let owner: SignerWithAddress,
-    addr1: SignerWithAddress,
-    addr2: SignerWithAddress,
-    fakeDAO: SignerWithAddress;
-  let artist1: SignerWithAddress, artist2: SignerWithAddress;
-  let adminRole: BytesLike,
-    minterRole: BytesLike,
-    burnerRole: BytesLike,
-    verifyArtistRole: BytesLike,
-    removeArtistRole: BytesLike;
-  const calldata = web3.eth.abi.encodeFunctionCall(
-    {
-      name: "acceptOwnership",
-      type: "function",
-      inputs: [],
-    },
-    []
-  );
+describe('Web3MusicNativeTokenManagement', () => {
+    let Web3MusicNativeToken: Web3MusicNativeToken;
+    let Web3MusicNativeTokenManagement: Web3MusicNativeTokenManagement;
+    let fanToArtistStaking: FanToArtistStaking;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
+    let artist1: SignerWithAddress, artist2: SignerWithAddress;
+    let adminRole: BytesLike, minterRole: BytesLike, tgeRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike, removeArtistRole: BytesLike;
+    const calldata = web3.eth.abi.encodeFunctionCall({
+        name: 'acceptOwnership',
+        type: 'function',
+        inputs: []
+    }, []);
 
-  before(async () => {
-    //same as deploy
-    [owner, addr1, addr2, fakeDAO, artist1, artist2] =
-      await ethers.getSigners();
+    before(async () => { //same as deploy
+        [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
-    const FTAS = await ethers.getContractFactory("FanToArtistStaking");
-    fanToArtistStaking = await FTAS.deploy();
-    await fanToArtistStaking.deployed();
 
-    const cWeb3MusicNativeToken = await ethers.getContractFactory(
-      "Web3MusicNativeToken"
-    );
-    Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(
-      fanToArtistStaking.address
-    );
-    await Web3MusicNativeToken.deployed();
-    fanToArtistStaking.initialize(
-      Web3MusicNativeToken.address,
-      10,
-      60,
-      86400,
-      3,
-      10
-    );
+        const FTAS = await ethers.getContractFactory('FanToArtistStaking');
+        fanToArtistStaking = await FTAS.deploy();
+        await fanToArtistStaking.deployed();
 
-    const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory(
-      "Web3MusicNativeTokenManagement"
-    );
-    Web3MusicNativeTokenManagement =
-      await cWeb3MusicNativeTokenManagement.deploy(
-        Web3MusicNativeToken.address,
-        fanToArtistStaking.address
-      );
-    await Web3MusicNativeTokenManagement.deployed();
-    await Web3MusicNativeToken.transferOwnership(
-      Web3MusicNativeTokenManagement.address
-    );
+        const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
+        Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fakeStaking.address);
+        await Web3MusicNativeToken.deployed();
+        fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 60, 86400);
 
-    await Web3MusicNativeTokenManagement.custom(
-      [Web3MusicNativeToken.address],
-      [calldata]
-    );
-    await fanToArtistStaking.transferOwnership(
-      Web3MusicNativeTokenManagement.address
-    );
-    await Web3MusicNativeTokenManagement.custom(
-      [fanToArtistStaking.address],
-      [calldata]
-    );
-    // await Web3MusicNativeTokenManagement.custom([calldata]);
+        const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
+        Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
+        await Web3MusicNativeTokenManagement.deployed();
+        await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
 
-    adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();
-    minterRole = await Web3MusicNativeTokenManagement.MINTER_ROLE();
-    burnerRole = await Web3MusicNativeTokenManagement.BURNER_ROLE();
-    verifyArtistRole =
-      await Web3MusicNativeTokenManagement.VERIFY_ARTIST_ROLE();
-    removeArtistRole =
-      await Web3MusicNativeTokenManagement.REMOVE_ARTIST_ROLE();
-  });
+        await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address], [calldata]);
+        await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
+        await Web3MusicNativeTokenManagement.custom([fanToArtistStaking.address], [calldata]);
+        // await Web3MusicNativeTokenManagement.custom([calldata]);
 
-  describe("Deployment", () => {
-    it("The owner of Web3MusicNativeToken should be the Web3MusicNativeTokenManagement contract", async () => {
-      expect(await Web3MusicNativeToken.owner()).to.equal(
-        Web3MusicNativeTokenManagement.address
-      );
+
+        adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();
+        minterRole = await Web3MusicNativeTokenManagement.MINTER_ROLE();
+        tgeRole = await Web3MusicNativeTokenManagement.TGE_ROLE();
+        burnerRole = await Web3MusicNativeTokenManagement.BURNER_ROLE();
+        verifyArtistRole = await Web3MusicNativeTokenManagement.VERIFY_ARTIST_ROLE();
+        removeArtistRole = await Web3MusicNativeTokenManagement.REMOVE_ARTIST_ROLE();
     });
 
-    it("The owner of FanToArtistStaking should be the Web3MusicNativeTokenManagement contract", async () => {
-      expect(await fanToArtistStaking.owner()).to.equal(
-        Web3MusicNativeTokenManagement.address
-      );
+    describe('Deployment', () => {
+        it('The owner of Web3MusicNativeToken should be the Web3MusicNativeTokenManagement contract', async () => {
+            expect(await Web3MusicNativeToken.owner()).to.equal(Web3MusicNativeTokenManagement.address);
+        });
+
+        it('The owner of FanToArtistStaking should be the Web3MusicNativeTokenManagement contract', async () => {
+            expect(await fanToArtistStaking.owner()).to.equal(Web3MusicNativeTokenManagement.address);
+        });
+
+        it('The deployer of the contract should have all the roles', async () => {
+            expect(await Web3MusicNativeTokenManagement.hasRole(adminRole, owner.address)).to.be.true;
+            expect(await Web3MusicNativeTokenManagement.hasRole(minterRole, owner.address)).to.be.true;
+            expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
+            expect(await Web3MusicNativeTokenManagement.hasRole(burnerRole, owner.address)).to.be.true;
+            expect(await Web3MusicNativeTokenManagement.hasRole(verifyArtistRole, owner.address)).to.be.true;
+        });
+        it('Another user should have no role', async () => {
+            expect(await Web3MusicNativeTokenManagement.hasRole(adminRole, addr1.address)).to.be.false;
+            expect(await Web3MusicNativeTokenManagement.hasRole(minterRole, addr1.address)).to.be.false;
+            expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
+            expect(await Web3MusicNativeTokenManagement.hasRole(burnerRole, addr1.address)).to.be.false;
+            expect(await Web3MusicNativeTokenManagement.hasRole(verifyArtistRole, addr1.address)).to.be.false;
+        });
     });
 
     it("The deployer of the contract should have all the roles", async () => {

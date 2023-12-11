@@ -12,6 +12,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     event Burn(address indexed from, uint256 amount, address indexed sender);
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant TGE_ROLE = keccak256("TGE_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant VERIFY_ARTIST_ROLE =
         keccak256("VERIFY_ARTIST_ROLE");
@@ -26,6 +27,13 @@ contract Web3MusicNativeTokenManagement is AccessControl {
             Web3MusicNativeToken != address(0),
             "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0"
         );
+        _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken);
+        // Grant the minter role to a specified account
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(TGE_ROLE, msg.sender);
+        _grantRole(BURNER_ROLE, msg.sender);
+
         require(
             ftas != address(0),
             "Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0"
@@ -44,6 +52,25 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
         _Web3MusicNativeToken.mint(to, amount);
         emit Mint(to, amount, _msgSender());
+    }
+
+    function mint_and_lock(
+        address to,
+        uint256 amount,
+        uint64 start,
+        uint64 duration
+    ) external onlyRole(TGE_ROLE) {
+        _Web3MusicNativeToken.mint_and_lock(to, amount, start, duration);
+    }
+
+    function transfer_and_lock(
+        address to,
+        uint256 amount,
+        uint64 start,
+        uint64 duration
+    ) external onlyRole(TGE_ROLE) {
+        _Web3MusicNativeToken.transferFrom(msg.sender, address(this), amount);
+        _Web3MusicNativeToken.transfer_and_lock(to, amount, start, duration);
     }
 
     // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(Web3MusicNativeTokenManament)
