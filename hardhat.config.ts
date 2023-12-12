@@ -20,14 +20,16 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  defaultNetwork: "hardhat",
   networks: {
-    hardhat: {
+    moonbase: {
+      url: 'https://rpc.api.moonbase.moonbeam.network',
+      chainId: 1287,
+      accounts: ['PRIVATE_KEY']
     },
-    localganache: {
-      url: process.env.PROVIDER_URL,
-      accounts: [`0x${process.env.PRIVATE_KEY}`]
-    }
+    // localganache: {
+    //   url: process.env.PROVIDER_URL,
+    //   accounts: [`0x${process.env.PRIVATE_KEY}`]
+    // }
   }
 };
 

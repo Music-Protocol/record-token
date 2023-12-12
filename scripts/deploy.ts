@@ -12,10 +12,12 @@ async function main() {
   const defArtistReward = 10;
   const minStakeTime = 10;
   const maxStakeTime = 864000;
+  const limit = 3;
+  const changeRewardLimit = 10;
   const daoQuorum = 10e7;
   const daoMajority = 50e7 + 1;
   const signers = await ethers.getSigners();
-  const offChain =  signers[0].address; //TODO replace
+  const offChain =  signers[0].address; //TODO replace (che è)
 
   const factoryFtas = await ethers.getContractFactory('FanToArtistStaking');
   let fanToArtistStaking = await factoryFtas.deploy();
@@ -25,7 +27,7 @@ async function main() {
   let Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address);
   await Web3MusicNativeToken.deployed();
 
-  await fanToArtistStaking.initialize(Web3MusicNativeToken.address, offChain, defVeReward, defArtistReward, minStakeTime, maxStakeTime);
+  await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, minStakeTime, maxStakeTime, limit, changeRewardLimit);
 
   const managementFactory = await ethers.getContractFactory("Web3MusicNativeTokenManagement");
   const Web3MusicNativeTokenManagement = await managementFactory.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
