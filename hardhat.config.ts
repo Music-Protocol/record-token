@@ -22,9 +22,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     moonbase: {
-      url: 'https://rpc.api.moonbase.moonbeam.network',
+      url: 'https://moonbase-alpha.blastapi.io/cdb9d846-a992-4b5d-8378-5c36def01bcb',
       chainId: 1287,
-      accounts: ['PRIVATE_KEY']
+      accounts: ['OWNER_PRIVATE_KEY']
     },
     // localganache: {
     //   url: process.env.PROVIDER_URL,
