@@ -21,8 +21,8 @@ describe("TGE Management", function () {
         inputs: [{
             type: 'bool',
             name: 'whitelist'
-            }]
-        }, ['false']);
+        }]
+    }, ['false']);
 
     async function deploy() {
         const [owner, addr1, addr2, artist1] = await ethers.getSigners();
@@ -61,11 +61,11 @@ describe("TGE Management", function () {
             inputs: [{
                 type: 'address',
                 name: 'target'
-                },{
+            }, {
                 type: 'bool',
                 name: 'whitelist'
-                }]
-            }, [addr1.address, 'true']);
+            }]
+        }, [addr1.address, 'true']);
 
         const daoCalldata2 = web3.eth.abi.encodeFunctionCall({
             name: 'manageWhitelist',
@@ -73,23 +73,40 @@ describe("TGE Management", function () {
             inputs: [{
                 type: 'address',
                 name: 'target'
-                },{
+            }, {
                 type: 'bool',
                 name: 'whitelist'
-                }]
-            }, [addr2.address, 'false']);
+            }]
+        }, [addr2.address, '']);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, dao, owner, addr1, addr2, artist1, blockBefore, adminRole, tgeRole, verifyArtistRole, daoCalldata1, daoCalldata2}
+        const daoCalldata4 = web3.eth.abi.encodeFunctionCall(
+            {
+                name: "mint",
+                type: "function",
+                inputs: [
+                    {
+                        type: "address",
+                        name: "to",
+                    },
+                    {
+                        type: "uint256",
+                        name: "amount",
+                    },
+                ],
+            },
+            [owner.address, `1000`]);
+
+        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, dao, owner, addr1, addr2, artist1, blockBefore, adminRole, tgeRole, verifyArtistRole, daoCalldata1, daoCalldata2, daoCalldata4 }
     }
 
     it('TgeRole is setted correctly', async () => {
-        const { Web3MusicNativeTokenManagement, owner, addr1, tgeRole} = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, owner, addr1, tgeRole } = await loadFixture(deploy);
         expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
         expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, addr1.address)).to.be.false;
     });
 
     it("mint_and_lock is available", async () => {
-        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore} = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore } = await loadFixture(deploy);
 
         await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
 
@@ -99,7 +116,7 @@ describe("TGE Management", function () {
     });
 
     it("transfer_and_lock is available", async () => {
-        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore} = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore } = await loadFixture(deploy);
 
         await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
         await Web3MusicNativeTokenManagement.connect(owner).mint(owner.address, 1n);
@@ -112,29 +129,41 @@ describe("TGE Management", function () {
 
     describe("Reverts", async () => {
         it("mint_and_lock", async () => {
-        const { Web3MusicNativeTokenManagement, addr1, tgeRole, blockBefore} = await loadFixture(deploy);
-        await expect(Web3MusicNativeTokenManagement.connect(addr1).mint_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
-            .to.be.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${tgeRole}`);
+            const { Web3MusicNativeTokenManagement, addr1, tgeRole, blockBefore } = await loadFixture(deploy);
+            await expect(Web3MusicNativeTokenManagement.connect(addr1).mint_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
+                .to.be.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${tgeRole}`);
         });
         it("transfer_and_lock", async () => {
-        const { Web3MusicNativeTokenManagement, addr1, tgeRole, blockBefore} = await loadFixture(deploy);
-        await expect(Web3MusicNativeTokenManagement.connect(addr1).transfer_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
-            .to.be.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${tgeRole}`);
+            const { Web3MusicNativeTokenManagement, addr1, tgeRole, blockBefore } = await loadFixture(deploy);
+            await expect(Web3MusicNativeTokenManagement.connect(addr1).transfer_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
+                .to.be.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${tgeRole}`);
         });
     })
 
     describe("Manage DAO whitelist", async () => {
         it("Manage whitelist", async () => {
-            const { Web3MusicNativeTokenManagement, dao, owner, daoCalldata1, daoCalldata2} = await loadFixture(deploy);
+            const { Web3MusicNativeTokenManagement, dao, owner, daoCalldata1, daoCalldata2 } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address, dao.address],[daoCalldata1, daoCalldata2]))
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address, dao.address], [daoCalldata1, daoCalldata2]))
                 .to.emit(dao, 'UserWhitelisted');
         })
         it("Disable whitelist", async () => {
-            const { Web3MusicNativeTokenManagement, dao, owner} = await loadFixture(deploy);
-    
-            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address],[daoCalldata3]))
+            const { Web3MusicNativeTokenManagement, dao, owner } = await loadFixture(deploy);
+
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata3]))
                 .to.emit(dao, 'WhitelistSwitched');
+        })
+        it("Propose and vote", async() => {
+            const { dao, addr1, addr2, owner, Web3MusicNativeToken, Web3MusicNativeTokenManagement, daoCalldata1, daoCalldata2, daoCalldata4 } = await loadFixture(deploy);
+
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address, dao.address], [daoCalldata1, daoCalldata2]))
+                .to.emit(dao, 'UserWhitelisted').withArgs(addr2.address, false);
+            await expect(dao.connect(addr1).propose([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner."))
+                .to.emit(dao, "ProposalCreated");
+            await expect(dao.connect(addr1).vote([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner.", true))
+                .to.emit(dao, "ProposalVoted");
+            await expect(dao.connect(addr2).vote([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner.", true))
+                .to.revertedWith('DAO: user not whitelisted');
         })
     });
 });

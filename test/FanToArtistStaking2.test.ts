@@ -113,5 +113,22 @@ describe("FanToArtistStaking2", function () {
         await expect(fanToArtistStaking.connect(addr1).increaseAmountStaked(artist1.address, 0))
             .to.revertedWith("FanToArtistStaking: the amount can not be zero");
     });
+
+    it('User should be able to redeem stake after the artist is not longer verified', async () => {
+        const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, artist1} = await loadFixture(deploy);
+
+        await fanToArtistStaking.connect(addr1).stake(artist1.address, 1, 3600);
+
+        expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(9999999999999999999n);
+
+        await timeMachine(70);
+
+        await expect(fanToArtistStaking.removeArtist(artist1.address, owner.address)).emit(fanToArtistStaking, "ArtistRemoved");
+        
+        await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
+
+        expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(10000000000000000000n);
+
+    });
     
 });

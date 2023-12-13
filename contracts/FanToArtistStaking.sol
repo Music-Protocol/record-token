@@ -405,7 +405,9 @@ contract FanToArtistStaking is
             _Web3MusicNativeToken.transfer(user, _stake[artist][user].amount),
             "FanToArtistStaking: error while redeeming"
         );
-        _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
+        if(_verifiedArtists[artist]){
+            _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
+        }
         _votingPower[user] -= _stake[artist][user].amount;
         _totalVotingPower -= _stake[artist][user].amount;
         delete _stake[artist][user];
