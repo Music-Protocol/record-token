@@ -6,7 +6,7 @@ async function main() {
 
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
     const artist = web3.eth.accounts.privateKeyToAccount(artistKey);
-
+    //The user stakes 20 tokens, to make stakes he can also use locked tokens.
     const functionToSend = f2a.methods.stake(artist.address, 20n*10n**18n, 600);
     const functionABI = functionToSend.encodeABI();
 

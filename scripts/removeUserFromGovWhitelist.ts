@@ -6,7 +6,7 @@ async function main() {
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
-
+    //Owner removes user from governance whitelist
     const calldata = web3.eth.abi.encodeFunctionCall({
         name: 'manageWhitelist',
         type: 'function',

@@ -3,10 +3,10 @@ import { ownerKey, adminKey } from "./utils/wallets";
 
 async function main() {
   const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
-
+  
   const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
   const admin = web3.eth.accounts.privateKeyToAccount(adminKey);
-
+  //Owner associates admin with roles to verify artists from artist whitelist
   let functionToSend = mgmt.methods.grantRole(web3.utils.keccak256("VERIFY_ARTIST_ROLE"), admin.address);
   let functionABI = functionToSend.encodeABI();
 
@@ -26,6 +26,7 @@ async function main() {
 
   console.log("VERIFY_ARTIST_ROLE receipt:", receipt);
 
+  //Owner associates admin with roles to verify artists from artist whitelist
   functionToSend = mgmt.methods.grantRole(web3.utils.keccak256("REMOVE_ARTIST_ROLE"), admin.address);
   functionABI = functionToSend.encodeABI();
 

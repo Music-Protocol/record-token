@@ -3,7 +3,7 @@ import { adminKey, artistKey } from "./utils/wallets";
 
 async function main() {
     const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
-
+    //Admin adds artist's wallet to artist whitelist
     const admin = web3.eth.accounts.privateKeyToAccount(adminKey);
     const artist = web3.eth.accounts.privateKeyToAccount(artistKey);
 

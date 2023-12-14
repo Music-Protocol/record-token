@@ -9,7 +9,7 @@ async function main() {
   }, []);
 
   const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
-
+  //Runs the Web3NativeTokenManagement custom method to acquire ownership of other contracts
   const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
   const functionToSend = mgmt.methods.custom([addressF2A, addressToken, addressDAO], [calldata, calldata, calldata]);
   const functionABI = functionToSend.encodeABI();

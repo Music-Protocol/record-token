@@ -6,7 +6,7 @@ async function main() {
 
 
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
-
+    //This is a proposal that cannot be executed, it is for the execution of the second proposal
     const calldata = web3.eth.abi.encodeFunctionCall(
         {
             name: "mint",
@@ -24,7 +24,7 @@ async function main() {
         },
         [user.address, `1000`]
     );
-
+    
     const functionToSend = dao.methods.propose([addressToken], [calldata], "Gift to myself");
     const functionABI = functionToSend.encodeABI();
 

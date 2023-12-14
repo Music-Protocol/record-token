@@ -569,7 +569,7 @@ const mgmtABI: AbiItem[] = [
         "type": "function"
     }
 ]
-const addressMGMT = '0x800280D1a0e9077FeF1342e799d87F543E1184Ed';
+const addressMGMT = '0x2aFdD7D36AB963Ecb8Cc3328735A5305334b97Fd';
 
 const daoABI: AbiItem[] = [
     {
@@ -1011,7 +1011,7 @@ const daoABI: AbiItem[] = [
         "type": "function"
     }
 ]
-const addressDAO = '0xeF3aba2a82b6FCb62C35a39584423DE51C17424c';
+const addressDAO = '0xcD7843BbdF7E141d638Cd92d495b94a7A36b4922';
 
 const f2aABI: AbiItem[] = [
     {
@@ -1603,7 +1603,7 @@ const f2aABI: AbiItem[] = [
         "type": "function"
     }
 ]
-const addressF2A = '0x27C02Ac78674ef3Fa5439925D9579b0c7e335193';
+const addressF2A = '0xD001915F7f414a54e4ff691DEa891a335F030650';
 
 const tokenABI: AbiItem[] = [
     {
@@ -2344,6 +2344,6 @@ const tokenABI: AbiItem[] = [
         "type": "function"
     }
 ]
-const addressToken = '0x2a7864D0a4ad6b00020dAc466d171E31ab3947A5';
+const addressToken = '4150c46e2E8334f6f14A2d2b7C99B399B2ECdfCA';
 
 export { mgmtABI, addressMGMT, daoABI, addressDAO, f2aABI, addressF2A, tokenABI, addressToken, web3 };

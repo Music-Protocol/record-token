@@ -5,7 +5,7 @@ async function main() {
     const f2a = new web3.eth.Contract(f2aABI, addressF2A);
 
     const artist = web3.eth.accounts.privateKeyToAccount(artistKey);
-
+    //Artist claims the reward by f2a contract
     const functionToSend = f2a.methods.getReward(artist.address);
     const functionABI = functionToSend.encodeABI();
 

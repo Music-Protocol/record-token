@@ -6,7 +6,7 @@ async function main() {
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
-
+    //The owner performs a mint that releases the tokens in a gardual way.
     const functionToSend = mgmt.methods.mint_and_lock(user.address, 10n*10n**18n, Date.now() ,1200);
     const functionABI = functionToSend.encodeABI();
 

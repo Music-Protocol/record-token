@@ -3,7 +3,7 @@ import { ownerKey, userKey } from "./utils/wallets";
 
 async function main() {
     const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
-
+    //It adds user's wallet to dao governance whitelist
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
 

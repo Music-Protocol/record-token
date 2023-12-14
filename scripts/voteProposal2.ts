@@ -6,7 +6,7 @@ async function main() {
 
 
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
-    //User votes for the first proposal, no need to execute it for the execution of the second one
+    //The user votes for the second proposal
     const calldata = web3.eth.abi.encodeFunctionCall(
         {
             name: "mint",
@@ -25,7 +25,33 @@ async function main() {
         [user.address, `1000`]
     );
 
-    const functionToSend = dao.methods.vote([addressToken], [calldata], "Gift to myself", true);
+    const functionSignature = web3.eth.abi.encodeFunctionSignature({
+        name: 'getProposal',
+        type: 'function',
+        inputs: [
+            {
+                type: 'address[]',
+                name: 'targets'
+            },
+            {
+                type: 'bytes[]',
+                name: 'calldatas'
+            },
+            {
+                type: 'string',
+                name: 'description'
+            }
+        ]
+    });
+
+    const encodedParams = web3.eth.abi.encodeParameters(
+        ['address[]', 'bytes[]', 'string'],
+        [[addressToken], [calldata], 'Gift to myself']
+    );
+
+    const encodedFunctionCall = functionSignature + encodedParams.slice(2);
+
+    const functionToSend = dao.methods.vote([addressDAO], [encodedFunctionCall], "Execute getProposal", true);
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {

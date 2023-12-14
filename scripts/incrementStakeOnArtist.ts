@@ -6,8 +6,8 @@ async function main() {
 
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
     const artist = web3.eth.accounts.privateKeyToAccount(artistKey);
-
-    const functionToSend = f2a.methods.increaseAmountStaked(artist.address, 190n);
+    //User increases the amount of tokens put into stake
+    const functionToSend = f2a.methods.increaseAmountStaked(artist.address, 10n*10n**18n);
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {

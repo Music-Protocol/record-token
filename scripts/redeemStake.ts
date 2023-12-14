@@ -6,7 +6,7 @@ async function main() {
 
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
     const artist = web3.eth.accounts.privateKeyToAccount(artistKey);
-
+    //User redeem tokens from artist stake
     const functionToSend = f2a.methods.redeem(artist.address, user.address);
     const functionABI = functionToSend.encodeABI();
 

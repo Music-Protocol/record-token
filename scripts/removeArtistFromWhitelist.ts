@@ -6,7 +6,7 @@ async function main() {
 
     const admin = web3.eth.accounts.privateKeyToAccount(adminKey);
     const artist = web3.eth.accounts.privateKeyToAccount(artistKey);
-
+    //Amdin removes artist from artist whitelist
     const functionToSend = mgmt.methods.removeArtist([artist.address]);
     const functionABI = functionToSend.encodeABI();
 

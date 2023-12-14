@@ -1,12 +1,11 @@
-import { web3, addressToken, addressDAO, daoABI } from './utils/contracts';
+import { web3, addressDAO, daoABI, addressToken } from './utils/contracts';
 import { userKey } from "./utils/wallets";
 
 async function main() {
     const dao = new web3.eth.Contract(daoABI, addressDAO);
 
-
     const user = web3.eth.accounts.privateKeyToAccount(userKey);
-    //User votes for the first proposal, no need to execute it for the execution of the second one
+    //This is a proposal that if executed retrieves the id of the previous proposal
     const calldata = web3.eth.abi.encodeFunctionCall(
         {
             name: "mint",
@@ -25,7 +24,33 @@ async function main() {
         [user.address, `1000`]
     );
 
-    const functionToSend = dao.methods.vote([addressToken], [calldata], "Gift to myself", true);
+    const functionSignature = web3.eth.abi.encodeFunctionSignature({
+        name: 'getProposal',
+        type: 'function',
+        inputs: [
+            {
+                type: 'address[]',
+                name: 'targets'
+            },
+            {
+                type: 'bytes[]',
+                name: 'calldatas'
+            },
+            {
+                type: 'string',
+                name: 'description'
+            }
+        ]
+    });
+
+    const encodedParams = web3.eth.abi.encodeParameters(
+        ['address[]', 'bytes[]', 'string'],
+        [[addressToken], [calldata], 'Gift to myself']
+    );
+
+    const encodedFunctionCall = functionSignature + encodedParams.slice(2);
+
+    const functionToSend = dao.methods.propose([addressDAO], [encodedFunctionCall], "Execute getProposal");
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {
@@ -49,3 +74,4 @@ main().catch((error) => {
     console.error(error);
     process.exitCode = 1;
 });
+

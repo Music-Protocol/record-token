@@ -8,7 +8,6 @@ import { ethers } from "hardhat";
 import { Web3MusicNetworkDAO } from "../typechain-types";
 
 async function main() {
-  const defVeReward = 10;
   const defArtistReward = 10;
   const minStakeTime = 10;
   const maxStakeTime = 864000;
@@ -16,8 +15,6 @@ async function main() {
   const changeRewardLimit = 10;
   const daoQuorum = 10e7;
   const daoMajority = 50e7 + 1;
-  const signers = await ethers.getSigners();
-  const offChain =  signers[0].address; //TODO replace (che è)
 
   const factoryFtas = await ethers.getContractFactory('FanToArtistStaking');
   let fanToArtistStaking = await factoryFtas.deploy();
@@ -33,8 +30,8 @@ async function main() {
   const Web3MusicNativeTokenManagement = await managementFactory.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
   await Web3MusicNativeTokenManagement.deployed();
 
-  const daoFactory = await ethers.getContractFactory('Web3MusicNetworkDAO');
-  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 864000, true) as Web3MusicNetworkDAO;
+  const daoFactory = await ethers.getContractFactory('Web3MusicNetworkDAO');            //The proposal can be executed only after 10 minutes
+  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 600, true) as Web3MusicNetworkDAO;
   await dao.deployed();
 
   await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
