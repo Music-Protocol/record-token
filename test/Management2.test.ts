@@ -77,6 +77,30 @@ describe("TGE Management", function () {
                 type: 'bool',
                 name: 'whitelist'
             }]
+        }, [addr2.address, 'true']);
+
+        const daoCalldata1false = web3.eth.abi.encodeFunctionCall({
+            name: 'manageWhitelist',
+            type: 'function',
+            inputs: [{
+                type: 'address',
+                name: 'target'
+            }, {
+                type: 'bool',
+                name: 'whitelist'
+            }]
+        }, [addr1.address, '']);
+
+        const daoCalldata2false = web3.eth.abi.encodeFunctionCall({
+            name: 'manageWhitelist',
+            type: 'function',
+            inputs: [{
+                type: 'address',
+                name: 'target'
+            }, {
+                type: 'bool',
+                name: 'whitelist'
+            }]
         }, [addr2.address, '']);
 
         const daoCalldata4 = web3.eth.abi.encodeFunctionCall(
@@ -96,7 +120,7 @@ describe("TGE Management", function () {
             },
             [owner.address, `1000`]);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, dao, owner, addr1, addr2, artist1, blockBefore, adminRole, tgeRole, verifyArtistRole, daoCalldata1, daoCalldata2, daoCalldata4 }
+        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, dao, owner, addr1, addr2, artist1, blockBefore, adminRole, tgeRole, verifyArtistRole, daoCalldata1, daoCalldata2, daoCalldata1false, daoCalldata2false, daoCalldata4 }
     }
 
     it('TgeRole is setted correctly', async () => {
@@ -142,10 +166,16 @@ describe("TGE Management", function () {
 
     describe("Manage DAO whitelist", async () => {
         it("Manage whitelist", async () => {
-            const { Web3MusicNativeTokenManagement, dao, owner, daoCalldata1, daoCalldata2 } = await loadFixture(deploy);
+            const { Web3MusicNativeTokenManagement, dao, addr1, addr2, owner, daoCalldata1, daoCalldata2, daoCalldata1false, daoCalldata2false } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address, dao.address], [daoCalldata1, daoCalldata2]))
-                .to.emit(dao, 'UserWhitelisted');
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata1]))
+                .to.emit(dao, 'UserWhitelisted').withArgs(addr1.address, true);
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata2]))
+                .to.emit(dao, 'UserWhitelisted').withArgs(addr2.address, true);
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata1false]))
+                .to.emit(dao, 'UserWhitelisted').withArgs(addr1.address, false);
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata2false]))
+                .to.emit(dao, 'UserWhitelisted').withArgs(addr2.address, false);
         })
         it("Disable whitelist", async () => {
             const { Web3MusicNativeTokenManagement, dao, owner } = await loadFixture(deploy);
@@ -156,8 +186,8 @@ describe("TGE Management", function () {
         it("Propose and vote", async() => {
             const { dao, addr1, addr2, owner, Web3MusicNativeToken, Web3MusicNativeTokenManagement, daoCalldata1, daoCalldata2, daoCalldata4 } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address, dao.address], [daoCalldata1, daoCalldata2]))
-                .to.emit(dao, 'UserWhitelisted').withArgs(addr2.address, false);
+            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata1]))
+                .to.emit(dao, 'UserWhitelisted').withArgs(addr1.address, true);
             await expect(dao.connect(addr1).propose([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner."))
                 .to.emit(dao, "ProposalCreated");
             await expect(dao.connect(addr1).vote([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner.", true))

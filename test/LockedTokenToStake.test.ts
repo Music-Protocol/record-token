@@ -58,30 +58,6 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         expect(await Web3MusicNativeToken.updatedDuration(addr1.address)).to.be.closeTo(1200, 3);
     });
 
-    it('User should not be able to spend locked token after redeem', async () => {
-        const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);
-
-        await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
-            .to.emit(fanToArtistStaking, 'StakeCreated')
-            .withArgs(artist1.address, addr1.address, amount, anyValue);
-
-        await timeMachine(1);
-
-        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
-            .to.emit(fanToArtistStaking, 'StakeRedeemed')
-            .withArgs(artist1.address, addr1.address);
-
-        await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount)).to.revertedWith("Web3MusicNativeToken: transfer amount exceeds balance");
-
-        await timeMachine(29);
-
-        await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount/2n)).to.emit(Web3MusicNativeToken, "Transfer");
-        await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount/2n)).to.revertedWith("Web3MusicNativeToken: transfer amount exceeds balance");
-
-        await timeMachine(30);
-        await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount/2n)).to.emit(Web3MusicNativeToken, "Transfer");
-    });
-
     it('User should be able to stake locked and unlocked tokens', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount*2n);
@@ -123,7 +99,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         await expect(Web3MusicNativeToken.connect(addr2).transfer(owner.address, amount*2n)).to.emit(Web3MusicNativeToken, "Transfer");
     });
 
-    it('The user should be able to stake locked tokens for a longer time than the release', async () => {
+    it('User should be able to stake locked tokens for a longer time than the release', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, artist1, amount} = await loadFixture(deploy);
 
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 7200))
@@ -157,4 +133,30 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount*3n)).to.emit(Web3MusicNativeToken, "Transfer");
     });
+
+    describe('Reverts', async () => {
+        it('User should not be able to spend locked token after redeem', async () => {
+            const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);
+    
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
+                .to.emit(fanToArtistStaking, 'StakeCreated')
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
+    
+            await timeMachine(1);
+    
+            await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+                .to.emit(fanToArtistStaking, 'StakeRedeemed')
+                .withArgs(artist1.address, addr1.address);
+    
+            await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount)).to.revertedWith("Web3MusicNativeToken: transfer amount exceeds balance");
+    
+            await timeMachine(29);
+    
+            await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount/2n)).to.emit(Web3MusicNativeToken, "Transfer");
+            await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount/2n)).to.revertedWith("Web3MusicNativeToken: transfer amount exceeds balance");
+    
+            await timeMachine(30);
+            await expect(Web3MusicNativeToken.connect(addr1).transfer(owner.address, amount/2n)).to.emit(Web3MusicNativeToken, "Transfer");
+        });
+    })
 });

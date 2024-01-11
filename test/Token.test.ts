@@ -42,6 +42,14 @@ describe('Web3MusicNativeToken', () => {
             await expect(cWeb3MusicNativeToken.deploy('0x0000000000000000000000000000000000000000'))
                 .to.be.rejectedWith('Web3MusicNativeToken: the address of FanToArtistStaking is 0');
         });
+
+        it('Should not be possible renounce to ownership', async () => {
+            await expect(Web3MusicNativeToken.connect(owner).renounceOwnership()).revertedWith("function disabled");
+        });
+
+        it('User should not be possible to call renounceOwnership', async () => {
+            await expect(Web3MusicNativeToken.connect(addr1).renounceOwnership()).revertedWith("Ownable: caller is not the owner");
+        });
     });
 
     describe('Access control', () => {
