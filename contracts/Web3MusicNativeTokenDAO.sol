@@ -32,7 +32,9 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     event WhitelistSwitched(bool whitelist);
 
     struct Proposal {
-        uint256 maxVotingPower;
+        uint256 blockNumber;
+        uint256 maxProposalMembers;
+        uint256 proposalVoters;
         uint256 votesFor;
         uint256 votesAgainst;
         uint128 timeStart;
@@ -47,6 +49,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     uint128 private immutable _quorum; // 0 to 10e8
     uint128 private immutable _majority; // 0 to 10e8
     uint128 private immutable _timeVotes;
+    uint128 private _membersNumber;
 
     IFanToArtistStaking private immutable _ftas;
 
@@ -78,14 +81,29 @@ contract Web3MusicNetworkDAO is Ownable2Step {
 
     function _reachedQuorum(
         uint256 proposalId
-    ) internal view virtual returns (bool) {
-        return
-            (_proposals[proposalId].votesFor +
-                _proposals[proposalId].votesAgainst) >
-            uint256(_quorum).mulDiv(
-                _proposals[proposalId].maxVotingPower,
-                10e8
-            );
+    ) internal virtual returns (bool) {
+        if (!whitelistEnabled) {
+            if (block.number == _proposals[proposalId].blockNumber) {
+                return
+                    (_proposals[proposalId].votesFor +
+                        _proposals[proposalId].votesAgainst) >
+                    uint256(_quorum).mulDiv(_ftas.getTotalSupply(), 10e8);
+            } else {
+                return
+                    (_proposals[proposalId].votesFor +
+                        _proposals[proposalId].votesAgainst) >
+                    uint256(_quorum).mulDiv(
+                        _ftas.getPastTotalSupply(
+                            _proposals[proposalId].blockNumber
+                        ),
+                        10e8
+                    );
+            }
+        } else {
+            return
+                _proposals[proposalId].proposalVoters >=
+                _proposals[proposalId].maxProposalMembers / 2 + 1;
+        }
     }
 
     function _votePassed(
@@ -134,7 +152,9 @@ contract Web3MusicNetworkDAO is Ownable2Step {
 
         _proposals[proposalId] = Proposal({
             timeStart: uint128(block.timestamp),
-            maxVotingPower: _ftas.totalVotingPower(),
+            maxProposalMembers: _membersNumber, //IT MUST BE AT LEAST 2? OR MORE?
+            proposalVoters: 0,
+            blockNumber: block.number,
             votesFor: 0,
             votesAgainst: 0
         });
@@ -179,10 +199,20 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         );
         require(!_votes[hashVote][msg.sender], "DAO: already voted");
 
-        uint256 amount = _ftas.votingPowerOf(msg.sender);
+        uint256 amount;
+        if (block.number == _proposals[proposalId].blockNumber) {
+            amount = _ftas.getVotes(msg.sender);
+        } else {
+            amount = _ftas.getPastVotes(
+                msg.sender,
+                _proposals[proposalId].blockNumber
+            );
+        }
+
         if (isFor) _proposals[proposalId].votesFor += amount;
         else _proposals[proposalId].votesAgainst += amount;
 
+        _proposals[proposalId].proposalVoters += 1;
         _votes[hashVote][msg.sender] = true;
 
         emit ProposalVoted(proposalId, msg.sender, amount, isFor);
@@ -207,8 +237,8 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             block.timestamp > _proposals[proposalId].timeStart + _timeVotes,
             "DAO: proposal not ended"
         );
+
         if (_reachedQuorum(proposalId) && _votePassed(proposalId)) {
-            delete _proposals[proposalId];
             for (uint256 i = 0; i < targets.length; ++i) {
                 (bool success, bytes memory returndata) = targets[i].call(
                     calldatas[i]
@@ -225,6 +255,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             msg.sender,
             (_reachedQuorum(proposalId) && _votePassed(proposalId))
         );
+        delete _proposals[proposalId];
     }
 
     function getProposal(
@@ -248,7 +279,12 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         address target,
         bool whitelist
     ) external onlyOwner {
+        require(
+            whitelistedAddresses[target] != whitelist,
+            "F2A: already added/removed."
+        );
         whitelistedAddresses[target] = whitelist;
+        whitelist ? _membersNumber++ : _membersNumber--;
         emit UserWhitelisted(target, whitelist);
     }
 

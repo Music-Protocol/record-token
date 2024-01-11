@@ -11,9 +11,13 @@ interface IFanToArtistStaking {
 
     function transferOwnership(address to) external;
 
-    function totalVotingPower() external returns (uint256);
+    function getTotalSupply() external returns (uint256);
 
-    function votingPowerOf(address user) external returns (uint256);
+    function getPastTotalSupply(uint256 blockNumber) external returns (uint256);
+
+    function getPastVotes(address account, uint256 blockNumber) external returns (uint256);
+
+    function getVotes(address account) external returns (uint256);
 
     function changeArtistRewardRate(uint256 rate, address sender) external;
 }
