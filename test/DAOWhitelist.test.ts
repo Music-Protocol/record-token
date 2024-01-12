@@ -109,6 +109,10 @@ describe("DAO whitelist mode", function () {
         await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated");
     });
 
+    it('Propose must respect length format', async () => {
+        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata, calldata], description)).revertedWith("DAO: invalid proposal length");
+    });
+
     it('A user whitelisted can vote', async () => {
         await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
     });
@@ -157,13 +161,19 @@ describe("DAO whitelist mode", function () {
         await timeMachine(20);
         await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
     });
-
+    
     it('Owner can switch off whitelist', async() => {
         await expect(dao.connect(owner).switchWhitelist(false)).emit(dao,"WhitelistSwitched");
     })
     
     it('Other addresses cannot switch whitelist', async() => {
         await expect(dao.connect(users[0]).switchWhitelist(true)).revertedWith("Ownable: caller is not the owner");
+    })
+
+    it('Owner should not be able to add/remove users already added/removed', async() => {
+        await expect(dao.connect(owner).manageWhitelist(users[0].address, true)).revertedWith("F2A: already added/removed.");
+        await dao.connect(owner).manageWhitelist(users[1].address, false);
+        await expect(dao.connect(owner).manageWhitelist(users[1].address, false)).revertedWith("F2A: already added/removed.");
     })
 
 });

@@ -266,7 +266,7 @@ contract FanToArtistStaking is
         super.transferOwnership(to);
     }
 
-    function superStake(
+    function addStakes(
         address[] calldata artists,
         uint256[] calldata amounts,
         uint40[] calldata ends

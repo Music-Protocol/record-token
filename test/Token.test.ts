@@ -131,33 +131,12 @@ describe('Web3MusicNativeToken', () => {
     });
 
     describe('Lock & Unlock', () => {
-        // before(async () => {
-        //     await Web3MusicNativeToken.mint(addr1.address, 100);
-        // });
-
-        // it('User should be able to lock', async () => {
-        //     await Web3MusicNativeToken.connect(fakeStaking).lock(addr1.address, 100);
-
-        //     expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(0);
-        //     expect(await Web3MusicNativeToken.balanceOf(fakeStaking.address)).to.equal(100);
-        // });
-
-        // it('User should be able to unlock', async () => {
-        //     await Web3MusicNativeToken.connect(fakeStaking).unlock(addr1.address, 100);
-
-        //     expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(100);
-        //     expect(await Web3MusicNativeToken.balanceOf(fakeStaking.address)).to.equal(0);
-        // });
-
         describe('Unauthorized access', () => {
             it('Should not be able to lock', async () => {
                 await expect(Web3MusicNativeToken.connect(addr1).lock(addr1.address, 100))
                     .to.be.revertedWith('Web3MusicNativeToken: caller is not the FanToArtistStaking contract');
             });
-            // it('Should not be able to unlock', async () => {
-            //     await expect(Web3MusicNativeToken.connect(addr1).unlock(addr1.address, 100))
-            //         .to.be.revertedWith('Web3MusicNativeToken: caller is not the FanToArtistStaking contract');
-            // });
+            
             it('Should not be able to payArtist', async () => {
                 await expect(Web3MusicNativeToken.connect(addr1).pay(addr1.address, 100))
                     .to.be.revertedWith('Web3MusicNativeToken: caller is not the FanToArtistStaking contract');

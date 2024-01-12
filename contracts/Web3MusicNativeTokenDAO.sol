@@ -82,28 +82,24 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     function _reachedQuorum(
         uint256 proposalId
     ) internal virtual returns (bool) {
-        if (!whitelistEnabled) {
-            if (block.number == _proposals[proposalId].blockNumber) {
-                return
-                    (_proposals[proposalId].votesFor +
-                        _proposals[proposalId].votesAgainst) >
-                    uint256(_quorum).mulDiv(_ftas.getTotalSupply(), 10e8);
-            } else {
-                return
-                    (_proposals[proposalId].votesFor +
-                        _proposals[proposalId].votesAgainst) >
-                    uint256(_quorum).mulDiv(
-                        _ftas.getPastTotalSupply(
-                            _proposals[proposalId].blockNumber
-                        ),
-                        10e8
-                    );
-            }
-        } else {
+        if (whitelistEnabled) {
             return
                 _proposals[proposalId].proposalVoters >=
                 _proposals[proposalId].maxProposalMembers / 2 + 1;
         }
+        if (block.number == _proposals[proposalId].blockNumber) {
+            return
+                (_proposals[proposalId].votesFor +
+                    _proposals[proposalId].votesAgainst) >
+                uint256(_quorum).mulDiv(_ftas.getTotalSupply(), 10e8);
+        }
+        return
+            (_proposals[proposalId].votesFor +
+                _proposals[proposalId].votesAgainst) >
+            uint256(_quorum).mulDiv(
+                _ftas.getPastTotalSupply(_proposals[proposalId].blockNumber),
+                10e8
+            );
     }
 
     function _votePassed(
@@ -152,7 +148,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
 
         _proposals[proposalId] = Proposal({
             timeStart: uint128(block.timestamp),
-            maxProposalMembers: _membersNumber, //IT MUST BE AT LEAST 2? OR MORE?
+            maxProposalMembers: _membersNumber,
             proposalVoters: 0,
             blockNumber: block.number,
             votesFor: 0,
