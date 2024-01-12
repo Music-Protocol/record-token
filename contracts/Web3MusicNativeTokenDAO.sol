@@ -62,7 +62,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     ) {
         require(
             ftas_ != address(0),
-            "DAO: the Web3MusicNativeToken address can not be 0"
+            "DAO: the fanToArtistStaking address can not be 0"
         );
         require(
             quorum_ <= 10e8,

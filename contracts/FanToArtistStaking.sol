@@ -115,7 +115,7 @@ contract FanToArtistStaking is
                 rate: artistWeb3MusicNativeTokenRewardRate
             })
         );
-        __Ownable2Step_init();
+        __Ownable_init();
         __Votes_init();
         _minStakePeriod = min;
         _maxStakePeriod = max;
