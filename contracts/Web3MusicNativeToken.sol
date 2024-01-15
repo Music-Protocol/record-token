@@ -72,9 +72,11 @@ contract Web3MusicNativeToken is
         address to,
         uint256 amount
     ) internal override whenNotPaused {
-        if (
+        //TRANSFER
+        if ( 
             from != address(0) &&
             to != _fanToArtistStaking &&
+            balanceOf(from) >= amount &&
             releasablePayments[from].tokens > 0
         ) {
             release(from);
@@ -86,7 +88,10 @@ contract Web3MusicNativeToken is
                 "Web3MusicNativeToken: transfer amount exceeds balance"
             );
         }
-        if (from == _fanToArtistStaking) {
+        //REDEEM
+        if (from == _fanToArtistStaking && 
+            balanceOf(from) >= amount &&
+            releasablePayments[to].releasableBalance > 0) { 
             uint256 debt = releasablePayments[to].releasableBalance -
                 releasablePayments[to].tokens;
             if (debt > 0 && amount >= debt) {
@@ -95,13 +100,6 @@ contract Web3MusicNativeToken is
                     (debt * releasablePayments[to].duration) /
                         releasablePayments[to].releasableBalance
                 );
-                if (
-                    releasablePayments[to].updatedDuration >
-                    releasablePayments[to].duration
-                )
-                    releasablePayments[to].updatedDuration = releasablePayments[
-                        to
-                    ].duration;
             }
             if (debt > 0 && amount < debt) {
                 releasablePayments[to].tokens += amount;
@@ -111,8 +109,10 @@ contract Web3MusicNativeToken is
                 );
             }
         }
-        if (
+        //STAKE
+        if ( 
             to == _fanToArtistStaking &&
+            balanceOf(from) >= amount &&
             releasablePayments[from].releasableBalance > 0
         ) {
             uint256 unlockedTokens = balanceOf(from) -
@@ -208,34 +208,12 @@ contract Web3MusicNativeToken is
         emit TokenLocked(_beneficiary, _amount);
     }
 
-    // -------------------Debug Functions----------------------------------------------
-    function getMinted() public view returns (uint256) {
-        return minted;
-    }
-
-    function getReleasableBalance(
-        address beneficiary
-    ) public view returns (uint256) {
-        return releasablePayments[beneficiary].releasableBalance;
-    }
-
-    function getReleasableTokens(
-        address beneficiary
-    ) public view returns (uint256) {
-        return releasablePayments[beneficiary].tokens;
-    }
-
+    //Test Function
     function updatedDuration(
         address beneficiary
     ) public view returns (uint256) {
         return releasablePayments[beneficiary].updatedDuration;
     }
-
-    function duration(address beneficiary) public view returns (uint256) {
-        return releasablePayments[beneficiary].duration;
-    }
-
-    // --------------------------------------------------------------------------------
 
     function release(address beneficiary) internal {
         uint256 amount = releasable(beneficiary);

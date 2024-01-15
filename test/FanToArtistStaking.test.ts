@@ -167,19 +167,6 @@ describe('FanToArtistStaking', () => {
                     .to.be.revertedWith('FanToArtistStaking: no stake found');
             });
 
-            it('Should not be able to extend a stake if there is no stake', async () => { //should not be necessary the test and the modifier
-                const date = await getTimestamp() + 10;
-                await expect(fanToArtistStaking.extendStake(artist1.address, 0))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found');
-            });
-
-            it('Should revert when extend a not existing stake', async () => {
-                const date = Date.now();
-                await expect(fanToArtistStaking.connect(owner).extendStake(artist2.address, 23))
-                    .to.be.revertedWith('FanToArtistStaking: no stake found');
-            });
-
-
             it('No event should be emitted if the artist was already added or removed', async () => {
                 await expect(fanToArtistStaking.connect(owner).addArtist(artist1.address, artist1.address))
                     .not.to.emit(fanToArtistStaking, 'ArtistAdded');

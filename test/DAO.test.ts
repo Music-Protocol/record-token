@@ -9,6 +9,7 @@ import {
 } from "../typechain-types/index";
 import { timeMachine } from "./utils/utils";
 import { BigNumber } from "ethers";
+import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 
 describe("DAO", () => {
   let dao: Web3MusicNetworkDAO;
@@ -268,6 +269,18 @@ describe("DAO", () => {
       );
     });
 
+    it("Should not be able to get a fake proposal ID", async () => {
+      await expect(dao.getProposal([Web3MusicNativeToken.address], [calldata], "non-existent proposal")).revertedWith("DAO: proposal not found")
+    })
+
+    it("User should not be able to vote a fake proposal", async () => {
+      await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], "non-existent proposal", true)).revertedWith("DAO: proposal not found")
+    })
+
+    it("Owner should not be able to execute a fake proposal", async () => {
+      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], "non-existent proposal")).revertedWith("DAO: proposal not found")
+    })
+
     it("Creation of same proposal with no votes", async () => {
       await dao
         .connect(users[2])
@@ -394,5 +407,21 @@ describe("DAO", () => {
           )
       ).to.be.revertedWith("DAO: proposal already exists");
     });
+
+    it("Should not be able to vote a ended stake", async () => {
+      await expect(dao.connect(users[1]).propose([Web3MusicNativeToken.address], [calldata], "Test propose ended")).to.emit(dao, "ProposalCreated");
+      await dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], "Test propose ended", true);
+      await dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], "Test propose ended", true);
+      await timeMachine(16);
+      await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], "Test propose ended", true)).to.revertedWith("DAO: proposal expired");
+      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], "Test propose ended"))
+        .to.emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
+    });
+    it("Should not be able to execute a not-ended stake", async () => {
+      await expect(dao.connect(users[1]).propose([Web3MusicNativeToken.address], [calldata], "Test propose ended")).to.emit(dao,"ProposalCreated");
+      await timeMachine(10);
+      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], "Test propose ended")).to.revertedWith("DAO: proposal not ended");
+    });
+
   });
 });
