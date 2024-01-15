@@ -85,7 +85,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         if (whitelistEnabled) {
             return
                 _proposals[proposalId].proposalVoters >=
-                _proposals[proposalId].maxProposalMembers / 2 + 1;
+                uint256(_quorum).mulDiv(_proposals[proposalId].maxProposalMembers, 10e8);
         }
         if (block.number == _proposals[proposalId].blockNumber) {
             return
