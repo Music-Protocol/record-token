@@ -29,7 +29,6 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         bool isFor
     );
     event UserWhitelisted(address indexed target, bool whitelisted);
-    event WhitelistSwitched(bool whitelist);
 
     struct Proposal {
         uint256 blockNumber;
@@ -282,10 +281,5 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         whitelistedAddresses[target] = whitelist;
         whitelist ? _membersNumber++ : _membersNumber--;
         emit UserWhitelisted(target, whitelist);
-    }
-
-    function switchWhitelist(bool whitelist) external onlyOwner {
-        whitelistEnabled = whitelist;
-        emit WhitelistSwitched(whitelist);
     }
 }

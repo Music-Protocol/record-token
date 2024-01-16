@@ -15,15 +15,6 @@ describe("TGE Management", function () {
         inputs: []
     }, []);
 
-    const daoCalldata3 = web3.eth.abi.encodeFunctionCall({
-        name: 'switchWhitelist',
-        type: 'function',
-        inputs: [{
-            type: 'bool',
-            name: 'whitelist'
-        }]
-    }, ['false']);
-
     async function deploy() {
         const [owner, addr1, addr2, artist1] = await ethers.getSigners();
         const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
@@ -197,12 +188,6 @@ describe("TGE Management", function () {
                 .to.emit(dao, 'UserWhitelisted').withArgs(addr1.address, false);
             await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata2false]))
                 .to.emit(dao, 'UserWhitelisted').withArgs(addr2.address, false);
-        })
-        it("Disable whitelist", async () => {
-            const { Web3MusicNativeTokenManagement, dao, owner } = await loadFixture(deploy);
-
-            await expect(Web3MusicNativeTokenManagement.connect(owner).custom([dao.address], [daoCalldata3]))
-                .to.emit(dao, 'WhitelistSwitched');
         })
         it("Propose and vote", async() => {
             const { dao, addr1, addr2, owner, Web3MusicNativeToken, Web3MusicNativeTokenManagement, daoCalldata1, daoCalldata2, daoCalldata4 } = await loadFixture(deploy);
