@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
 import "hardhat/console.sol";
@@ -11,8 +11,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract FanToArtistStaking is
     IFanToArtistStaking,
-    Ownable2Step,
-    Initializable
+    Ownable2StepUpgradeable,
+    VotesUpgradeable
 {
     using Math for uint256;
 
@@ -47,6 +47,8 @@ contract FanToArtistStaking is
         address indexed sender,
         address indexed newArtist
     );
+
+    event newRewardLimit(uint oldlimit, uint newlimit);
 
     struct Stake {
         uint256 amount;
@@ -84,7 +86,6 @@ contract FanToArtistStaking is
     uint40 private _maxStakePeriod; //change onylOwner
 
     mapping(address => uint256) private _votingPower;
-    uint256 private _totalVotingPower;
 
     uint256 private REWARD_LIMIT;
     uint256 private CHANGE_REWARD_LIMIT;
@@ -114,6 +115,8 @@ contract FanToArtistStaking is
                 rate: artistWeb3MusicNativeTokenRewardRate
             })
         );
+        __Ownable_init();
+        __Votes_init();
         _minStakePeriod = min;
         _maxStakePeriod = max;
         REWARD_LIMIT = limit_;
@@ -229,7 +232,9 @@ contract FanToArtistStaking is
     }
 
     function changeArtistRewardLimit(uint limit_) external onlyOwner {
+        uint oldlimit = REWARD_LIMIT;
         REWARD_LIMIT = limit_;
+        emit newRewardLimit(oldlimit, REWARD_LIMIT);
     }
 
     function getArtistRewardRate() external view returns (uint256) {
@@ -257,23 +262,34 @@ contract FanToArtistStaking is
 
     function transferOwnership(
         address to
-    ) public override(IFanToArtistStaking, Ownable2Step) onlyOwner {
+    ) public override(IFanToArtistStaking, Ownable2StepUpgradeable) onlyOwner {
         super.transferOwnership(to);
+    }
+
+    function addStakes(
+        address[] calldata artists,
+        uint256[] calldata amounts,
+        uint40[] calldata ends
+    ) external {
+        require(
+            artists.length == amounts.length && amounts.length == ends.length,
+            "FanToArtistStaking: calldata format error"
+        );
+        for (uint i = 0; i < artists.length; i++) {
+            stake(artists[i], amounts[i], ends[i]);
+        }
     }
 
     function stake(
         address artist,
         uint256 amount,
         uint40 end
-    ) external onlyVerifiedArtist(artist) {
+    ) public onlyVerifiedArtist(artist) {
         require(
             !_isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: already staking"
         );
-        require(
-            amount > 0,
-            "FanToArtistStaking: the amount can not be zero"
-        );
+        require(amount > 0, "FanToArtistStaking: the amount can not be zero");
         require(
             end > _minStakePeriod,
             "FanToArtistStaking: the end period is less than minimum"
@@ -282,14 +298,17 @@ contract FanToArtistStaking is
             end <= _maxStakePeriod,
             "FanToArtistStaking: the stake period exceed the maximum"
         );
+        if (_msgSender() != delegates(_msgSender())) {
+            delegate(_msgSender());
+        }
         if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()] = Stake({
                 amount: amount,
                 start: uint40(block.timestamp),
                 end: uint40(block.timestamp + end)
             });
+            _transferVotingUnits(address(0), _msgSender(), amount);
             _votingPower[_msgSender()] += amount;
-            _totalVotingPower += amount;
             _calcSinceLastPosition(artist, amount, true);
             emit StakeCreated(
                 artist,
@@ -305,10 +324,7 @@ contract FanToArtistStaking is
             _isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: no stake found"
         );
-        require(
-            amount > 0,
-            "FanToArtistStaking: the amount can not be zero"
-        );
+        require(amount > 0, "FanToArtistStaking: the amount can not be zero");
         require(
             _stake[artist][_msgSender()].end - _minStakePeriod >=
                 block.timestamp,
@@ -316,8 +332,8 @@ contract FanToArtistStaking is
         );
         if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()].amount += amount;
+            _transferVotingUnits(address(0), _msgSender(), amount);
             _votingPower[_msgSender()] += amount;
-            _totalVotingPower += amount;
             _calcSinceLastPosition(artist, amount, true);
             emit StakeIncreased(artist, _msgSender(), amount);
         }
@@ -405,11 +421,11 @@ contract FanToArtistStaking is
             _Web3MusicNativeToken.transfer(user, _stake[artist][user].amount),
             "FanToArtistStaking: error while redeeming"
         );
-        if(_verifiedArtists[artist]){
+        if (_verifiedArtists[artist]) {
             _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
         }
+        _transferVotingUnits(user, address(0), _stake[artist][user].amount);
         _votingPower[user] -= _stake[artist][user].amount;
-        _totalVotingPower -= _stake[artist][user].amount;
         delete _stake[artist][user];
         emit StakeRedeemed(artist, user);
     }
@@ -420,11 +436,56 @@ contract FanToArtistStaking is
 
     // ----------VOTING POWER------------------
 
-    function totalVotingPower() external view returns (uint256) {
-        return _totalVotingPower;
+    function getTotalSupply() external view returns (uint256) {
+        return _getTotalSupply();
     }
 
-    function votingPowerOf(address user) external view returns (uint256) {
-        return _votingPower[user];
+    function getPastTotalSupply(
+        uint256 blockNumber
+    )
+        public
+        view
+        override(IFanToArtistStaking, VotesUpgradeable)
+        returns (uint256)
+    {
+        return super.getPastTotalSupply(blockNumber);
+    }
+
+    function getVotes(
+        address account
+    )
+        public
+        view
+        override(IFanToArtistStaking, VotesUpgradeable)
+        returns (uint256)
+    {
+        return super.getVotes(account);
+    }
+
+    function getPastVotes(
+        address account,
+        uint256 blockNumber
+    )
+        public
+        view
+        override(IFanToArtistStaking, VotesUpgradeable)
+        returns (uint256)
+    {
+        return super.getPastVotes(account, blockNumber);
+    }
+
+    function _getVotingUnits(
+        address account
+    ) internal view virtual override returns (uint256) {
+        return _votingPower[account];
+    }
+
+    //When a DAO member want to vote he must delegate himself
+    function delegate(address delegatee) public override {
+        require(
+            _msgSender() == delegatee,
+            "F2A: users cannot delegate other accounts."
+        );
+        super.delegate(delegatee);
     }
 }
