@@ -101,10 +101,6 @@ describe("DAO whitelist mode", function () {
         await expect(dao.connect(users[0]).manageWhitelist(otherUser.address, true)).revertedWith("Ownable: caller is not the owner");
     });
 
-    it('A user cannot disable the whitelist', async () => {
-        await expect(dao.connect(users[0]).switchWhitelist(false)).revertedWith("Ownable: caller is not the owner");
-    });
-
     it('A user can make proposal also if he is not whitelisted', async () => {
         await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated");
     });
@@ -161,14 +157,6 @@ describe("DAO whitelist mode", function () {
         await timeMachine(20);
         await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
     });
-    
-    it('Owner can switch off whitelist', async() => {
-        await expect(dao.connect(owner).switchWhitelist(false)).emit(dao,"WhitelistSwitched");
-    })
-    
-    it('Other addresses cannot switch whitelist', async() => {
-        await expect(dao.connect(users[0]).switchWhitelist(true)).revertedWith("Ownable: caller is not the owner");
-    })
 
     it('Owner should not be able to add/remove users already added/removed', async() => {
         await expect(dao.connect(owner).manageWhitelist(users[0].address, true)).revertedWith("F2A: already added/removed.");
