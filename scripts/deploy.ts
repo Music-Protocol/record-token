@@ -18,25 +18,39 @@ async function main() {
 
   const factoryFtas = await ethers.getContractFactory('FanToArtistStaking');
   let fanToArtistStaking = await factoryFtas.deploy();
+  console.log("FTA deploy");
   await fanToArtistStaking.deployed();
+  console.log("FTA deployed");
 
   const Web3MusicNativeTokenFactory = await ethers.getContractFactory('Web3MusicNativeToken');
   let Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address);
+  console.log("ERC20 deploy");
   await Web3MusicNativeToken.deployed();
+  console.log("ERC20 deployed");
 
   await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, minStakeTime, maxStakeTime, limit, changeRewardLimit);
 
   const managementFactory = await ethers.getContractFactory("Web3MusicNativeTokenManagement");
   const Web3MusicNativeTokenManagement = await managementFactory.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
+  console.log("MGMT deploy");
   await Web3MusicNativeTokenManagement.deployed();
+  console.log("MGMT deployed");
 
   const daoFactory = await ethers.getContractFactory('Web3MusicNetworkDAO');            //The proposal can be executed only after 10 minutes
   let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 600, true) as Web3MusicNetworkDAO;
+  console.log("DAO deploy");
   await dao.deployed();
+  console.log("DAO deployed");
 
-  await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
-  await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
-  await dao.transferOwnership(Web3MusicNativeTokenManagement.address);
+  const tokown = await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
+  await tokown.wait();
+  console.log("Ownership 1");
+  const f2aown = await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
+  await f2aown.wait();
+  console.log("Ownership 2");
+  const daoown = await dao.transferOwnership(Web3MusicNativeTokenManagement.address);
+  await daoown.wait();
+  console.log("Ownership 3");
 
   console.log('Web3MusicNativeTokenManagement address', Web3MusicNativeTokenManagement.address);
   console.log('Web3MusicNativeToken address', Web3MusicNativeToken.address);

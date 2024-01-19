@@ -1,19 +1,27 @@
-import { web3, addressMGMT, mgmtABI } from './utils/contracts';
-import { ownerKey, user2Key} from "./utils/wallets";
+import { web3, addressDAO, addressMGMT2, mgmtABI, addressMGMT } from './utils/contracts';
+import { ownerKey} from "./utils/wallets";
 
 async function main() {
-    const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
+    const mgmt1 = new web3.eth.Contract(mgmtABI, addressMGMT);
+
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
-    const user = web3.eth.accounts.privateKeyToAccount(user2Key);
-    //The owner performs a mint that releases the tokens in a gardual way.
-    const functionToSend = mgmt.methods.mint_and_lock(user.address, 1000n*10n**18n, Math.round(Date.now()/1000) ,1200);
-    web3.eth.getBlock('latest', (error, block) => {
-        if (!error) {
-        console.log(block.timestamp);
-        console.log(Math.round(Date.now()/1000));
-        }
-    });
+
+    const calldata = web3.eth.abi.encodeFunctionCall(
+        {
+            name: "transferOwnership",
+            type: "function",
+            inputs: [
+                {
+                    type: "address",
+                    name: "newOwner",
+                }
+            ],
+        },
+        [addressMGMT2]
+    );
+    
+    const functionToSend = mgmt1.methods.custom([addressDAO], [calldata]);
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {

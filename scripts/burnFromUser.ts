@@ -1,13 +1,13 @@
 import { web3, addressMGMT, mgmtABI } from './utils/contracts';
-import { ownerKey, userKey} from "./utils/wallets";
+import { ownerKey, user1Key} from "./utils/wallets";
 
 async function main() {
     const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
-    const user = web3.eth.accounts.privateKeyToAccount(userKey);
+    const user = web3.eth.accounts.privateKeyToAccount(user1Key);
     //Owner burns 1000 tokens from user
-    const functionToSend = mgmt.methods.burn(user.address, 1000n*10n**18n);
+    const functionToSend = mgmt.methods.burnFrom(user.address, 10n*10n**18n);
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {

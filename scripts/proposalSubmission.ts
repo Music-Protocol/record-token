@@ -1,11 +1,11 @@
 import { web3, addressToken, addressDAO, daoABI } from './utils/contracts';
-import { userKey } from "./utils/wallets";
+import { user2Key } from "./utils/wallets";
 
 async function main() {
     const dao = new web3.eth.Contract(daoABI, addressDAO);
 
 
-    const user = web3.eth.accounts.privateKeyToAccount(userKey);
+    const user = web3.eth.accounts.privateKeyToAccount(user2Key);
     //This is a proposal that cannot be executed, it is for the execution of the second proposal
     const calldata = web3.eth.abi.encodeFunctionCall(
         {
@@ -35,7 +35,7 @@ async function main() {
         data: functionABI
     };
 
-    const signedTx = await web3.eth.accounts.signTransaction(transactionObject, userKey);
+    const signedTx = await web3.eth.accounts.signTransaction(transactionObject, user2Key);
 
     let receipt;
     if (signedTx.rawTransaction != undefined) {

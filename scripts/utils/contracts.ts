@@ -1,7 +1,7 @@
 import { AbiItem } from 'web3-utils'
 import Web3 from "web3";
 
-const providerUrl = 'https://moonbase-alpha.blastapi.io/cdb9d846-a992-4b5d-8378-5c36def01bcb';
+const providerUrl = 'https://sepolia.base.org';
 const web3 = new Web3(providerUrl);
 
 const mgmtABI: AbiItem[] = [
@@ -569,7 +569,8 @@ const mgmtABI: AbiItem[] = [
         "type": "function"
     }
 ]
-const addressMGMT = '0x2aFdD7D36AB963Ecb8Cc3328735A5305334b97Fd';
+const addressMGMT = '0x1Efa71feF36709D7493f63E60ec2a5AA3ff3cC93';
+const addressMGMT2 = '0x779C97F952Ee15F4ab699ad086F6E9Fbb3BAbe4a';
 
 const daoABI: AbiItem[] = [
     {
@@ -760,19 +761,6 @@ const daoABI: AbiItem[] = [
         "type": "event"
     },
     {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "bool",
-                "name": "whitelist",
-                "type": "bool"
-            }
-        ],
-        "name": "WhitelistSwitched",
-        "type": "event"
-    },
-    {
         "inputs": [],
         "name": "acceptOwnership",
         "outputs": [],
@@ -826,7 +814,17 @@ const daoABI: AbiItem[] = [
                 "components": [
                     {
                         "internalType": "uint256",
-                        "name": "maxVotingPower",
+                        "name": "blockNumber",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxProposalMembers",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "proposalVoters",
                         "type": "uint256"
                     },
                     {
@@ -959,19 +957,6 @@ const daoABI: AbiItem[] = [
     {
         "inputs": [
             {
-                "internalType": "bool",
-                "name": "whitelist",
-                "type": "bool"
-            }
-        ],
-        "name": "switchWhitelist",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
                 "internalType": "address",
                 "name": "newOwner",
                 "type": "address"
@@ -1011,7 +996,7 @@ const daoABI: AbiItem[] = [
         "type": "function"
     }
 ]
-const addressDAO = '0xcD7843BbdF7E141d638Cd92d495b94a7A36b4922';
+const addressDAO = '0x7faA6519d209239D41151291851A4c8d8620eE73';
 
 const f2aABI: AbiItem[] = [
     {
@@ -1094,6 +1079,56 @@ const f2aABI: AbiItem[] = [
             }
         ],
         "name": "ArtistWeb3MusicNativeTokenRewardChanged",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "delegator",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "fromDelegate",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "toDelegate",
+                "type": "address"
+            }
+        ],
+        "name": "DelegateChanged",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "delegate",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "previousBalance",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "newBalance",
+                "type": "uint256"
+            }
+        ],
+        "name": "DelegateVotesChanged",
         "type": "event"
     },
     {
@@ -1273,6 +1308,38 @@ const f2aABI: AbiItem[] = [
         "type": "event"
     },
     {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "oldlimit",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "newlimit",
+                "type": "uint256"
+            }
+        ],
+        "name": "newRewardLimit",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "DOMAIN_SEPARATOR",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "acceptOwnership",
         "outputs": [],
@@ -1293,6 +1360,29 @@ const f2aABI: AbiItem[] = [
             }
         ],
         "name": "addArtist",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address[]",
+                "name": "artists",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "amounts",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint40[]",
+                "name": "ends",
+                "type": "uint40[]"
+            }
+        ],
+        "name": "addStakes",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1350,6 +1440,76 @@ const f2aABI: AbiItem[] = [
         "inputs": [
             {
                 "internalType": "address",
+                "name": "delegatee",
+                "type": "address"
+            }
+        ],
+        "name": "delegate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "delegatee",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "expiry",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint8",
+                "name": "v",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "r",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "s",
+                "type": "bytes32"
+            }
+        ],
+        "name": "delegateBySig",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "delegates",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
                 "name": "artist",
                 "type": "address"
             },
@@ -1380,6 +1540,49 @@ const f2aABI: AbiItem[] = [
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "blockNumber",
+                "type": "uint256"
+            }
+        ],
+        "name": "getPastTotalSupply",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "blockNumber",
+                "type": "uint256"
+            }
+        ],
+        "name": "getPastVotes",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "artist",
                 "type": "address"
@@ -1388,6 +1591,38 @@ const f2aABI: AbiItem[] = [
         "name": "getReward",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getTotalSupply",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "getVotes",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -1460,6 +1695,25 @@ const f2aABI: AbiItem[] = [
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "nonces",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1558,19 +1812,6 @@ const f2aABI: AbiItem[] = [
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "totalVotingPower",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "address",
@@ -1582,28 +1823,9 @@ const f2aABI: AbiItem[] = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            }
-        ],
-        "name": "votingPowerOf",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
     }
 ]
-const addressF2A = '0xD001915F7f414a54e4ff691DEa891a335F030650';
+const addressF2A = '0x24CF0F236d7fb31085Ff393A019cE7796ffDEeEE';
 
 const tokenABI: AbiItem[] = [
     {
@@ -1909,76 +2131,6 @@ const tokenABI: AbiItem[] = [
             }
         ],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "beneficiary",
-                "type": "address"
-            }
-        ],
-        "name": "duration",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getMinted",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "beneficiary",
-                "type": "address"
-            }
-        ],
-        "name": "getReleasableBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "beneficiary",
-                "type": "address"
-            }
-        ],
-        "name": "getReleasableTokens",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -2344,6 +2496,6 @@ const tokenABI: AbiItem[] = [
         "type": "function"
     }
 ]
-const addressToken = '4150c46e2E8334f6f14A2d2b7C99B399B2ECdfCA';
+const addressToken = '0x1079d568012c3A3F285a484F07dA0a8463563DCC';
 
-export { mgmtABI, addressMGMT, daoABI, addressDAO, f2aABI, addressF2A, tokenABI, addressToken, web3 };
+export { mgmtABI, addressMGMT, addressMGMT2, daoABI, addressDAO, f2aABI, addressF2A, tokenABI, addressToken, web3 };

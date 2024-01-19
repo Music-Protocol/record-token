@@ -1,11 +1,11 @@
 import { web3, addressMGMT, mgmtABI } from './utils/contracts';
-import { ownerKey, userKey } from "./utils/wallets";
+import { ownerKey, user1Key } from "./utils/wallets";
 
 async function main() {
     const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
-    const user = web3.eth.accounts.privateKeyToAccount(userKey);
+    const user = web3.eth.accounts.privateKeyToAccount(user1Key);
     //Owner removes user from governance whitelist
     const calldata = web3.eth.abi.encodeFunctionCall({
         name: 'manageWhitelist',
