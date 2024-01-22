@@ -20,15 +20,32 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  defaultNetwork: "hardhat",
   networks: {
-    hardhat: {
+    sepolia: {
+      url: 'https://sepolia.base.org',
+      accounts: ['OWNER_PRIVATE_KEY']
     },
-    localganache: {
-      url: process.env.PROVIDER_URL,
-      accounts: [`0x${process.env.PRIVATE_KEY}`]
-    }
-  }
-};
+    moonbase: {
+      url: 'https://rpc.api.moonbase.moonbeam.network',
+      chainId: 1287,
+      accounts: ['OWNER_PRIVATE_KEY']
+    },
+  },
+  etherscan: {
+    apiKey: {
+     "sepolia": "API_KEY"
+    },
+    customChains: [
+      {
+        network: "sepolia",
+        chainId: 84532,
+        urls: {
+         apiURL: "https://api-sepolia.basescan.org/api",
+         browserURL: "https://sepolia.basescan.org/"
+        }
+      }
+    ]
+  },
+}
 
 export default config;
