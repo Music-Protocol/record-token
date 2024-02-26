@@ -12,7 +12,6 @@ contract Web3MusicNativeToken is
     Ownable2Step,
     Pausable
 {
-
     uint256 max_mint = 1000000000000000000000000000;
     uint256 minted = 0;
     address private immutable _fanToArtistStaking;
@@ -72,61 +71,78 @@ contract Web3MusicNativeToken is
         address to,
         uint256 amount
     ) internal override whenNotPaused {
-        //TRANSFER
-        if ( 
-            from != address(0) &&
-            to != _fanToArtistStaking &&
-            balanceOf(from) >= amount &&
-            releasablePayments[from].tokens > 0
-        ) {
-            release(from);
-            uint256 ownedTokens = balanceOf(from) -
-                (releasablePayments[from].tokens -
-                    releasablePayments[from].released);
-            require(
-                ownedTokens >= amount,
-                "Web3MusicNativeToken: transfer amount exceeds balance"
-            );
-        }
-        //REDEEM
-        if (from == _fanToArtistStaking && 
-            balanceOf(from) >= amount &&
-            releasablePayments[to].releasableBalance > 0) { 
-            uint256 debt = releasablePayments[to].releasableBalance -
-                releasablePayments[to].tokens;
-            if (debt > 0 && amount >= debt) {
-                releasablePayments[to].tokens += debt;
-                releasablePayments[to].updatedDuration += uint64(
-                    (debt * releasablePayments[to].duration) /
-                        releasablePayments[to].releasableBalance
-                );
+
+        //Sender address has enough tokens
+        if (balanceOf(from) >= amount) {
+
+            //Sender address has received a phased release of tokens
+            if (releasablePayments[from].releasableBalance > 0) {
+
+                release(from); //Release of earned tokens
+
+                //It's not a mint, it's not a stake and it's not a redeem: TRANSFER
+                if (from != address(0) && to != _fanToArtistStaking && from != _fanToArtistStaking) {
+                    //Calculating the tokens actually held:
+                    uint256 ownedTokens = balanceOf(from) - 
+                        (releasablePayments[from].tokens -
+                            releasablePayments[from].released);
+                    //To continue the transaction, it checks that the tokens actually held are greater than those sent:
+                    require(
+                        ownedTokens >= amount, 
+                        "Web3MusicNativeToken: transfer amount exceeds balance"
+                    );
+                }
+
+                //It's a transfer to the stake: STAKE
+                if (to == _fanToArtistStaking) {
+                    //Calculating the tokens actually held:
+                    uint256 ownedTokens = balanceOf(from) - 
+                        (releasablePayments[from].tokens - 
+                            releasablePayments[from].released); 
+                    if (
+                        amount > ownedTokens
+                    ) {
+                        uint256 debt = amount - ownedTokens;
+                        releasablePayments[from].tokens -= debt;
+                        releasablePayments[from].updatedDuration -= uint64(
+                            (debt * releasablePayments[from].duration) /
+                                releasablePayments[from].releasableBalance
+                        );
+                    }
+                }
             }
-            if (debt > 0 && amount < debt) {
-                releasablePayments[to].tokens += amount;
-                releasablePayments[to].updatedDuration += uint64(
-                    (amount * releasablePayments[to].duration) /
-                        releasablePayments[to].releasableBalance
-                );
+
+            //If a user who has received a gradual release of tokens does a REDEEM:
+            if (
+                from == _fanToArtistStaking && //It's a redeem, it is sent by the fanToArtistStaking contract
+                releasablePayments[to].releasableBalance > 0 //The recipient address received a phased release of tokens
+            )   {
+                //Calculating the possible debt:
+                uint256 debt = releasablePayments[to].releasableBalance -
+                    releasablePayments[to].tokens;
+                //It checks if there is a debt and if this debt is greater or equal than amount:
+                if (debt > 0 && amount >= debt) {
+                    //Allocate tokens within releasable payment, only the amount of debit tokens are included in the gradual payment
+                    releasablePayments[to].tokens += debt; 
+                    //Update the duration
+                    releasablePayments[to].updatedDuration += uint64( 
+                        (debt * releasablePayments[to].duration) /
+                            releasablePayments[to].releasableBalance
+                    );
+                }
+                //It checks if there is a debt and if this debt is less than amount:
+                if (debt > 0 && amount < debt) {
+                    //Allocate tokens within releasable payment
+                    releasablePayments[to].tokens += amount;
+                    //Update the duration
+                    releasablePayments[to].updatedDuration += uint64( 
+                        (amount * releasablePayments[to].duration) /
+                            releasablePayments[to].releasableBalance
+                    );
+                }
             }
         }
-        //STAKE
-        if ( 
-            to == _fanToArtistStaking &&
-            balanceOf(from) >= amount &&
-            releasablePayments[from].releasableBalance > 0
-        ) {
-            uint256 unlockedTokens = balanceOf(from) -
-                (releasablePayments[from].tokens -
-                    releasablePayments[from].released);
-            if (amount > unlockedTokens) {
-                uint256 excess = amount - unlockedTokens;
-                releasablePayments[from].tokens -= excess;
-                releasablePayments[from].updatedDuration -= uint64(
-                    (excess * releasablePayments[from].duration) /
-                        releasablePayments[from].releasableBalance
-                );
-            }
-        }
+
         super._beforeTokenTransfer(from, to, amount);
     }
 
@@ -150,7 +166,7 @@ contract Web3MusicNativeToken is
             "Web3MusicNativeToken: Amount can not be 0 or less in mint_and_lock."
         );
         require(
-            releasablePayments[_beneficiary].tokens == 0,
+            releasablePayments[_beneficiary].releasableBalance == 0,
             "Web3MusicNativeToken: Releasable payment already used."
         );
         require(
@@ -193,7 +209,7 @@ contract Web3MusicNativeToken is
             "Web3MusicNativeToken: Amount can not be 0 or less in transfer_and_lock."
         );
         require(
-            releasablePayments[_beneficiary].tokens == 0,
+            releasablePayments[_beneficiary].releasableBalance == 0,
             "Web3MusicNativeToken: Releasable payment already used."
         );
         releasablePayments[_beneficiary] = ReleasablePayment(
