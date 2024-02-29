@@ -125,5 +125,23 @@ describe("Voting Power", function () {
         const { fanToArtistStaking, addr1, addr2 } = await loadFixture(deploy);
         expect(fanToArtistStaking.connect(addr1).delegate(addr2.address)).revertedWith("F2A: users cannot delegate other accounts.");
     });
+
+    it('A user cannot delegate other accounts with delegateBySig', async () => {
+        const { fanToArtistStaking, addr1, addr2, blockBefore } = await loadFixture(deploy);
+
+        const nonce = await fanToArtistStaking.nonces(addr1.address);
+        const expiry = blockBefore.timestamp + 3600;
+
+        const digest = ethers.utils.solidityKeccak256(
+            ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
+            [addr2.address, nonce, expiry, 0, ethers.utils.hexZeroPad('0x0', 32), ethers.utils.hexZeroPad('0x0', 32)]
+        );
+
+        const signature = await addr1.signMessage(ethers.utils.arrayify(digest));
+        const { v, r, s } = ethers.utils.splitSignature(signature);
+
+        await expect(fanToArtistStaking.delegateBySig(addr2.address, nonce, expiry, v, r, s)).to.revertedWith("F2A: users cannot delegate other accounts.");
+
+    });
     
 });
