@@ -82,9 +82,16 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         uint256 proposalId
     ) internal virtual returns (bool) {
         if (whitelistEnabled) {
+            if (
+                _proposals[proposalId].proposalVoters == 0 ||
+                _proposals[proposalId].maxProposalMembers == 0
+            ) return false;
             return
-                _proposals[proposalId].proposalVoters >=
-                uint256(_quorum).mulDiv(_proposals[proposalId].maxProposalMembers, 10e8);
+                _proposals[proposalId].proposalVoters >
+                uint256(_quorum).mulDiv(
+                    _proposals[proposalId].maxProposalMembers,
+                    10e8
+                );
         }
         if (block.number == _proposals[proposalId].blockNumber) {
             return
@@ -104,6 +111,11 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     function _votePassed(
         uint256 proposalId
     ) internal view virtual returns (bool) {
+        if (
+            _proposals[proposalId].votesFor +
+                _proposals[proposalId].votesAgainst ==
+            0
+        ) return false;
         return
             _proposals[proposalId].votesFor >=
             uint256(_majority).mulDiv(

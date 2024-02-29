@@ -131,6 +131,14 @@ describe("DAO whitelist mode", function () {
         expect(await Web3MusicNativeToken.balanceOf(users[3].address)).equal(1000);
     });
 
+    it('A proposal that has not been voted cannot be executed', async () => {
+        await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
+
+        await timeMachine(20);
+
+        await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
+    });
+
     it('Quorum is reached if the number of voters is greater than half of the whitelisted members at the proposal initialization', async() => {
         await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
         await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
@@ -162,6 +170,25 @@ describe("DAO whitelist mode", function () {
         await expect(dao.connect(owner).manageWhitelist(users[0].address, true)).revertedWith("F2A: already added/removed.");
         await dao.connect(owner).manageWhitelist(users[1].address, false);
         await expect(dao.connect(owner).manageWhitelist(users[1].address, false)).revertedWith("F2A: already added/removed.");
+    })
+
+    it('Proposals created while the whitelist was empty should not be executed. ', async() => {
+        await dao.connect(owner).manageWhitelist(users[0].address, false);
+        await dao.connect(owner).manageWhitelist(users[2].address, false);
+        //Now whitelist is empty
+        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
+        await timeMachine(20);
+        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
+    })
+
+    it('Proposals created while the whitelist was empty should not be executed even if someone later votes for them.', async() => {
+        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
+        
+        await dao.connect(owner).manageWhitelist(users[0].address, true);
+        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], description, true)).to.emit(dao, "ProposalVoted");
+
+        await timeMachine(20);
+        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
     })
 
 });
