@@ -15,6 +15,8 @@ describe("FanToArtistStaking2", function () {
         const fanToArtistStaking = await FTAS.deploy() as FanToArtistStaking;
         await fanToArtistStaking.deployed();
 
+        const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
+
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
@@ -26,7 +28,7 @@ describe("FanToArtistStaking2", function () {
         await fanToArtistStaking.addArtist(artist2.address, owner.address);
         await fanToArtistStaking.addArtist(artist3.address, owner.address);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, addr3, artist1, artist2, artist3, amount}
+        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, addr3, artist1, artist2, artist3, amount, blockBefore}
     }
 
     it('Owner should be able to change artist reward limit', async () => {
@@ -162,6 +164,50 @@ describe("FanToArtistStaking2", function () {
 
     });
 
+    it('Removed artist should receive the award of the tokens in stake up to that time', async () => {
+        const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, artist1, amount} = await loadFixture(deployF2A);
+
+        await fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 3600);
+
+        await timeMachine(30);
+
+        await expect(fanToArtistStaking.removeArtist(artist1.address, owner.address)).emit(fanToArtistStaking, "ArtistRemoved");
+
+        expect(await Web3MusicNativeToken.balanceOf(artist1.address)).greaterThan(0n);
+    });
+
+    it('Removed user should not receive tokens in the period after removal', async () => {
+        const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, artist1, amount} = await loadFixture(deployF2A);
+
+        await fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 3600);
+
+        await timeMachine(30);
+
+        await expect(fanToArtistStaking.removeArtist(artist1.address, owner.address)).emit(fanToArtistStaking, "ArtistRemoved");
+
+        const firstReward = await Web3MusicNativeToken.balanceOf(artist1.address);
+
+        await timeMachine(30);
+
+        await fanToArtistStaking.connect(addr1).getReward(artist1.address);
+
+        expect(await Web3MusicNativeToken.balanceOf(artist1.address)).to.equal(firstReward);
+    });
+
+    it('User should be able to redeem token from removed artist', async () => {
+        const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, artist1, amount} = await loadFixture(deployF2A)
+
+        await fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 3600);
+
+        await timeMachine(30);
+
+        await expect(fanToArtistStaking.removeArtist(artist1.address, owner.address)).emit(fanToArtistStaking, "ArtistRemoved");
+
+        await timeMachine(30);
+
+        await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address)).emit(fanToArtistStaking, "StakeRedeemed");
+    })
+
     describe('Reverts', () => {
         it('A user should not be able to change artist reward limit', async () => {
             const { fanToArtistStaking, addr1 } = await loadFixture(deployF2A);
@@ -286,6 +332,54 @@ describe("FanToArtistStaking2", function () {
 
             await expect(fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
                 .to.revertedWith("FanToArtistStaking: the stake is not ended")
+        });
+
+        it('User should not be able to increase a stake of a removed artist', async () => {
+            const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, owner, amount } = await loadFixture(deployF2A);
+    
+            await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
+    
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
+                .to.emit(fanToArtistStaking, 'StakeCreated')
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
+
+            await expect(fanToArtistStaking.connect(owner).removeArtist(artist1.address, owner.address))
+                .to.emit(fanToArtistStaking, 'ArtistRemoved');
+    
+            await expect(fanToArtistStaking.connect(addr1).increaseAmountStaked(artist1.address, amount))
+                .to.revertedWith("FanToArtistStaking: the artist is not a verified artist");
+        });
+
+        it('User should not be able to extend a stake of a removed artist', async () => {
+            const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist2, owner, amount, blockBefore } = await loadFixture(deployF2A);
+    
+            await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
+    
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
+                .to.emit(fanToArtistStaking, 'StakeCreated')
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
+
+            await expect(fanToArtistStaking.connect(owner).removeArtist(artist1.address, owner.address))
+                .to.emit(fanToArtistStaking, 'ArtistRemoved');
+    
+            await expect(fanToArtistStaking.connect(addr1).extendStake(artist1.address, blockBefore.timestamp + 60))
+                .to.revertedWith("FanToArtistStaking: the artist is not a verified artist");
+        });
+
+        it('User should not be able to change a stake to a removed artist', async () => {
+            const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist2, owner, amount } = await loadFixture(deployF2A);
+    
+            await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
+    
+            await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
+                .to.emit(fanToArtistStaking, 'StakeCreated')
+                .withArgs(artist1.address, addr1.address, amount, anyValue);
+
+            await expect(fanToArtistStaking.connect(owner).removeArtist(artist2.address, owner.address))
+                .to.emit(fanToArtistStaking, 'ArtistRemoved');
+    
+            await expect(fanToArtistStaking.connect(addr1).changeArtistStaked(artist1.address, artist2.address))
+                .to.revertedWith("FanToArtistStaking: the artist is not a verified artist");
         });
     });
 

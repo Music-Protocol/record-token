@@ -158,7 +158,10 @@ contract FanToArtistStaking is
         bool isAdd
     ) internal {
         uint accumulator = 0;
-        if (_artistCheckpoints[artist].tokenAmount != 0) {
+        if (
+            _artistCheckpoints[artist].tokenAmount != 0 &&
+            _verifiedArtists[artist]    //The artist accumulates tokens only if he is verified
+        ) {
             for (
                 uint i = 0;
                 i < REWARD_LIMIT && _artistReward.length - i > 0;
@@ -195,9 +198,8 @@ contract FanToArtistStaking is
         address sender
     ) external override onlyOwner {
         if (_verifiedArtists[artist]) {
+            _getReward(artist); //Before removing it, the tokens it has earned are conferred
             _verifiedArtists[artist] = false;
-            _getReward(artist);
-            delete _artistCheckpoints[artist];
             emit ArtistRemoved(artist, sender);
         }
     }
@@ -249,14 +251,23 @@ contract FanToArtistStaking is
             artist != address(0),
             "FanToArtistStaking: the artist address can not be 0"
         );
-        if (!_verifiedArtists[artist]) {
-            _verifiedArtists[artist] = true;
-            _artistCheckpoints[artist] = ArtistCheckpoint({
-                amountAcc: 0,
-                lastRedeem: uint40(block.timestamp),
-                tokenAmount: 0
-            });
-            emit ArtistAdded(artist, sender);
+        if (!_verifiedArtists[artist]) { //Check if the artist is already verified
+            if (_artistCheckpoints[artist].lastRedeem == 0) { //If it is not verified, and it has never been verified
+                _verifiedArtists[artist] = true;
+                _artistCheckpoints[artist] = ArtistCheckpoint({ //It creates the ArtistCheckpoint
+                    amountAcc: 0,
+                    lastRedeem: uint40(block.timestamp),
+                    tokenAmount: 0
+                });
+                emit ArtistAdded(artist, sender);
+            }
+            if (
+                _artistCheckpoints[artist].lastRedeem != 0 //If it is not verified but has already been verified
+            ) {
+                _verifiedArtists[artist] = true;
+                _artistCheckpoints[artist].lastRedeem = uint40(block.timestamp); //It changes the value of lastRedeem to not calculate the time period when it was not verified
+                emit ArtistAdded(artist, sender);
+            }
         }
     }
 
@@ -319,7 +330,10 @@ contract FanToArtistStaking is
         }
     }
 
-    function increaseAmountStaked(address artist, uint256 amount) external {
+    function increaseAmountStaked(
+        address artist,
+        uint256 amount
+    ) external onlyVerifiedArtist(artist) {
         require(
             _isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: no stake found"
@@ -339,7 +353,10 @@ contract FanToArtistStaking is
         }
     }
 
-    function extendStake(address artist, uint40 newEnd) external {
+    function extendStake(
+        address artist,
+        uint40 newEnd
+    ) external onlyVerifiedArtist(artist) {
         require(
             _isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: no stake found"
@@ -373,7 +390,7 @@ contract FanToArtistStaking is
             _isStakingNow(artist, _msgSender()),
             "FanToArtistStaking: no stake found"
         );
-        require( //TODO this can be improved, increase instead of revert???
+        require(
             !_isStakingNow(newArtist, _msgSender()),
             "FanToArtistStaking: already staking the new artist"
         );
@@ -421,9 +438,7 @@ contract FanToArtistStaking is
             _Web3MusicNativeToken.transfer(user, _stake[artist][user].amount),
             "FanToArtistStaking: error while redeeming"
         );
-        if (_verifiedArtists[artist]) {
-            _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
-        }
+        _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
         _transferVotingUnits(user, address(0), _stake[artist][user].amount);
         _votingPower[user] -= _stake[artist][user].amount;
         delete _stake[artist][user];
