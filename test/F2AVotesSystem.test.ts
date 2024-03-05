@@ -35,7 +35,10 @@ describe("Voting Power", function () {
     }
 
     it('The total number of votes in circulation to this block can be returned', async () => {
-        const { fanToArtistStaking, addr1, addr2, artist1, amount } = await loadFixture(deploy);
+        const { Web3MusicNativeToken, fanToArtistStaking, addr1, addr2, artist1, amount } = await loadFixture(deploy);
+        
+        await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/2n));
+        await expect( Web3MusicNativeToken.connect(addr2).approve(fanToArtistStaking.address, amount/2n));
         
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/2n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
@@ -48,8 +51,10 @@ describe("Voting Power", function () {
     });
 
     it('The amount of votes held by an address can be returned', async () => {
-        const { fanToArtistStaking, addr1, artist1, amount } = await loadFixture(deploy);
+        const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, amount } = await loadFixture(deploy);
         
+        await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/2n));
+
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/2n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/2n, anyValue);
@@ -59,9 +64,10 @@ describe("Voting Power", function () {
     });
 
     it('Correct voting power for each block', async () => {
-        const { Web3MusicNativeToken,fanToArtistStaking, addr1, artist1, amount } = await loadFixture(deploy);
+        const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, amount } = await loadFixture(deploy);
         
         //BLOCK 1
+        await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/2n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/2n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/2n, anyValue);
@@ -86,6 +92,7 @@ describe("Voting Power", function () {
         await mine(1)
 
         //BLOCK 3
+        await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/3n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
@@ -100,6 +107,7 @@ describe("Voting Power", function () {
         const { Web3MusicNativeToken,fanToArtistStaking, addr1, artist1, amount } = await loadFixture(deploy);
         
         //BLOCK 1
+        await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/2n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/2n, 600))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/2n, anyValue);
@@ -112,6 +120,7 @@ describe("Voting Power", function () {
         await mine(1);
 
         //BLOCK 2
+        await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/3n));
         await expect(fanToArtistStaking.connect(addr1).increaseAmountStaked(artist1.address, amount/3n))
             .to.emit(fanToArtistStaking, "StakeIncreased")
             .withArgs(artist1.address, addr1.address, amount/3n);

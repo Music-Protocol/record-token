@@ -273,7 +273,7 @@ contract Web3MusicNativeToken is
         address from,
         uint256 amount
     ) external override onlyStaking returns (bool) {
-        _transfer(from, _msgSender(), amount);
+        transferFrom(from, _msgSender(), amount);
         return true;
     }
 

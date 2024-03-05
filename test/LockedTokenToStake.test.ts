@@ -41,7 +41,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
     it('User should be able to stake locked tokens', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);;
-
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/3n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
@@ -52,7 +52,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, artist3, amount} = await loadFixture(deploy);;
 
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount/3n);
-
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/3n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
@@ -69,7 +69,8 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
     it('User should be able to increment stake with locked tokens', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);
-
+        
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount/3n*2n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
@@ -84,7 +85,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
     it('User should be able to stake locked and unlocked tokens', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount*2n);
-
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount*3n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount*3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount*3n, anyValue);
@@ -107,6 +108,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr2, artist1, artist2, amount} = await loadFixture(deploy);
         await Web3MusicNativeToken.connect(owner).mint(addr2.address, amount*2n);
 
+        await expect(Web3MusicNativeToken.connect(addr2).approve(fanToArtistStaking.address, amount*2n));
         await expect(fanToArtistStaking.connect(addr2).stake(artist1.address, amount*2n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr2.address, amount*2n, anyValue);
@@ -125,6 +127,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
     it('User should be able to stake locked tokens for a longer time than the release', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, artist1, amount} = await loadFixture(deploy);
 
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 7200))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount, anyValue);
@@ -144,6 +147,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount*2n);
 
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount*3n));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount*3n, 7200))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount*3n, anyValue);
@@ -159,7 +163,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
     it('If debt is less than the amount put in stake reedem the correct value', async () => {
         const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist3, amount} = await loadFixture(deploy);
-
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/2n, 120))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/2n, anyValue);
@@ -177,8 +181,8 @@ describe("Redeem of releasable tokens after creating a stake", function () {
     describe('Reverts', async () => {
 
         it('User should not be able to stake more than him balance', async () =>  {
-            const { fanToArtistStaking, addr1, artist1, amount2} = await loadFixture(deploy);
-
+            const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, amount2} = await loadFixture(deploy);
+            await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount2));
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount2, 120))
                 .to.revertedWith("ERC20: transfer amount exceeds balance");
     
@@ -187,6 +191,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         it('User should not be able to spend locked token after redeem', async () => {
             const { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, amount} = await loadFixture(deploy);
     
+            await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);

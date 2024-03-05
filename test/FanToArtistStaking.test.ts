@@ -88,6 +88,7 @@ describe('FanToArtistStaking', () => {
             const amount = BigNumber.from(10).pow(20);
             const time = 50;
             times.push(time);
+            await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);
@@ -117,7 +118,7 @@ describe('FanToArtistStaking', () => {
         it('Should be able to stake again', async () => {
             const amount = BigNumber.from(10).pow(20);
             const time = 86400;
-
+            await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);

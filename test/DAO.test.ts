@@ -71,6 +71,14 @@ describe("DAO", () => {
         )
       )
     );
+    await Promise.allSettled(
+      users.map((user) =>
+        Web3MusicNativeToken.connect(user).approve(
+          fanToArtistStaking.address,
+          BigNumber.from(10).pow(19).mul(10)
+        )
+      )
+    );
     const promises: Promise<ContractTransaction>[] = [];
     artists.forEach((artist) =>
       users.forEach((user) =>

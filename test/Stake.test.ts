@@ -54,18 +54,23 @@ describe('Stake Simulation', () => {
 
     describe('staking settled', () => {
         it('Should let a stake happen', async () => {
+            await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100000));
             await stakeAndRedeem(users[0], artists[0], 100000, 120);
             await ftas.getReward(artists[0].address);
             expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100000, 120 + 1, artistRewardPerc));
         });
 
         it('Redeem time should not change the amount redeemed', async () => {
+            await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100000));
             await stakeAndRedeem(users[0], artists[0], 100000, 120);
+            await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100000));
             await stakeAndRedeem(users[0], artists[0], 100000, 120);
             await ftas.getReward(artists[0].address);
 
+            await expect(Web3MusicNativeToken.connect(users[1]).approve(ftas.address, 100000));
             await stakeAndRedeem(users[1], artists[1], 100000, 120);
             await ftas.getReward(artists[1].address);
+            await expect(Web3MusicNativeToken.connect(users[1]).approve(ftas.address, 100000));
             await stakeAndRedeem(users[1], artists[1], 100000, 120);
             await ftas.getReward(artists[1].address);
 
@@ -74,8 +79,10 @@ describe('Stake Simulation', () => {
         });
 
         it('The redeem should not change even with interleaving', async () => {
+            await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100));
             await ftas.connect(users[0]).stake(artists[0].address, 100, 600); // 10 minutes for s1
             await timeMachine(5); // we let 5 min pass, half s1
+            await expect(Web3MusicNativeToken.connect(users[1]).approve(ftas.address, 100));
             await ftas.connect(users[1]).stake(artists[0].address, 100, 600); // 10 minutes for s2
             await timeMachine(5); // we let 5 min pass, full s1 and half2
             await ftas.redeem(artists[0].address, users[0].address); // redeem s1
@@ -83,10 +90,11 @@ describe('Stake Simulation', () => {
             await ftas.redeem(artists[0].address, users[1].address); // redeem s2
 
             await ftas.getReward(artists[0].address);
-            expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 2, artistRewardPerc) * 2);
+            expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 2.5, artistRewardPerc) * 2);
         });
 
         it('The redeem should not change even with 2 different reward rates', async () => {
+            await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100));
             await ftas.connect(users[0]).stake(artists[0].address, 100, 600); // 10 minutes for s1
             await timeMachine(5); // we let 5 min pass, half s1
             await ftas.changeArtistRewardRate(3 * 10e8, users[0].address);
@@ -98,6 +106,7 @@ describe('Stake Simulation', () => {
         });
 
         it('The redeem should not change even with 3 different reward rates', async () => {
+            await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100));
             await ftas.connect(users[0]).stake(artists[0].address, 100, 900); // 10 minutes for s1
             await timeMachine(5); // we let 5 min pass, 1/3 s1
             await ftas.changeArtistRewardRate(3 * 10e8, users[0].address);

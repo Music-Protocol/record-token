@@ -51,6 +51,7 @@ describe("Hardcap", function () {
             .to.emit(fanToArtistStaking, 'ArtistAdded')
             .withArgs(artist1.address, owner.address);
 
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount, anyValue);

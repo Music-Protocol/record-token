@@ -58,6 +58,10 @@ describe("DAO whitelist mode", function () {
             Web3MusicNativeToken.connect(owner).mint(user.address, amount);
         }));
 
+        await Promise.allSettled(users.map(user => {
+              Web3MusicNativeToken.connect(user).approve(fanToArtistStaking.address, amount)
+        }));
+
         await Promise.allSettled(artists.map(artist => {
             fanToArtistStaking.addArtist(artist.address, owner.address);
         }));

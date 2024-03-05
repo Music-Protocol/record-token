@@ -115,17 +115,19 @@ describe("TGE Management", function () {
     }
 
     it('TgeRole is setted correctly', async () => {
-        const { Web3MusicNativeTokenManagement, owner, addr1, tgeRole } = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, tgeRole, blockBefore} = await loadFixture(deploy);
         expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
         expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, addr1.address)).to.be.false;
     });
 
     it("mint_and_lock is available", async () => {
-        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore } = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, tgeRole, blockBefore } = await loadFixture(deploy);
+
+        expect(await Web3MusicNativeTokenManagement.grantRole(tgeRole, addr1.address)).to.emit(Web3MusicNativeTokenManagement, 'RoleGranted');
 
         await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
 
-        expect(await Web3MusicNativeTokenManagement.connect(owner).mint_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
+        expect(await Web3MusicNativeTokenManagement.connect(addr1).mint_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
             .to.emit(Web3MusicNativeToken, 'TokenLocked')
             .withArgs(addr1.address, 1);
     });
