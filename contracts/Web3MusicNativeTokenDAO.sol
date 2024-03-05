@@ -244,8 +244,9 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             block.timestamp > _proposals[proposalId].timeStart + _timeVotes,
             "DAO: proposal not ended"
         );
-
-        if (_reachedQuorum(proposalId) && _votePassed(proposalId)) {
+        bool votingResult = _reachedQuorum(proposalId) && _votePassed(proposalId);
+        delete _proposals[proposalId];
+        if (votingResult) {
             for (uint256 i = 0; i < targets.length; ++i) {
                 (bool success, bytes memory returndata) = targets[i].call(
                     calldatas[i]
@@ -260,9 +261,8 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         emit ProposalExecuted(
             proposalId,
             msg.sender,
-            (_reachedQuorum(proposalId) && _votePassed(proposalId))
+            votingResult
         );
-        delete _proposals[proposalId];
     }
 
     function getProposal(
