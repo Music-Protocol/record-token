@@ -231,6 +231,7 @@ describe("FanToArtistStaking2", function () {
         });
         it('It should not be possible to change the artistRewardRate too many times in a short time', async () => {
             const { fanToArtistStaking, owner } = await loadFixture(deployF2A);
+            await timeMachine(1);
             await fanToArtistStaking.connect(owner).changeArtistRewardRate(1, owner.address);
             await expect(fanToArtistStaking.connect(owner).changeArtistRewardRate(2, owner.address)).to.revertedWith("FanToArtistStaking: the artist reward cannot be changed yet");
         });

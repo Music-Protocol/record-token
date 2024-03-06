@@ -146,7 +146,7 @@ describe("TGE Management", function () {
 
     it("Owner should be able to change artist reward rate", async () => {
         const { Web3MusicNativeTokenManagement, fanToArtistStaking, owner} = await loadFixture(deploy);
-
+        await timeMachine(1);
         await expect(Web3MusicNativeTokenManagement.connect(owner).changeArtistRewardRate(4)).to.emit(fanToArtistStaking, "ArtistWeb3MusicNativeTokenRewardChanged");
     })
 

@@ -65,6 +65,7 @@ describe('FanToArtistStaking', () => {
     describe('Rates', () => {
         it('Should be able to change the artist reward rate', async () => {
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(10);
+            await timeMachine(1);
             await expect(fanToArtistStaking.changeArtistRewardRate(50, owner.address))
                 .to.emit(fanToArtistStaking, 'ArtistWeb3MusicNativeTokenRewardChanged')
                 .withArgs(50, anyValue, owner.address);

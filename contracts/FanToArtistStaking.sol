@@ -110,7 +110,7 @@ contract FanToArtistStaking is
         _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken_);
         _artistReward.push(
             ArtistReward({
-                start: 0,
+                start: uint40(block.timestamp),
                 end: (2 ** 40) - 1,
                 rate: artistWeb3MusicNativeTokenRewardRate
             })
