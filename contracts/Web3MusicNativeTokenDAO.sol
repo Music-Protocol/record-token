@@ -64,6 +64,10 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             "DAO: the fanToArtistStaking address can not be 0"
         );
         require(
+            time >= 600,
+            "DAO: the voting time for a proposal must be at least 10 minutes"
+        );
+        require(
             quorum_ <= 10e8,
             "DAO: the quorum must be less than or equal 10e8"
         );

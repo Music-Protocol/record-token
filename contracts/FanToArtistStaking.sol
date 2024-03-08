@@ -113,6 +113,14 @@ contract FanToArtistStaking is
             artistWeb3MusicNativeTokenRewardRate != 0,
             "FanToArtistStaking: the artist reward rate can not be 0"
         );
+        require(
+            limit_ > 0,
+            "FanToArtistStaking: the reward limit must be greater than 0"
+        );
+        require(
+            changeRewardLimit_ >= 600,
+            "FanToArtistStaking: the minimum time to change the reward rate is 10 minutes"
+        );
         require(max > min, "FanToArtistStaking: min cant be greater than max");
         _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken_);
         _artistReward.push(
@@ -258,8 +266,10 @@ contract FanToArtistStaking is
             artist != address(0),
             "FanToArtistStaking: the artist address can not be 0"
         );
-        if (!_verifiedArtists[artist]) { //Check if the artist is already verified
-            if (_artistCheckpoints[artist].lastRedeem == 0) { //If it is not verified, and it has never been verified
+        if (!_verifiedArtists[artist]) {
+            //Check if the artist is already verified
+            if (_artistCheckpoints[artist].lastRedeem == 0) {
+                //If it is not verified, and it has never been verified
                 _verifiedArtists[artist] = true;
                 _artistCheckpoints[artist] = ArtistCheckpoint({ //It creates the ArtistCheckpoint
                     amountAcc: 0,

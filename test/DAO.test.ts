@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect, use } from "chai";
+import { expect } from "chai";
 import { ContractTransaction } from "@ethersproject/contracts";
 import { ethers, web3, upgrades } from "hardhat";
 import {
@@ -45,7 +45,7 @@ describe("DAO", () => {
       minStakeTime,
       maxStakeTime,
       3,
-      10
+      600
     );
 
     const cDAO = await ethers.getContractFactory("Web3MusicNetworkDAO");

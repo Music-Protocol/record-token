@@ -23,7 +23,7 @@ describe('FanToArtistStaking', () => {
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
         
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 600);
     });
 
     describe('Deployment', () => {
@@ -65,7 +65,7 @@ describe('FanToArtistStaking', () => {
     describe('Rates', () => {
         it('Should be able to change the artist reward rate', async () => {
             expect(await fanToArtistStaking.getArtistRewardRate()).to.equal(10);
-            await timeMachine(1);
+            await timeMachine(10);
             await expect(fanToArtistStaking.changeArtistRewardRate(50, owner.address))
                 .to.emit(fanToArtistStaking, 'ArtistWeb3MusicNativeTokenRewardChanged')
                 .withArgs(50, anyValue, owner.address);
@@ -106,9 +106,7 @@ describe('FanToArtistStaking', () => {
 
         it('Should be able to redeem the token locked', async () => {
             //pass time
-            const blockNumBefore = await ethers.provider.getBlockNumber();
-            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-            await ethers.provider.send('evm_mine', [(60 * 10) + blockBefore.timestamp]);
+            await ethers.provider.send('evm_mine', [(60 * 10) + await getTimestamp()]);
             await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
             stake1.redeemed = true;
 

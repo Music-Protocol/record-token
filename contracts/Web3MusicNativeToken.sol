@@ -149,7 +149,7 @@ contract Web3MusicNativeToken is
     function mint(address to, uint256 amount) external override onlyOwner {
         require(
             minted + amount <= max_mint,
-            "W3T: Maximum limit of minable tokens reached"
+            "Web3MusicNativeToken: Maximum limit of minable tokens reached"
         );
         minted += amount;
         _mint(to, amount);
@@ -171,7 +171,15 @@ contract Web3MusicNativeToken is
         );
         require(
             minted + _amount <= max_mint,
-            "W3T: Maximum limit of minable tokens reached"
+            "Web3MusicNativeToken: Maximum limit of minable tokens reached"
+        );
+        require(
+            _start >= block.timestamp, 
+            "Web3MusicNativeToken: Releasable payment cannot begin in the past"
+        );
+        require(
+            _duration >= 600, 
+            "Web3MusicNativeToken: The duration of releasable payment must be at least 10 minutes"
         );
         releasablePayments[_beneficiary] = ReleasablePayment(
             _amount,
@@ -211,6 +219,14 @@ contract Web3MusicNativeToken is
         require(
             releasablePayments[_beneficiary].releasableBalance == 0,
             "Web3MusicNativeToken: Releasable payment already used."
+        );
+        require(
+            _start >= block.timestamp, 
+            "Web3MusicNativeToken: Releasable payment cannot begin in the past"
+        );
+        require(
+            _duration >= 600, 
+            "Web3MusicNativeToken: The duration of releasable payment must be at least 10 minutes"
         );
         releasablePayments[_beneficiary] = ReleasablePayment(
             _amount,

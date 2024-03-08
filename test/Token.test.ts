@@ -2,9 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine } from './utils/utils';
-import { BigNumber } from 'ethers';
+import { timeMachine, getTimestamp } from './utils/utils';
 
 describe('Web3MusicNativeToken', () => {
     let Web3MusicNativeToken: Web3MusicNativeToken;
@@ -25,7 +23,7 @@ describe('Web3MusicNativeToken', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 600);
     });
 
     describe('Deployment', () => {
@@ -146,8 +144,7 @@ describe('Web3MusicNativeToken', () => {
 
     describe('Relesable Payments', () =>{
         it('Release Check', async() => {
-            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
-            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr4.address, BigInt(20*10**18), blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr4.address, BigInt(20*10**18), await getTimestamp(), 3600))
                 .to.emit(Web3MusicNativeToken, 'Transfer')
                 .withArgs('0x0000000000000000000000000000000000000000', addr4.address, BigInt(20*10**18));
             expect(await Web3MusicNativeToken.balanceOf(addr4.address)).to.be.equal(BigInt(20*10**18));
@@ -164,26 +161,23 @@ describe('Web3MusicNativeToken', () => {
         });
 
         it('Owner should be able to use mint_and lock', async() => {
-            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
-            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, await getTimestamp(), 3600))
                 .to.emit(Web3MusicNativeToken, 'Transfer')
                 .withArgs('0x0000000000000000000000000000000000000000', addr1.address, 100);
         });
 
         it('Owner should be able to use transfer_and_lock', async() => {
-            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
             await Web3MusicNativeToken.connect(owner).mint(owner.address, 100);
-            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr2.address, 100, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr2.address, 100, await getTimestamp(), 3600))
                 .to.emit(Web3MusicNativeToken, 'Transfer')
                 .withArgs(owner.address, addr2.address, 100);
         });
 
         it('Should not be possible reuse mint_and_lock or transfer_and_lock for the same account', async() => {
-            const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
-            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, await getTimestamp(), 3600))
                 .to.revertedWith('Web3MusicNativeToken: Releasable payment already used.');
             await Web3MusicNativeToken.connect(owner).mint(owner.address, 100);
-            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 100, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 100, await getTimestamp(), 3600))
                 .to.revertedWith('Web3MusicNativeToken: Releasable payment already used.');
             await Web3MusicNativeToken.connect(owner).burn(100);
         });

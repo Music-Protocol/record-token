@@ -1,13 +1,9 @@
-import { expect, use } from 'chai';
+import { expect } from 'chai';
 import { ethers, upgrades} from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine, parseDetailedStake, matchDetailedStakes, getStakeFromEvent, getStakeExtendedFromEvent, getStakeArtistFromEvent, getStakeIncreaseFromEvent } from './utils/utils';
-import { ContractTransaction } from '@ethersproject/contracts';
+import { timeMachine } from './utils/utils';
 import { BigNumberish } from 'ethers';
-
-const cache = {};
 
 describe('Stake Simulation', () => {
     let Web3MusicNativeToken: Web3MusicNativeToken;
@@ -42,7 +38,7 @@ describe('Stake Simulation', () => {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(ftas.address);
         await Web3MusicNativeToken.deployed();
-        await ftas.initialize(Web3MusicNativeToken.address, defArtistReward, minStakeTime, maxStakeTime, 3, 10);
+        await ftas.initialize(Web3MusicNativeToken.address, defArtistReward, minStakeTime, maxStakeTime, 3, 600);
 
         await Promise.allSettled([artists.forEach(artist =>
             ftas.addArtist(artist.address, owner.address)
@@ -94,34 +90,30 @@ describe('Stake Simulation', () => {
         });
 
         it('The redeem should not change even with 2 different reward rates', async () => {
-            await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100));
-            await ftas.connect(users[0]).stake(artists[0].address, 100, 600); // 10 minutes for s1
-            await timeMachine(5); // we let 5 min pass, half s1
-            await ftas.changeArtistRewardRate(3 * 10e8, users[0].address);
-            await timeMachine(5); // we let 5 min pass, full s1 and half2
+            await Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100);
+            await ftas.connect(users[0]).stake(artists[0].address, 100, 1200); // 20 minutes for s1
+            await timeMachine(10); // we let 10 min pass, half s1
+            await expect(ftas.changeArtistRewardRate(3 * 10e8, users[0].address)).emit(ftas, "ArtistWeb3MusicNativeTokenRewardChanged");
+            await timeMachine(10); // we let 5 min pass, full s1 and half2
             await ftas.redeem(artists[0].address, users[0].address); // redeem s1
 
             await ftas.getReward(artists[0].address);
-            expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 2, artistRewardPerc) * 2);
+            expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600+1, artistRewardPerc) + expectedRedeem(100, 600+1, 3*10e8/10e9));
         });
 
         it('The redeem should not change even with 3 different reward rates', async () => {
             await expect(Web3MusicNativeToken.connect(users[0]).approve(ftas.address, 100));
-            await ftas.connect(users[0]).stake(artists[0].address, 100, 900); // 10 minutes for s1
-            await timeMachine(5); // we let 5 min pass, 1/3 s1
-            await ftas.changeArtistRewardRate(3 * 10e8, users[0].address);
-            await timeMachine(5); // we let 5 min pass, 2/3 s1
-            await ftas.changeArtistRewardRate(20e8, users[0].address);
-            await timeMachine(5); // we let 5 min pass, full s1
+            await ftas.connect(users[0]).stake(artists[0].address, 100, 1800); // 30 minutes for s1
+            await timeMachine(10); // we let 10 min pass, 1/3 s1
+            await expect(ftas.changeArtistRewardRate(3 * 10e8, users[0].address)).emit(ftas, "ArtistWeb3MusicNativeTokenRewardChanged");
+            await timeMachine(10); // we let 10 min pass, 2/3 s1
+            await expect(ftas.changeArtistRewardRate(20e8, users[0].address)).emit(ftas, "ArtistWeb3MusicNativeTokenRewardChanged");
+            await timeMachine(10); // we let 10 min pass, full s1
             await ftas.redeem(artists[0].address, users[0].address); // redeem s1
 
             await ftas.getReward(artists[0].address);
-            expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 2, artistRewardPerc) * 3);
+            expect(await Web3MusicNativeToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 1, artistRewardPerc) + expectedRedeem(100, 600 + 1, 3*10e8/10e9) + expectedRedeem(100, 600 + 1, 2*10e8/10e9));
         });
     });
-
-    // describe.only('staking', () => {
-
-    // });
 });
 

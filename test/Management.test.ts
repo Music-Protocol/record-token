@@ -3,8 +3,6 @@ import { BytesLike } from 'ethers';
 import { ethers, web3, upgrades } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNativeTokenManagement } from '../typechain-types/index';
-import stableCoinContract from '../contracts/mocks/FiatTokenV2_1.json';
-import { getIndexFromProposal, getPoolFromEvent } from './utils/utils';
 
 describe('Web3MusicNativeTokenManagement', () => {
   let Web3MusicNativeToken: Web3MusicNativeToken;
@@ -29,7 +27,7 @@ describe('Web3MusicNativeTokenManagement', () => {
     const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
     Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address);
     await Web3MusicNativeToken.deployed();
-    fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 10);
+    fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 600);
 
     const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
     Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
@@ -267,10 +265,6 @@ describe('Web3MusicNativeTokenManagement', () => {
           [calldata]
         );
       });
-      // This test work but is redundant, already tested on Web3MusicNativeToken.js -> Access Control
-      // it('An address with the correct role should not be able to perfom ', async()=>{
-      //     await expect(Web3MusicNativeTokenManagement.connect(owner).mint(Web3MusicNativeTokenManagement.address, 10)).to.be.revertedWith(`Ownable: caller is not the owner`);
-      // });
     });
   });
 

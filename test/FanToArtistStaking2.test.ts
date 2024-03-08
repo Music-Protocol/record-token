@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine } from './utils/utils';
+import { getTimestamp, timeMachine } from './utils/utils';
 
 describe("FanToArtistStaking2", function () {
     
@@ -15,12 +15,10 @@ describe("FanToArtistStaking2", function () {
         const fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as FanToArtistStaking;
         await fanToArtistStaking.deployed();
 
-        const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
-
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 600);
 
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
 
@@ -28,7 +26,7 @@ describe("FanToArtistStaking2", function () {
         await fanToArtistStaking.addArtist(artist2.address, owner.address);
         await fanToArtistStaking.addArtist(artist3.address, owner.address);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, addr3, artist1, artist2, artist3, amount, blockBefore}
+        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, addr3, artist1, artist2, artist3, amount }
     }
 
     it('Owner should be able to change artist reward limit', async () => {
@@ -103,9 +101,6 @@ describe("FanToArtistStaking2", function () {
     it('User should be able to extend a stake', async () => {
         const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, owner, amount } = await loadFixture(deployF2A);
 
-        const blockNumBefore = await ethers.provider.getBlockNumber();
-        const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
         await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
         const receipt1 = await fanToArtistStaking.connect(addr1).stake(artist1.address, amount, 60);
@@ -113,14 +108,14 @@ describe("FanToArtistStaking2", function () {
         
         const end1 = transactionReceipt1?.events && transactionReceipt1?.events[4].args && transactionReceipt1.events[4].args['end']; 
 
-        expect(end1).to.be.closeTo(blockBefore.timestamp + 60, 5); //Verified with a 5-second error
+        expect(end1).to.be.closeTo(await getTimestamp() + 60, 5); //Verified with a 5-second error
 
         const receipt2 = await fanToArtistStaking.connect(addr1).extendStake(artist1.address, 60);
         const transactionReceipt2 = await receipt2.wait();
         
         const end2 = transactionReceipt2?.events && transactionReceipt2?.events[0].args && transactionReceipt2.events[0].args['end'];
 
-        expect(end2).to.be.closeTo(blockBefore.timestamp + 120, 5); //Verified with a 5-second error
+        expect(end2).to.be.closeTo(await getTimestamp() + 120, 5); //Verified with a 5-second error
 
         //Emit verification
         await expect(fanToArtistStaking.connect(addr1).extendStake(artist1.address, 60)).to.emit(fanToArtistStaking, "StakeEndChanged")
@@ -231,7 +226,7 @@ describe("FanToArtistStaking2", function () {
         });
         it('It should not be possible to change the artistRewardRate too many times in a short time', async () => {
             const { fanToArtistStaking, owner } = await loadFixture(deployF2A);
-            await timeMachine(1);
+            await timeMachine(10);
             await fanToArtistStaking.connect(owner).changeArtistRewardRate(1, owner.address);
             await expect(fanToArtistStaking.connect(owner).changeArtistRewardRate(2, owner.address)).to.revertedWith("FanToArtistStaking: the artist reward cannot be changed yet");
         });
@@ -367,7 +362,7 @@ describe("FanToArtistStaking2", function () {
         });
 
         it('User should not be able to extend a stake of a removed artist', async () => {
-            const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist2, owner, amount, blockBefore } = await loadFixture(deployF2A);
+            const {Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist2, owner, amount } = await loadFixture(deployF2A);
     
             await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
     
@@ -379,7 +374,7 @@ describe("FanToArtistStaking2", function () {
             await expect(fanToArtistStaking.connect(owner).removeArtist(artist1.address, owner.address))
                 .to.emit(fanToArtistStaking, 'ArtistRemoved');
     
-            await expect(fanToArtistStaking.connect(addr1).extendStake(artist1.address, blockBefore.timestamp + 60))
+            await expect(fanToArtistStaking.connect(addr1).extendStake(artist1.address, await getTimestamp() + 60))
                 .to.revertedWith("FanToArtistStaking: the artist is not a verified artist");
         });
 

@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken} from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine } from './utils/utils';
+import { getTimestamp, timeMachine } from './utils/utils';
 import { mine } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Voting Power", function () {
@@ -12,7 +12,6 @@ describe("Voting Power", function () {
         const [owner, addr1, addr2, addr3, artist1, artist2, artist3] = await ethers.getSigners();
         const defArtistReward = 10;
         const amount = 10n*10n**18n;
-        const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         const fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
@@ -22,7 +21,7 @@ describe("Voting Power", function () {
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
 
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 600);
 
         await Web3MusicNativeToken.connect(owner).mint(addr1.address, amount);
         await Web3MusicNativeToken.connect(owner).mint(addr2.address, amount);
@@ -31,7 +30,7 @@ describe("Voting Power", function () {
         await fanToArtistStaking.addArtist(artist2.address, owner.address);
         await fanToArtistStaking.addArtist(artist3.address, owner.address);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, addr3, artist1, artist2, artist3, amount, blockBefore}
+        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, addr3, artist1, artist2, artist3, amount }
     }
 
     it('The total number of votes in circulation to this block can be returned', async () => {
@@ -136,10 +135,10 @@ describe("Voting Power", function () {
     });
 
     it('A user cannot delegate other accounts with delegateBySig', async () => {
-        const { fanToArtistStaking, addr1, addr2, blockBefore } = await loadFixture(deploy);
+        const { fanToArtistStaking, addr1, addr2 } = await loadFixture(deploy);
 
         const nonce = await fanToArtistStaking.nonces(addr1.address);
-        const expiry = blockBefore.timestamp + 3600;
+        const expiry = await getTimestamp() + 3600;
 
         const digest = ethers.utils.solidityKeccak256(
             ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],

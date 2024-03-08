@@ -36,18 +36,24 @@ describe("Constructors", () => {
         const tok = await TOK.deploy(fta.address);
         await tok.deployed();
 
-        await expect(fta.initialize(ethers.constants.AddressZero, defArtistReward, 10, 86400, 3, 10))
+        await expect(fta.initialize(ethers.constants.AddressZero, defArtistReward, 10, 86400, 3, 600))
             .to.revertedWith("FanToArtistStaking: the Web3MusicNativeToken address can not be 0");
 
-        await expect(fta.initialize(tok.address, 0, 10, 86400, 3, 10))
+        await expect(fta.initialize(tok.address, 0, 10, 86400, 3, 600))
             .to.revertedWith("FanToArtistStaking: the artist reward rate can not be 0");
 
-        await expect(fta.initialize(tok.address, defArtistReward, 86400, 10, 3, 10))
+        await expect(fta.initialize(tok.address, defArtistReward, 86400, 10, 3, 600))
             .to.revertedWith("FanToArtistStaking: min cant be greater than max");
 
-        await fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 10);
+        await expect(fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 60))
+            .to.revertedWith("FanToArtistStaking: the minimum time to change the reward rate is 10 minutes");
 
-        await expect(fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 10))
+        await expect(fta.initialize(tok.address, defArtistReward, 86400, 10, 0, 600))
+            .to.revertedWith("FanToArtistStaking: the reward limit must be greater than 0");
+
+        await fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 600);
+
+        await expect(fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 600))
             .to.revertedWith("Initializable: contract is already initialized");
 
     });
@@ -61,7 +67,7 @@ describe("Constructors", () => {
         const tok = await TOK.deploy(fta.address);
         await tok.deployed();
 
-        await fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 10);
+        await fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 600);
 
         await expect(DAO.deploy(ethers.constants.AddressZero, 10e7, 50e7 + 1, 900, true))
             .to.revertedWith("DAO: the fanToArtistStaking address can not be 0");
@@ -89,8 +95,8 @@ describe("Constructors", () => {
         const tok2 = await TOK.deploy(fta1.address);
         await tok2.deployed();
 
-        await fta1.initialize(tok1.address, defArtistReward, 10, 86400, 3, 10);
-        await fta2.initialize(tok2.address, defArtistReward, 10, 86400, 3, 10);
+        await fta1.initialize(tok1.address, defArtistReward, 10, 86400, 3, 600);
+        await fta2.initialize(tok2.address, defArtistReward, 10, 86400, 3, 600);
 
         await expect(MNG.deploy(ethers.constants.AddressZero, fta1.address))
             .to.revertedWith("Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0");

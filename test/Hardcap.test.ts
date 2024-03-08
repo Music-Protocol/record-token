@@ -1,11 +1,9 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine } from './utils/utils';
-import { BigNumber } from 'ethers';
+import { getTimestamp } from './utils/utils';
 
 describe("Hardcap", function () {
     
@@ -13,7 +11,6 @@ describe("Hardcap", function () {
         const [owner, addr1, addr2, artist1, artist2] = await ethers.getSigners();
         const defVeReward = 10;
         const defArtistReward = 10;
-        const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         const fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
         await fanToArtistStaking.deployed();
@@ -21,21 +18,21 @@ describe("Hardcap", function () {
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 86400, 3, 600);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, blockBefore}
+        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2 }
     }
 
     it('It is not possible to mint more than one billion tokens', async () => {
-        const { Web3MusicNativeToken, owner, blockBefore  } = await loadFixture(deployToken);
+        const { Web3MusicNativeToken, owner } = await loadFixture(deployToken);
 
         await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, 1000000000000000000000000000n)).emit(Web3MusicNativeToken, "Transfer");
 
         await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, 1))
-            .to.be.revertedWith("W3T: Maximum limit of minable tokens reached") 
+            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of minable tokens reached") 
 
-        await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(owner.address, 1, blockBefore.timestamp, 3600))
-            .to.be.revertedWith("W3T: Maximum limit of minable tokens reached") 
+        await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(owner.address, 1, await getTimestamp(), 3600))
+            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of minable tokens reached") 
     });
 
     it('Pay has no limit', async () => {
@@ -45,7 +42,7 @@ describe("Hardcap", function () {
             .emit(Web3MusicNativeToken, "Transfer");
 
         await expect(Web3MusicNativeToken.connect(owner).mint(addr1.address, 1))
-            .to.be.revertedWith("W3T: Maximum limit of minable tokens reached");
+            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of minable tokens reached");
 
         await expect(fanToArtistStaking.addArtist(artist1.address, owner.address))
             .to.emit(fanToArtistStaking, 'ArtistAdded')

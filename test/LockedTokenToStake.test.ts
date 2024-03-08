@@ -1,12 +1,9 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine } from './utils/utils';
-import { BigNumber } from 'ethers';
-import { web3MusicNativeTokenDaoSol } from "../typechain-types/contracts";
+import { getTimestamp, timeMachine } from './utils/utils';
 
 describe("Redeem of releasable tokens after creating a stake", function () {
     
@@ -16,7 +13,6 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         const defArtistReward = 10;
         const amount =  100n*10n**18n
         const amount2 =  100n*10n**18n + amount/3n
-        const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         const fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
         await fanToArtistStaking.deployed();
@@ -25,9 +21,9 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
         
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defVeReward, defArtistReward, 86400, 3, 600);
 
-        await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, amount, blockBefore.timestamp, 3600))
+        await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, amount, await getTimestamp(), 3600))
             .to.emit(Web3MusicNativeToken, "Transfer");
 
         await expect(fanToArtistStaking.addArtist(artist1.address, owner.address))
@@ -37,7 +33,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
             .to.emit(fanToArtistStaking, 'ArtistAdded')
             .withArgs(artist3.address, owner.address);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, artist3, amount, amount2, blockBefore}
+        return { Web3MusicNativeToken, fanToArtistStaking, owner, addr1, addr2, artist1, artist2, artist3, amount, amount2 }
     }
 
     it('User should be able to stake locked tokens', async () => {
@@ -215,20 +211,20 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         });
 
         it("Owner should not be able to (tranfer/mint)_and_lock with amount equal to 0", async () => {
-            const { Web3MusicNativeToken, owner, addr1, blockBefore} = await loadFixture(deploy);
+            const { Web3MusicNativeToken, owner, addr1 } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 0, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Web3MusicNativeToken: Amount can not be 0 or less in transfer_and_lock.")
-            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 0, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Web3MusicNativeToken: Amount can not be 0 or less in mint_and_lock.");
         })
         
         it("Only owner should be able to (tranfer/mint)_and_lock", async () => {
-            const { Web3MusicNativeToken, owner, addr1, blockBefore} = await loadFixture(deploy);
+            const { Web3MusicNativeToken, owner, addr1 } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeToken.connect(addr1).transfer_and_lock(addr1.address, 0, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(addr1).transfer_and_lock(addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Ownable: caller is not the owner")
-            await expect(Web3MusicNativeToken.connect(addr1).mint_and_lock(addr1.address, 0, blockBefore.timestamp, 3600))
+            await expect(Web3MusicNativeToken.connect(addr1).mint_and_lock(addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Ownable: caller is not the owner");
         })
     })

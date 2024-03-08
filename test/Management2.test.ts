@@ -1,11 +1,8 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, web3, upgrades } from 'hardhat';
-import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNativeTokenManagement__factory } from '../typechain-types/index';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { timeMachine } from './utils/utils';
-import { BigNumber } from 'ethers';
+import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
+import { getTimestamp, timeMachine } from './utils/utils';
 
 describe("TGE Management", function () {
 
@@ -17,7 +14,6 @@ describe("TGE Management", function () {
 
     async function deploy() {
         const [owner, addr1, addr2, artist1] = await ethers.getSigners();
-        const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
         const fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
@@ -26,7 +22,7 @@ describe("TGE Management", function () {
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;
         await Web3MusicNativeToken.deployed();
 
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 600);
 
         const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
         const Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
@@ -110,54 +106,56 @@ describe("TGE Management", function () {
             },
             [owner.address, `1000`]);
 
-        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, dao, owner, addr1, addr2, artist1, blockBefore, adminRole, tgeRole, verifyArtistRole, daoCalldata1, daoCalldata2, daoCalldata1false, daoCalldata2false, daoCalldata4 }
+        return { Web3MusicNativeToken, fanToArtistStaking, Web3MusicNativeTokenManagement, dao, owner, addr1, addr2, artist1, adminRole, tgeRole, verifyArtistRole, daoCalldata1, daoCalldata2, daoCalldata1false, daoCalldata2false, daoCalldata4 }
     }
 
     it('TgeRole is setted correctly', async () => {
-        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, tgeRole, blockBefore} = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, tgeRole } = await loadFixture(deploy);
         expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
         expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, addr1.address)).to.be.false;
     });
 
     it("mint_and_lock is available", async () => {
-        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, tgeRole, blockBefore } = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, tgeRole } = await loadFixture(deploy);
 
         expect(await Web3MusicNativeTokenManagement.grantRole(tgeRole, addr1.address)).to.emit(Web3MusicNativeTokenManagement, 'RoleGranted');
 
         await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
 
-        expect(await Web3MusicNativeTokenManagement.connect(addr1).mint_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
+        expect(await Web3MusicNativeTokenManagement.connect(addr1).mint_and_lock(addr1.address, 1n, await getTimestamp(), 3600))
             .to.emit(Web3MusicNativeToken, 'TokenLocked')
             .withArgs(addr1.address, 1);
     });
 
     it("transfer_and_lock is available", async () => {
-        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1, blockBefore } = await loadFixture(deploy);
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, artist1 } = await loadFixture(deploy);
 
         await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
         await Web3MusicNativeTokenManagement.connect(owner).mint(owner.address, 1n);
         await Web3MusicNativeToken.connect(owner).approve(Web3MusicNativeTokenManagement.address, 1n);
 
-        expect(await Web3MusicNativeTokenManagement.connect(owner).transfer_and_lock(addr1.address, 1n, blockBefore.timestamp, 3600))
+        expect(await Web3MusicNativeTokenManagement.connect(owner).transfer_and_lock(addr1.address, 1n, await getTimestamp(), 3600))
             .to.emit(Web3MusicNativeToken, 'TokenLocked')
             .withArgs(addr1.address, 1n);
     });
 
     it("Owner should be able to change artist reward rate", async () => {
         const { Web3MusicNativeTokenManagement, fanToArtistStaking, owner} = await loadFixture(deploy);
-        await timeMachine(1);
+        await timeMachine(10);
         await expect(Web3MusicNativeTokenManagement.connect(owner).changeArtistRewardRate(4)).to.emit(fanToArtistStaking, "ArtistWeb3MusicNativeTokenRewardChanged");
     })
 
     describe("Reverts", async () => {
         it("mint_and_lock", async () => {
-            const { Web3MusicNativeTokenManagement, addr1, tgeRole, blockBefore } = await loadFixture(deploy);
-            await expect(Web3MusicNativeTokenManagement.connect(addr1).mint_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
+            const { Web3MusicNativeTokenManagement, addr1, tgeRole } = await loadFixture(deploy);
+
+            await expect(Web3MusicNativeTokenManagement.connect(addr1).mint_and_lock(addr1.address, 1n, await getTimestamp(), 3600))
                 .to.be.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${tgeRole}`);
         });
         it("transfer_and_lock", async () => {
-            const { Web3MusicNativeTokenManagement, addr1, tgeRole, blockBefore } = await loadFixture(deploy);
-            await expect(Web3MusicNativeTokenManagement.connect(addr1).transfer_and_lock(addr1.address, 1, blockBefore.timestamp, 3600))
+            const { Web3MusicNativeTokenManagement, addr1, tgeRole } = await loadFixture(deploy);
+
+            await expect(Web3MusicNativeTokenManagement.connect(addr1).transfer_and_lock(addr1.address, 1n, await getTimestamp(), 3600))
                 .to.be.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${tgeRole}`);
         });
 

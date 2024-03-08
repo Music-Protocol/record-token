@@ -1,10 +1,8 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from 'chai';
-import { ethers, network, web3, upgrades } from 'hardhat';
+import { ethers, web3, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNetworkDAO } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine } from './utils/utils';
-import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("DAO whitelist mode", function () {
@@ -45,7 +43,7 @@ describe("DAO whitelist mode", function () {
         dao = await DAO.deploy(fanToArtistStaking.address, 10e7, 50e7 + 1, 900, true);
         await dao.deployed();
 
-        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
+        await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 600);
 
         expect(users.length).equal(5);
         expect(artists.length).equal(5);
@@ -146,19 +144,9 @@ describe("DAO whitelist mode", function () {
     it('Quorum is reached if the number of voters is greater than half of the whitelisted members at the proposal initialization', async() => {
         await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
         await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
-        // This can be a problem:
-        // await expect(dao.connect(owner).manageWhitelist(users[3].address, true)); 
-        // await expect(dao.connect(owner).manageWhitelist(users[4].address, true)); //HERE WE CHANGE THE NUMBER OF EFFECTIVE WHITELIST MEMBER FROM 3 to 5 
-        // await expect(dao.connect(users[3]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
-        // await expect(dao.connect(users[4]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
         await expect(dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
         await timeMachine(20);
         await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
-
-        // It should be pointed out that if a quorum is calculated on the number of members on the whitelist at the time of the proposal and later
-        // many members are added to the whitelist with already accrued voting power, the required number of voters can be reached even if members present
-        // at the time of the proposal have not voted. Since it cannot be determined who are the members present in the whitelist at the moment of the proposal.
-
     });
 
     it('Propose doesn\'t pass if the amount of negative votes are greater than the amount of the positive votes', async() => {

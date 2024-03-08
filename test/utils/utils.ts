@@ -52,7 +52,7 @@ function matchDetailedStakes(element: any, artist: string, user: string, amount:
 async function getTimestamp() {
     const blockNumBefore = await ethers.provider.getBlockNumber();
     const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    return blockBefore.timestamp;
+    return blockBefore.timestamp+1;
 }
 
 async function getStakeFromEvent(receipt: ContractTransaction) {
@@ -134,7 +134,6 @@ export {
     timeMachine,
     parseDetailedStake,
     matchDetailedStakes,
-    matchPool,
     getTimestamp,
     getPoolFromEvent,
     getProposalHash,
