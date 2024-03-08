@@ -131,7 +131,7 @@ describe("Voting Power", function () {
 
     it('A user cannot delegate other accounts', async () => {
         const { fanToArtistStaking, addr1, addr2 } = await loadFixture(deploy);
-        expect(fanToArtistStaking.connect(addr1).delegate(addr2.address)).revertedWith("F2A: users cannot delegate other accounts.");
+        expect(fanToArtistStaking.connect(addr1).delegate(addr2.address)).revertedWith("FanToArtistStaking: users cannot delegate other accounts.");
     });
 
     it('A user cannot delegate other accounts with delegateBySig', async () => {
@@ -148,7 +148,7 @@ describe("Voting Power", function () {
         const signature = await addr1.signMessage(ethers.utils.arrayify(digest));
         const { v, r, s } = ethers.utils.splitSignature(signature);
 
-        await expect(fanToArtistStaking.delegateBySig(addr2.address, nonce, expiry, v, r, s)).to.revertedWith("F2A: users cannot delegate other accounts.");
+        await expect(fanToArtistStaking.delegateBySig(addr2.address, nonce, expiry, v, r, s)).to.revertedWith("FanToArtistStaking: users cannot delegate other accounts.");
 
     });
     

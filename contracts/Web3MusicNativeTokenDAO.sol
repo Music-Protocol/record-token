@@ -11,7 +11,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
 
     event ProposalCreated(
         uint256 indexed proposalId,
-        address proposer,
+        address indexed proposer,
         address[] targets,
         bytes[] calldatas,
         uint256 startTime,
@@ -175,7 +175,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             msg.sender,
             targets,
             calldatas,
-            _proposals[proposalId].timeStart,
+            block.timestamp,
             description
         );
     }
@@ -292,7 +292,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     ) external onlyOwner {
         require(
             whitelistedAddresses[target] != whitelist,
-            "F2A: already added/removed."
+            "DAO: already added/removed."
         );
         whitelistedAddresses[target] = whitelist;
         whitelist ? _membersNumber++ : _membersNumber--;

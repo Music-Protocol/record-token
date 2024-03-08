@@ -113,8 +113,8 @@ describe("Constructors", () => {
             .to.revertedWith("Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0")
 
         //CHANGE SMART CONTRACTS
-        await mng.changeFTAS(fta2.address);
-        await mng.changeWeb3MusicNativeToken(tok2.address);
+        await expect(mng.changeFTAS(fta2.address)).emit(mng, "FanToArtistStakingChanged").withArgs(fta2.address);
+        await expect(mng.changeWeb3MusicNativeToken(tok2.address)).emit(mng, "Web3MusicNativeTokenChanged").withArgs(tok2.address);;
         
         //ONLY OWNER CAN CHANGE SMART CONTRACTS
         await expect(mng.connect(artist1).changeFTAS(fta2.address))

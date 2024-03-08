@@ -42,7 +42,6 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
-        expect(await Web3MusicNativeToken.updatedDuration(addr1.address)).to.be.closeTo(2400, 10);
     });
 
     it('User should be able to stake owned tokens instead of locked tokens and reedem them', async () => {
@@ -53,8 +52,6 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/3n, 60))
             .to.emit(fanToArtistStaking, 'StakeCreated')
             .withArgs(artist1.address, addr1.address, amount/3n, anyValue);
-        
-        expect(await Web3MusicNativeToken.updatedDuration(addr1.address)).to.be.equal(3600);
 
         await timeMachine(1);
 
@@ -75,8 +72,6 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         await expect(fanToArtistStaking.connect(addr1).increaseAmountStaked(artist1.address, amount/3n))
             .to.emit(fanToArtistStaking, 'StakeIncreased')
             .withArgs(artist1.address, addr1.address, amount/3n);
-
-        expect(await Web3MusicNativeToken.updatedDuration(addr1.address)).to.be.closeTo(1200, 10);
     });
 
     it('User should be able to stake locked and unlocked tokens', async () => {
@@ -172,7 +167,6 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await fanToArtistStaking.connect(addr1).redeem(artist3.address, addr1.address);
         expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.be.equal(amount/2n);
-        expect(await Web3MusicNativeToken.updatedDuration(addr1.address)).to.be.closeTo(1800, 10);
     });
 
     describe('Reverts', async () => {

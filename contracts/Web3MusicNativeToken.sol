@@ -26,9 +26,16 @@ contract Web3MusicNativeToken is
         uint64 updatedDuration;
     }
 
-    event TokenReleased(address beneficiary, uint256 amount);
-
-    event TokenLocked(address beneficiary, uint256 amount);
+    event TokenReleased(address indexed beneficiary, uint256 amount);
+    event TokenLocked(address indexed beneficiary, uint256 amount);
+    event SenderReleasablePaymentUpdate(
+        uint256 indexed senderToken,
+        uint64 indexed senderUpdatedDuration
+    );
+    event RecipientReleasablePaymentUpdate(
+        uint256 indexed recipientToken,
+        uint64 indexed recipientUpdatedDuration
+    );
 
     //for the function callable only by FanToArtistStaking.sol
     modifier onlyStaking() {
@@ -54,7 +61,10 @@ contract Web3MusicNativeToken is
     }
 
     function renounceOwnership() public override(Ownable) onlyOwner {
-        require(false, "function disabled");
+        require(
+            false, 
+            "Web3MusicNativeToken: function disabled"
+        );
         super.renounceOwnership();
     }
 
@@ -108,6 +118,10 @@ contract Web3MusicNativeToken is
                             (debt * releasablePayments[from].duration) /
                                 releasablePayments[from].releasableBalance
                         );
+                        emit SenderReleasablePaymentUpdate(
+                            releasablePayments[from].tokens, 
+                            releasablePayments[from].updatedDuration
+                        );
                     }
                 }
             }
@@ -120,24 +134,28 @@ contract Web3MusicNativeToken is
                 //Calculating the possible debt:
                 uint256 debt = releasablePayments[to].releasableBalance -
                     releasablePayments[to].tokens;
-                //It checks if there is a debt and if this debt is greater or equal than amount:
-                if (debt > 0 && amount >= debt) {
-                    //Allocate tokens within releasable payment, only the amount of debit tokens are included in the gradual payment
-                    releasablePayments[to].tokens += debt; 
-                    //Update the duration
-                    releasablePayments[to].updatedDuration += uint64( 
-                        (debt * releasablePayments[to].duration) /
-                            releasablePayments[to].releasableBalance
-                    );
-                }
-                //It checks if there is a debt and if this debt is less than amount:
-                if (debt > 0 && amount < debt) {
-                    //Allocate tokens within releasable payment
-                    releasablePayments[to].tokens += amount;
-                    //Update the duration
-                    releasablePayments[to].updatedDuration += uint64( 
-                        (amount * releasablePayments[to].duration) /
-                            releasablePayments[to].releasableBalance
+                //It checks if there is a debt
+                if (debt > 0) { //It checks if there is a debt is greater or equal than amount:
+                    if (amount >= debt) {
+                        //Allocate tokens within releasable payment, only the amount of debit tokens are included in the gradual payment
+                        releasablePayments[to].tokens += debt; 
+                        //Update the duration
+                        releasablePayments[to].updatedDuration += uint64( 
+                            (debt * releasablePayments[to].duration) /
+                                releasablePayments[to].releasableBalance
+                        );
+                    } else { //If this debt is less than amount:
+                        //Allocate tokens within releasable payment
+                        releasablePayments[to].tokens += amount;
+                        //Update the duration
+                        releasablePayments[to].updatedDuration += uint64( 
+                            (amount * releasablePayments[to].duration) /
+                                releasablePayments[to].releasableBalance
+                        );
+                    }
+                    emit RecipientReleasablePaymentUpdate(
+                        releasablePayments[to].tokens, 
+                        releasablePayments[to].updatedDuration
                     );
                 }
             }

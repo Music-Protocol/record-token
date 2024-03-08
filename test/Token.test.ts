@@ -10,9 +10,6 @@ describe('Web3MusicNativeToken', () => {
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress,
     addr4: SignerWithAddress, artist1: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
 
-    const defVeReward = 10;
-    const defArtistReward = 10;
-
     before(async () => {
         [owner, addr1, addr2, addr3, addr4, artist1, fakeStaking, fakeDAO] = await ethers.getSigners();
 
@@ -42,7 +39,7 @@ describe('Web3MusicNativeToken', () => {
         });
 
         it('Should not be possible renounce to ownership', async () => {
-            await expect(Web3MusicNativeToken.connect(owner).renounceOwnership()).revertedWith("function disabled");
+            await expect(Web3MusicNativeToken.connect(owner).renounceOwnership()).revertedWith("Web3MusicNativeToken: function disabled");
         });
 
         it('User should not be possible to call renounceOwnership', async () => {

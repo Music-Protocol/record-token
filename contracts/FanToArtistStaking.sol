@@ -71,7 +71,6 @@ contract FanToArtistStaking is
     }
 
     ArtistReward[] private _artistReward;
-    // to track all the
 
     IWeb3MusicNativeToken private _Web3MusicNativeToken;
 
@@ -130,7 +129,7 @@ contract FanToArtistStaking is
                 rate: artistWeb3MusicNativeTokenRewardRate
             })
         );
-        __Ownable_init();
+        __Ownable2Step_init();
         __Votes_init();
         _minStakePeriod = min;
         _maxStakePeriod = max;
@@ -516,7 +515,7 @@ contract FanToArtistStaking is
     function _delegate(address account, address delegatee) internal override {
         require(
             _msgSender() == delegatee,
-            "F2A: users cannot delegate other accounts."
+            "FanToArtistStaking: users cannot delegate other accounts."
         );
         super._delegate(account, delegatee);
     }

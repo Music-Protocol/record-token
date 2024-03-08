@@ -159,9 +159,9 @@ describe("DAO whitelist mode", function () {
     });
 
     it('Owner should not be able to add/remove users already added/removed', async() => {
-        await expect(dao.connect(owner).manageWhitelist(users[0].address, true)).revertedWith("F2A: already added/removed.");
+        await expect(dao.connect(owner).manageWhitelist(users[0].address, true)).revertedWith("DAO: already added/removed.");
         await dao.connect(owner).manageWhitelist(users[1].address, false);
-        await expect(dao.connect(owner).manageWhitelist(users[1].address, false)).revertedWith("F2A: already added/removed.");
+        await expect(dao.connect(owner).manageWhitelist(users[1].address, false)).revertedWith("DAO: already added/removed.");
     })
 
     it('Proposals created while the whitelist was empty should not be executed. ', async() => {
