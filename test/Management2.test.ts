@@ -1,7 +1,7 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { ethers, web3 } from 'hardhat';
+import { ethers, web3, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNativeTokenManagement__factory } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine } from './utils/utils';
@@ -20,8 +20,7 @@ describe("TGE Management", function () {
         const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        const fanToArtistStaking = await FTAS.deploy();
-        await fanToArtistStaking.deployed();
+        const fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         const Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address) as Web3MusicNativeToken;

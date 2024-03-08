@@ -1,5 +1,5 @@
 import { expect, use } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades} from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
@@ -36,7 +36,7 @@ describe('Stake Simulation', () => {
         users = signers.slice(7, 20);
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        ftas = await FTAS.deploy();
+        ftas= await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
         await ftas.deployed();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');

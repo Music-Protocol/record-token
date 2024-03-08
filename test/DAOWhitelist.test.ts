@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from 'chai';
-import { ethers, network, web3 } from 'hardhat';
+import { ethers, network, web3, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNetworkDAO } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine } from './utils/utils';
@@ -34,7 +34,7 @@ describe("DAO whitelist mode", function () {
         }, []);
 
         FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy();
+        fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
         await fanToArtistStaking.deployed();
 
         cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');

@@ -1,8 +1,8 @@
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 
 async function deployFTA() {
     const factoryFtas = await ethers.getContractFactory('FanToArtistStaking');
-    let fanToArtistStaking = await factoryFtas.deploy();
+    const fanToArtistStaking = await upgrades.deployProxy(factoryFtas, [], {initializer: false, kind: 'uups', timeout: 180000});
     console.log("FTA deploy");
     await fanToArtistStaking.deployed();
     console.log("FTA deployed");

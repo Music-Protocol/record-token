@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
@@ -12,7 +13,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 contract FanToArtistStaking is
     IFanToArtistStaking,
     Ownable2StepUpgradeable,
-    VotesUpgradeable
+    VotesUpgradeable,
+    UUPSUpgradeable
 {
     using Math for uint256;
 
@@ -90,6 +92,11 @@ contract FanToArtistStaking is
     uint256 private REWARD_LIMIT;
     uint256 private CHANGE_REWARD_LIMIT;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         address Web3MusicNativeToken_,
         uint256 artistWeb3MusicNativeTokenRewardRate,
@@ -160,7 +167,7 @@ contract FanToArtistStaking is
         uint accumulator = 0;
         if (
             _artistCheckpoints[artist].tokenAmount != 0 &&
-            _verifiedArtists[artist]    //The artist accumulates tokens only if he is verified
+            _verifiedArtists[artist] //The artist accumulates tokens only if he is verified
         ) {
             for (
                 uint i = 0;
@@ -503,4 +510,8 @@ contract FanToArtistStaking is
         );
         super._delegate(account, delegatee);
     }
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal virtual override onlyOwner {}
 }

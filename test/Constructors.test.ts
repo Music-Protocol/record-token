@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { ethers, web3 } from "hardhat";
+import { ethers, web3, upgrades } from "hardhat";
 
 const calldata = web3.eth.abi.encodeFunctionCall({
     name: 'acceptOwnership',
@@ -28,9 +28,9 @@ describe("Constructors", () => {
     }
 
     it("FanToArtistStaking", async () => {
-        const { FTA, TOK, defArtistReward } = await loadFixture(deploy);
+        const { FTA, TOK, defArtistReward, owner } = await loadFixture(deploy);
 
-        const fta = await FTA.deploy();
+        const fta = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
         await fta.deployed();
 
         const tok = await TOK.deploy(fta.address);
@@ -53,9 +53,9 @@ describe("Constructors", () => {
     });
 
     it("Web3MusicNetworkDAO", async () => {
-        const { FTA, TOK, DAO, defArtistReward} = await loadFixture(deploy);
+        const { FTA, TOK, DAO, defArtistReward, owner} = await loadFixture(deploy);
 
-        const fta = await FTA.deploy();
+        const fta = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
         await fta.deployed();
 
         const tok = await TOK.deploy(fta.address);
@@ -77,10 +77,10 @@ describe("Constructors", () => {
     it("Web3MusicNativeTokenManagement", async () => {
         const { owner, FTA, TOK, MNG, artist1, defArtistReward} =  await loadFixture(deploy);
 
-        const fta1 = await FTA.deploy();
+        const fta1 = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
         await fta1.deployed();
 
-        const fta2 = await FTA.deploy();
+        const fta2 = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
         await fta2.deployed();
 
         const tok1 = await TOK.deploy(fta1.address);

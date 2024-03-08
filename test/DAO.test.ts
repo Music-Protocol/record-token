@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect, use } from "chai";
 import { ContractTransaction } from "@ethersproject/contracts";
-import { ethers, web3 } from "hardhat";
+import { ethers, web3, upgrades } from "hardhat";
 import {
   Web3MusicNetworkDAO,
   Web3MusicNativeToken,
@@ -29,7 +29,7 @@ describe("DAO", () => {
     users = signers.slice(7, 20);
 
     const FTAS = await ethers.getContractFactory("FanToArtistStaking");
-    fanToArtistStaking = await FTAS.deploy();
+    fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
     await fanToArtistStaking.deployed();
 
     const cWeb3MusicNativeToken = await ethers.getContractFactory(

@@ -7,6 +7,8 @@ import "hardhat-gas-reporter";
 import "@typechain/hardhat";
 import 'solidity-coverage'
 import "@nomiclabs/hardhat-web3";
+import "@nomiclabs/hardhat-ethers";
+import "@openzeppelin/hardhat-upgrades";
 
 require("dotenv").config();
 
@@ -33,7 +35,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-     "sepolia": "API_KEY"
+      "sepolia": "API_KEY"
     },
     customChains: [
       {

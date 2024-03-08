@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
@@ -10,19 +10,19 @@ describe('FanToArtistStaking', () => {
     let Web3MusicNativeToken: Web3MusicNativeToken;
     let fanToArtistStaking: FanToArtistStaking;
     let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, artist1: SignerWithAddress, artist2: SignerWithAddress, artist3: SignerWithAddress;
-
     const defArtistReward = 10;
 
     before(async () => {
         [owner, addr1, addr2, addr3, artist1, artist2, artist3] = await ethers.getSigners();
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await FTAS.deploy();
+        fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as FanToArtistStaking;
         await fanToArtistStaking.deployed();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
         Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address);
         await Web3MusicNativeToken.deployed();
+        
         await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, 10, 86400, 3, 10);
     });
 
@@ -89,7 +89,7 @@ describe('FanToArtistStaking', () => {
             const amount = BigNumber.from(10).pow(20);
             const time = 50;
             times.push(time);
-            await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
+            await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);
@@ -119,7 +119,7 @@ describe('FanToArtistStaking', () => {
         it('Should be able to stake again', async () => {
             const amount = BigNumber.from(10).pow(20);
             const time = 86400;
-            await expect( Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
+            await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
             await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount, time))
                 .to.emit(fanToArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);

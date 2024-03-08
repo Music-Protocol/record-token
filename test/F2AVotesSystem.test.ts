@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken} from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine } from './utils/utils';
@@ -15,7 +15,7 @@ describe("Voting Power", function () {
         const blockBefore = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
 
         const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        const fanToArtistStaking = await FTAS.deploy() as FanToArtistStaking;
+        const fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
         await fanToArtistStaking.deployed();
 
         const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
