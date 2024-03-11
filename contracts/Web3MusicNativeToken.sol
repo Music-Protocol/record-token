@@ -12,10 +12,10 @@ contract Web3MusicNativeToken is
     Ownable2Step,
     Pausable
 {
-    uint256 max_mint = 1000000000000000000000000000;
-    uint256 minted = 0;
+    uint256 private constant MAX_MINT = 1000000000000000000000000000;
+    uint256 public minted = 0;
     address private immutable _fanToArtistStaking;
-    mapping(address => ReleasablePayment) releasablePayments;
+    mapping(address => ReleasablePayment) public releasablePayments;
 
     struct ReleasablePayment {
         uint256 releasableBalance;
@@ -80,7 +80,7 @@ contract Web3MusicNativeToken is
         address from,
         address to,
         uint256 amount
-    ) internal override whenNotPaused {
+    ) internal virtual override whenNotPaused {
 
         //Sender address has enough tokens
         if (balanceOf(from) >= amount) {
@@ -88,7 +88,7 @@ contract Web3MusicNativeToken is
             //Sender address has received a phased release of tokens
             if (releasablePayments[from].releasableBalance > 0) {
 
-                release(from); //Release of earned tokens
+                _release(from); //Release of earned tokens
 
                 //It's not a mint, it's not a stake and it's not a redeem: TRANSFER
                 if (from != address(0) && to != _fanToArtistStaking && from != _fanToArtistStaking) {
@@ -166,8 +166,8 @@ contract Web3MusicNativeToken is
 
     function mint(address to, uint256 amount) external override onlyOwner {
         require(
-            minted + amount <= max_mint,
-            "Web3MusicNativeToken: Maximum limit of minable tokens reached"
+            minted + amount <= MAX_MINT,
+            "Web3MusicNativeToken: Maximum limit of mintable tokens reached"
         );
         minted += amount;
         _mint(to, amount);
@@ -188,8 +188,8 @@ contract Web3MusicNativeToken is
             "Web3MusicNativeToken: Releasable payment already used."
         );
         require(
-            minted + _amount <= max_mint,
-            "Web3MusicNativeToken: Maximum limit of minable tokens reached"
+            minted + _amount <= MAX_MINT,
+            "Web3MusicNativeToken: Maximum limit of mintable tokens reached"
         );
         require(
             _start >= block.timestamp, 
@@ -258,14 +258,7 @@ contract Web3MusicNativeToken is
         emit TokenLocked(_beneficiary, _amount);
     }
 
-    //Test Function
-    function updatedDuration(
-        address beneficiary
-    ) public view returns (uint256) {
-        return releasablePayments[beneficiary].updatedDuration;
-    }
-
-    function release(address beneficiary) internal {
+    function _release(address beneficiary) internal {
         uint256 amount = releasable(beneficiary);
         releasablePayments[beneficiary].released += amount;
         emit TokenReleased(beneficiary, amount);

@@ -5,10 +5,9 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "./interfaces/IWeb3MusicNativeToken.sol";
 import "./interfaces/IFanToArtistStaking.sol";
-import "hardhat/console.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract FanToArtistStaking is
     IFanToArtistStaking,
@@ -16,7 +15,7 @@ contract FanToArtistStaking is
     VotesUpgradeable,
     UUPSUpgradeable
 {
-    using Math for uint256;
+    using MathUpgradeable for uint256;
 
     event ArtistAdded(address indexed artist, address indexed sender);
     event ArtistRemoved(address indexed artist, address indexed sender);
@@ -42,7 +41,7 @@ contract FanToArtistStaking is
     event StakeIncreased(
         address indexed artist,
         address indexed sender,
-        uint amount
+        uint256 amount
     );
     event StakeChangedArtist(
         address indexed artist,
@@ -50,7 +49,7 @@ contract FanToArtistStaking is
         address indexed newArtist
     );
 
-    event newRewardLimit(uint oldlimit, uint newlimit);
+    event newRewardLimit(uint256 oldlimit, uint256 newlimit);
 
     struct Stake {
         uint256 amount;
@@ -83,13 +82,13 @@ contract FanToArtistStaking is
 
     mapping(address => bool) private _verifiedArtists; // 0 never added | 1 addedd | else is the timestamp of removal
 
-    uint40 private _minStakePeriod; //change onylOwner
-    uint40 private _maxStakePeriod; //change onylOwner
+    uint40 private _minStakePeriod;
+    uint40 private _maxStakePeriod;
 
     mapping(address => uint256) private _votingPower;
 
-    uint256 private REWARD_LIMIT;
-    uint256 private CHANGE_REWARD_LIMIT;
+    uint256 private _rewardLimit;
+    uint256 private _changeRewardLimit;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -101,8 +100,8 @@ contract FanToArtistStaking is
         uint256 artistWeb3MusicNativeTokenRewardRate,
         uint40 min,
         uint40 max,
-        uint limit_,
-        uint changeRewardLimit_
+        uint256 limit_,
+        uint256 changeRewardLimit_
     ) public initializer {
         require(
             Web3MusicNativeToken_ != address(0),
@@ -133,8 +132,8 @@ contract FanToArtistStaking is
         __Votes_init();
         _minStakePeriod = min;
         _maxStakePeriod = max;
-        REWARD_LIMIT = limit_;
-        CHANGE_REWARD_LIMIT = changeRewardLimit_;
+        _rewardLimit = limit_;
+        _changeRewardLimit = changeRewardLimit_;
     }
 
     modifier onlyVerifiedArtist(address artist) {
@@ -171,14 +170,14 @@ contract FanToArtistStaking is
         uint256 amount,
         bool isAdd
     ) internal {
-        uint accumulator = 0;
+        uint256 accumulator = 0;
         if (
             _artistCheckpoints[artist].tokenAmount != 0 &&
             _verifiedArtists[artist] //The artist accumulates tokens only if he is verified
         ) {
             for (
-                uint i = 0;
-                i < REWARD_LIMIT && _artistReward.length - i > 0;
+                uint256 i = 0;
+                i < _rewardLimit && _artistReward.length - i > 0;
                 i++
             ) {
                 uint256 index = _artistReward.length - i - 1;
@@ -228,7 +227,7 @@ contract FanToArtistStaking is
         );
         require(
             _artistReward[_artistReward.length - 1].start +
-                CHANGE_REWARD_LIMIT <=
+                _changeRewardLimit <=
                 block.timestamp,
             "FanToArtistStaking: the artist reward cannot be changed yet"
         );
@@ -247,10 +246,10 @@ contract FanToArtistStaking is
         );
     }
 
-    function changeArtistRewardLimit(uint limit_) external onlyOwner {
-        uint oldlimit = REWARD_LIMIT;
-        REWARD_LIMIT = limit_;
-        emit newRewardLimit(oldlimit, REWARD_LIMIT);
+    function changeArtistRewardLimit(uint256 limit_) external onlyOwner {
+        uint256 oldlimit = _rewardLimit;
+        _rewardLimit = limit_;
+        emit newRewardLimit(oldlimit, _rewardLimit);
     }
 
     function getArtistRewardRate() external view returns (uint256) {
@@ -302,7 +301,7 @@ contract FanToArtistStaking is
             artists.length == amounts.length && amounts.length == ends.length,
             "FanToArtistStaking: calldata format error"
         );
-        for (uint i = 0; i < artists.length; i++) {
+        for (uint256 i = 0; i < artists.length; i++) {
             stake(artists[i], amounts[i], ends[i]);
         }
     }

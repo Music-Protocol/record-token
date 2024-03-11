@@ -94,7 +94,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     function addArtist(
         address[] calldata artist
     ) external onlyRole(VERIFY_ARTIST_ROLE) {
-        for (uint i = 0; i < artist.length; i++) {
+        for (uint256 i = 0; i < artist.length; i++) {
             _ftas.addArtist(artist[i], _msgSender());
         }
     }
@@ -102,7 +102,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     function removeArtist(
         address[] calldata artist
     ) external onlyRole(REMOVE_ARTIST_ROLE) {
-        for (uint i = 0; i < artist.length; i++) {
+        for (uint256 i = 0; i < artist.length; i++) {
             _ftas.removeArtist(artist[i], _msgSender());
         }
     }

@@ -169,6 +169,40 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.be.equal(amount/2n);
     });
 
+    it('_beforeTokenTransfer should emit an event when it modify a releasablePayment during stake', async () => {
+        const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, amount} = await loadFixture(deploy);
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
+        
+        const tx = await fanToArtistStaking.connect(addr1).stake(artist1.address, amount/2n, 120)
+        const rx = await tx.wait()
+        const data = rx.logs[3].data;
+        const topics = rx.logs[3].topics;
+        const event = Web3MusicNativeToken.interface.decodeEventLog("SenderReleasablePaymentUpdate", data, topics);
+        expect(event.senderToken).closeTo(amount/2n, 1n*10n**18n); //1 token tolerance
+        expect(event.senderUpdatedDuration).closeTo(1800, 5); //5 seconds tolerance
+    });
+
+    it('_beforeTokenTransfer should emit an event when it modify a releasablePayment during redeem', async () => {
+        const { Web3MusicNativeToken, fanToArtistStaking, addr1, artist1, artist3, amount} = await loadFixture(deploy);
+        await expect(Web3MusicNativeToken.connect(addr1).approve(fanToArtistStaking.address, amount));
+        await expect(fanToArtistStaking.connect(addr1).stake(artist1.address, amount/2n, 120))
+            .to.emit(fanToArtistStaking, 'StakeCreated')
+            .withArgs(artist1.address, addr1.address, amount/2n, anyValue);
+        await expect(fanToArtistStaking.connect(addr1).stake(artist3.address, amount/2n, 120))
+            .to.emit(fanToArtistStaking, 'StakeCreated')
+            .withArgs(artist3.address, addr1.address, amount/2n, anyValue);
+
+        await timeMachine(2);
+
+        const tx = await fanToArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
+        const rx = await tx.wait()
+        const data = rx.logs[0].data;
+        const topics = rx.logs[0].topics;
+        const event = Web3MusicNativeToken.interface.decodeEventLog("RecipientReleasablePaymentUpdate", data, topics);
+        expect(event.recipientToken).closeTo(amount/2n, 1n*10n**18n); //1 token tolerance
+        expect(event.recipientUpdatedDuration).closeTo(1800, 5); //5 seconds tolerance
+    });
+
     describe('Reverts', async () => {
 
         it('User should not be able to stake more than him balance', async () =>  {

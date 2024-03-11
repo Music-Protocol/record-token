@@ -29,10 +29,10 @@ describe("Hardcap", function () {
         await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, 1000000000000000000000000000n)).emit(Web3MusicNativeToken, "Transfer");
 
         await expect(Web3MusicNativeToken.connect(owner).mint(owner.address, 1))
-            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of minable tokens reached") 
+            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of mintable tokens reached") 
 
         await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(owner.address, 1, await getTimestamp(), 3600))
-            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of minable tokens reached") 
+            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of mintable tokens reached") 
     });
 
     it('Pay has no limit', async () => {
@@ -42,7 +42,7 @@ describe("Hardcap", function () {
             .emit(Web3MusicNativeToken, "Transfer");
 
         await expect(Web3MusicNativeToken.connect(owner).mint(addr1.address, 1))
-            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of minable tokens reached");
+            .to.be.revertedWith("Web3MusicNativeToken: Maximum limit of mintable tokens reached");
 
         await expect(fanToArtistStaking.addArtist(artist1.address, owner.address))
             .to.emit(fanToArtistStaking, 'ArtistAdded')

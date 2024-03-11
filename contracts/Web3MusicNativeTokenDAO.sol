@@ -42,9 +42,10 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     mapping(uint256 => Proposal) private _proposals;
     mapping(uint256 => mapping(address => bool)) private _votes; //hash collision of keccack256
 
-    mapping(address => bool) whitelistedAddresses;
-    bool whitelistEnabled;
+    mapping(address => bool) public whitelistedAddresses;
+    bool public whitelistEnabled;
 
+    uint128 private immutable _maxValue = 10e8;
     uint128 private immutable _quorum; // 0 to 10e8
     uint128 private immutable _majority; // 0 to 10e8
     uint128 private immutable _timeVotes;
@@ -68,11 +69,11 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             "DAO: the voting time for a proposal must be at least 10 minutes"
         );
         require(
-            quorum_ <= 10e8,
+            quorum_ <= _maxValue,
             "DAO: the quorum must be less than or equal 10e8"
         );
         require(
-            majority_ <= 10e8,
+            majority_ <= _maxValue,
             "DAO: the majority must be less than or equal 10e8"
         );
         _ftas = IFanToArtistStaking(ftas_);
@@ -94,21 +95,21 @@ contract Web3MusicNetworkDAO is Ownable2Step {
                 _proposals[proposalId].proposalVoters >
                 uint256(_quorum).mulDiv(
                     _proposals[proposalId].maxProposalMembers,
-                    10e8
+                    _maxValue
                 );
         }
         if (block.number == _proposals[proposalId].blockNumber) {
             return
                 (_proposals[proposalId].votesFor +
                     _proposals[proposalId].votesAgainst) >
-                uint256(_quorum).mulDiv(_ftas.getTotalSupply(), 10e8);
+                uint256(_quorum).mulDiv(_ftas.getTotalSupply(), _maxValue);
         }
         return
             (_proposals[proposalId].votesFor +
                 _proposals[proposalId].votesAgainst) >
             uint256(_quorum).mulDiv(
                 _ftas.getPastTotalSupply(_proposals[proposalId].blockNumber),
-                10e8
+                _maxValue
             );
     }
 
@@ -125,7 +126,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             uint256(_majority).mulDiv(
                 (_proposals[proposalId].votesFor +
                     _proposals[proposalId].votesAgainst),
-                10e8
+                _maxValue
             );
     }
 
@@ -196,34 +197,36 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             keccak256(bytes(description))
         );
 
+        Proposal storage proposal = _proposals[proposalId];
+
         require(
-            _proposals[proposalId].timeStart != 0,
+            proposal.timeStart != 0,
             "DAO: proposal not found"
         );
         require(
-            block.timestamp < _proposals[proposalId].timeStart + _timeVotes,
+            block.timestamp < proposal.timeStart + _timeVotes,
             "DAO: proposal expired"
         );
 
         uint256 hashVote = uint256(
-            keccak256(abi.encode(proposalId, _proposals[proposalId].timeStart))
+            keccak256(abi.encode(proposalId, proposal.timeStart))
         );
         require(!_votes[hashVote][msg.sender], "DAO: already voted");
 
         uint256 amount;
-        if (block.number == _proposals[proposalId].blockNumber) {
+        if (block.number == proposal.blockNumber) {
             amount = _ftas.getVotes(msg.sender);
         } else {
             amount = _ftas.getPastVotes(
                 msg.sender,
-                _proposals[proposalId].blockNumber
+                proposal.blockNumber
             );
         }
 
-        if (isFor) _proposals[proposalId].votesFor += amount;
-        else _proposals[proposalId].votesAgainst += amount;
+        if (isFor) proposal.votesFor += amount;
+        else proposal.votesAgainst += amount;
 
-        _proposals[proposalId].proposalVoters += 1;
+        proposal.proposalVoters += 1;
         _votes[hashVote][msg.sender] = true;
 
         emit ProposalVoted(proposalId, msg.sender, amount, isFor);
