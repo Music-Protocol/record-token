@@ -165,7 +165,11 @@ describe('Web3MusicNativeToken', () => {
 
         it('Owner should be able to use transfer_and_lock', async() => {
             await Web3MusicNativeToken.connect(owner).mint(owner.address, 100);
-            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr2.address, 100, await getTimestamp(), 3600))
+            //If you want to transfer_and_block through the token contract, you need to approve the amount of tokens at your address
+            await expect(Web3MusicNativeToken.connect(owner).approve(owner.address, 100))
+                .to.emit(Web3MusicNativeToken, "Approval")
+                .withArgs(owner.address, owner.address, 100);
+            await expect(Web3MusicNativeToken.transfer_and_lock(owner.address, addr2.address, 100, await getTimestamp(), 3600))
                 .to.emit(Web3MusicNativeToken, 'Transfer')
                 .withArgs(owner.address, addr2.address, 100);
         });
@@ -174,7 +178,8 @@ describe('Web3MusicNativeToken', () => {
             await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 100, await getTimestamp(), 3600))
                 .to.revertedWith('Web3MusicNativeToken: Releasable payment already used.');
             await Web3MusicNativeToken.connect(owner).mint(owner.address, 100);
-            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 100, await getTimestamp(), 3600))
+            await Web3MusicNativeToken.connect(owner).approve(owner.address, 100);
+            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(owner.address, addr1.address, 100, await getTimestamp(), 3600))
                 .to.revertedWith('Web3MusicNativeToken: Releasable payment already used.');
             await Web3MusicNativeToken.connect(owner).burn(100);
         });

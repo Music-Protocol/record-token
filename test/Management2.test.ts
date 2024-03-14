@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from 'chai';
-import { ethers, web3, upgrades } from 'hardhat';
+import { ethers, web3, upgrades, Web3 } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken } from '../typechain-types/index';
 import { getTimestamp, timeMachine } from './utils/utils';
 
@@ -133,10 +133,34 @@ describe("TGE Management", function () {
         await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
         await Web3MusicNativeTokenManagement.connect(owner).mint(owner.address, 1n);
         await Web3MusicNativeToken.connect(owner).approve(Web3MusicNativeTokenManagement.address, 1n);
-
-        expect(await Web3MusicNativeTokenManagement.connect(owner).transfer_and_lock(addr1.address, 1n, await getTimestamp(), 3600))
+        expect(await Web3MusicNativeTokenManagement.connect(owner).transfer_and_lock(owner.address, addr1.address, 1n, await getTimestamp(), 3600))
             .to.emit(Web3MusicNativeToken, 'TokenLocked')
             .withArgs(addr1.address, 1n);
+    });
+
+    it("transfer_and_lock is available by admin, if someone approve the tokens he can use them", async () => {
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, addr2, artist1 } = await loadFixture(deploy);
+
+        await Web3MusicNativeTokenManagement.connect(owner).addArtist([artist1.address]);
+        await Web3MusicNativeTokenManagement.mint(addr1.address, 100n);
+        //An address can approve a transfer to the management, then the management can create a transfer_and_lock.
+        await Web3MusicNativeToken.connect(addr1).approve(Web3MusicNativeTokenManagement.address, 100n);
+        expect(await Web3MusicNativeTokenManagement.transfer_and_lock(addr1.address ,addr2.address, 100n, await getTimestamp(), 3600))
+            .to.emit(Web3MusicNativeToken, 'TokenLocked')
+            .withArgs(addr1.address, addr2.address, 100n);
+    });
+
+    it("transfer_and_lock is available by TGE admin", async () => {
+        const { Web3MusicNativeTokenManagement, Web3MusicNativeToken, owner, addr1, addr2, artist1, tgeRole} = await loadFixture(deploy);
+
+        await Web3MusicNativeTokenManagement.addArtist([artist1.address]);
+        await Web3MusicNativeTokenManagement.grantRole(tgeRole, addr1.address);
+        await Web3MusicNativeTokenManagement.mint(addr1.address, 100n);
+        //An address can approve a transfer to the management, then the management can create a transfer_and_lock.
+        await Web3MusicNativeToken.connect(addr1).approve(Web3MusicNativeTokenManagement.address, 100n);
+        expect(await Web3MusicNativeTokenManagement.connect(addr1).transfer_and_lock(addr1.address ,addr2.address, 100n, await getTimestamp(), 3600))
+            .to.emit(Web3MusicNativeToken, 'TokenLocked')
+            .withArgs(addr1.address, addr2.address, 100n);
     });
 
     it("Owner should be able to change artist reward rate", async () => {
@@ -155,7 +179,7 @@ describe("TGE Management", function () {
         it("transfer_and_lock", async () => {
             const { Web3MusicNativeTokenManagement, addr1, tgeRole } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeTokenManagement.connect(addr1).transfer_and_lock(addr1.address, 1n, await getTimestamp(), 3600))
+            await expect(Web3MusicNativeTokenManagement.connect(addr1).transfer_and_lock(addr1.address, addr1.address, 1n, await getTimestamp(), 3600))
                 .to.be.revertedWith(`AccessControl: account ${addr1.address.toLowerCase()} is missing role ${tgeRole}`);
         });
 

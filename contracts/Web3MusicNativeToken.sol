@@ -27,7 +27,7 @@ contract Web3MusicNativeToken is
     }
 
     event TokenReleased(address indexed beneficiary, uint256 amount);
-    event TokenLocked(address indexed beneficiary, uint256 amount);
+    event TokenLocked(address indexed sender, address indexed beneficiary, uint256 amount);
     event SenderReleasablePaymentUpdate(
         uint256 indexed senderToken,
         uint64 indexed senderUpdatedDuration
@@ -209,7 +209,7 @@ contract Web3MusicNativeToken is
         );
         minted += _amount;
         _mint(_beneficiary, _amount);
-        emit TokenLocked(_beneficiary, _amount);
+        emit TokenLocked(address(0), _beneficiary, _amount);
     }
 
     function burn(uint256 amount) external override onlyOwner {
@@ -225,6 +225,7 @@ contract Web3MusicNativeToken is
     }
 
     function transfer_and_lock(
+        address _from,
         address _beneficiary,
         uint256 _amount,
         uint64 _start,
@@ -254,8 +255,8 @@ contract Web3MusicNativeToken is
             _duration,
             _duration
         );
-        transfer(_beneficiary, _amount);
-        emit TokenLocked(_beneficiary, _amount);
+        transferFrom(_from, _beneficiary, _amount);
+        emit TokenLocked(_from, _beneficiary, _amount);
     }
 
     function _release(address beneficiary) internal {
