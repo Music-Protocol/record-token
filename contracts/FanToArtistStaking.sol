@@ -513,7 +513,7 @@ contract FanToArtistStaking is
     //When a DAO member want to vote he must delegate himself
     function _delegate(address account, address delegatee) internal override {
         require(
-            _msgSender() == delegatee,
+            account == delegatee,
             "FanToArtistStaking: users cannot delegate other accounts."
         );
         super._delegate(account, delegatee);
