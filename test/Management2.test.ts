@@ -219,7 +219,7 @@ describe("TGE Management", function () {
                 .to.emit(dao, 'UserWhitelisted').withArgs(addr1.address, true);
             await expect(dao.connect(addr1).propose([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner."))
                 .to.emit(dao, "ProposalCreated");
-            await expect(dao.connect(addr1).vote([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner.", true))
+            await expect(dao.connect(addr1).vote([Web3MusicNativeToken.address], [daoCalldata4], 1, "Mint 1000 to owner.", true))
                 .to.emit(dao, "ProposalVoted");
         })
         describe("Reverts", async () => {
@@ -231,7 +231,7 @@ describe("TGE Management", function () {
                     .to.emit(dao, 'UserWhitelisted').withArgs(addr1.address, true);
                 await expect(dao.connect(addr1).propose([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner."))
                     .to.emit(dao, "ProposalCreated");
-                await expect(dao.connect(addr2).vote([Web3MusicNativeToken.address], [daoCalldata4], "Mint 1000 to owner.", true))
+                await expect(dao.connect(addr2).vote([Web3MusicNativeToken.address], [daoCalldata4], 1, "Mint 1000 to owner.", true))
                     .to.revertedWith('DAO: user not whitelisted')
             });
         });

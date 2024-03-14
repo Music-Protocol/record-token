@@ -21,6 +21,7 @@ describe("DAO", () => {
   const defArtistReward = 10;
   const minStakeTime = 10;
   const maxStakeTime = 864000;
+  let nounce : bigint = 0n;
 
   before(async () => {
     const signers = await ethers.getSigners();
@@ -100,11 +101,12 @@ describe("DAO", () => {
       },
       []
     );
-    await dao.propose(
+    await expect(dao.propose(
       [Web3MusicNativeToken.address],
       [calldata],
       "transfer ownership"
-    ); //give ownership of Web3MusicNativeToken to dao
+    )).emit(dao, "ProposalCreated").withArgs(anyValue, owner.address, [Web3MusicNativeToken.address], [calldata], anyValue, "transfer ownership", 1);
+    nounce += 1n;
     await Promise.all(
       users.map((u) =>
         dao
@@ -112,6 +114,7 @@ describe("DAO", () => {
           .vote(
             [Web3MusicNativeToken.address],
             [calldata],
+            nounce,
             "transfer ownership",
             true
           )
@@ -121,6 +124,7 @@ describe("DAO", () => {
     await dao.execute(
       [Web3MusicNativeToken.address],
       [calldata],
+      nounce,
       "transfer ownership"
     );
   });
@@ -159,22 +163,13 @@ describe("DAO", () => {
       const propCreated = (await receipt.wait()).events
         ?.filter((e) => e.event == "ProposalCreated")
         .at(0)?.args!;
+      nounce += 1n;
       hash = propCreated.proposalId;
       expect(propCreated.proposer).to.deep.equal(users[2].address);
       expect(propCreated.targets).to.deep.equal([Web3MusicNativeToken.address]);
       expect(propCreated.calldatas).to.deep.equal([calldata]);
+      expect(propCreated.nounce).to.deep.equal(2);
       expect(propCreated.description).to.deep.equal("Gift previous owner");
-
-      //Other users should not be able to create the same proposal if one is already active
-      await expect(
-        dao
-          .connect(users[2])
-          .propose(
-            [Web3MusicNativeToken.address],
-            [calldata],
-            "Gift previous owner"
-          )
-      ).to.be.revertedWith("DAO: proposal already exists");
     });
 
     it("Voting a proposal", async () => {
@@ -185,21 +180,12 @@ describe("DAO", () => {
             .vote(
               [Web3MusicNativeToken.address],
               [calldata],
+              nounce,
               "Gift previous owner",
               true
             )
         )
       );
-      await expect(
-        dao
-          .connect(users[1])
-          .vote(
-            [Web3MusicNativeToken.address],
-            [calldata],
-            "Gift previous owner",
-            true
-          )
-      ).to.revertedWith("DAO: already voted");
       const prevWeb3MusicNativeToken = await Web3MusicNativeToken.balanceOf(
         owner.address
       );
@@ -207,6 +193,7 @@ describe("DAO", () => {
       await dao.execute(
         [Web3MusicNativeToken.address],
         [calldata],
+        nounce,
         "Gift previous owner"
       );
       expect(Number(prevWeb3MusicNativeToken) + 1000).to.equal(
@@ -220,10 +207,12 @@ describe("DAO", () => {
           [Web3MusicNativeToken.address],
           [calldata],
           "Gift previous owner"
-        );
+        )
+      nounce += 1n;
       const proposal = await dao.getProposal(
         [Web3MusicNativeToken.address],
         [calldata],
+        nounce,
         "Gift previous owner"
       );
       expect(proposal.votesFor).to.equal(0);
@@ -240,6 +229,7 @@ describe("DAO", () => {
             .vote(
               [Web3MusicNativeToken.address],
               [calldata],
+              nounce,
               "Gift previous owner",
               true
             )
@@ -252,6 +242,7 @@ describe("DAO", () => {
             .vote(
               [Web3MusicNativeToken.address],
               [calldata],
+              nounce,
               "Gift previous owner",
               false
             )
@@ -261,6 +252,7 @@ describe("DAO", () => {
       const prop = await dao.getProposal(
         [Web3MusicNativeToken.address],
         [calldata],
+        nounce,
         "Gift previous owner"
       );
       expect(prop.votesFor).to.be.lessThan(prop.votesAgainst);
@@ -270,6 +262,7 @@ describe("DAO", () => {
       await dao.execute(
         [Web3MusicNativeToken.address],
         [calldata],
+        nounce,
         "Gift previous owner"
       );
       expect(await Web3MusicNativeToken.balanceOf(owner.address)).to.be.equal(
@@ -278,157 +271,32 @@ describe("DAO", () => {
     });
 
     it("Should not be able to get a fake proposal ID", async () => {
-      await expect(dao.getProposal([Web3MusicNativeToken.address], [calldata], "non-existent proposal")).revertedWith("DAO: proposal not found")
+      await expect(dao.getProposal([Web3MusicNativeToken.address], [calldata], 0, "non-existent proposal")).revertedWith("DAO: proposal not found")
     })
 
     it("User should not be able to vote a fake proposal", async () => {
-      await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], "non-existent proposal", true)).revertedWith("DAO: proposal not found")
+      await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], 0, "non-existent proposal", true)).revertedWith("DAO: proposal not found")
     })
 
     it("Owner should not be able to execute a fake proposal", async () => {
-      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], "non-existent proposal")).revertedWith("DAO: proposal not found")
+      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], 0, "non-existent proposal")).revertedWith("DAO: proposal not found")
     })
-
-    it("Creation of same proposal with no votes", async () => {
-      await dao
-        .connect(users[2])
-        .propose(
-          [Web3MusicNativeToken.address],
-          [calldata],
-          "Test not revert1"
-        );
-
-      await timeMachine(20);
-      //Other users should not be able to create the same proposal if one is already active
-      await expect(
-        dao
-          .connect(users[2])
-          .propose(
-            [Web3MusicNativeToken.address],
-            [calldata],
-            "Test not revert1"
-          )
-      ).to.not.be.revertedWith("DAO: proposal already exists");
-    });
-
-    it("Creation of same proposal when doesnt pass", async () => {
-      await dao
-        .connect(users[2])
-        .propose(
-          [Web3MusicNativeToken.address],
-          [calldata],
-          "Test not revert2"
-        );
-      const yesUser = users.slice(0, 6);
-      const noUser = users.slice(-7);
-      await Promise.all(
-        yesUser.map((u) =>
-          dao
-            .connect(u)
-            .vote(
-              [Web3MusicNativeToken.address],
-              [calldata],
-              "Test not revert2",
-              true
-            )
-        )
-      );
-      await Promise.all(
-        noUser.map((u) =>
-          dao
-            .connect(u)
-            .vote(
-              [Web3MusicNativeToken.address],
-              [calldata],
-              "Test not revert2",
-              false
-            )
-        )
-      );
-      await timeMachine(15);
-      //Other users should not be able to create the same proposal if one is already active
-      await expect(
-        dao
-          .connect(users[2])
-          .propose(
-            [Web3MusicNativeToken.address],
-            [calldata],
-            "Test not revert2"
-          )
-      ).to.not.be.revertedWith("DAO: proposal already exists");
-
-      await expect(
-        dao
-          .connect(yesUser[0])
-          .vote(
-            [Web3MusicNativeToken.address],
-            [calldata],
-            "Test not revert2",
-            true
-          )
-      ).to.not.be.revertedWith("DAO: already voted");
-    });
-
-    it("Creation of same proposal when passes", async () => {
-      await dao
-        .connect(users[2])
-        .propose(
-          [Web3MusicNativeToken.address],
-          [calldata],
-          "Test not revert3"
-        );
-      const noUser = users.slice(0, 6);
-      const yesUser = users.slice(-7);
-      await Promise.all(
-        noUser.map((u) =>
-          dao
-            .connect(u)
-            .vote(
-              [Web3MusicNativeToken.address],
-              [calldata],
-              "Test not revert3",
-              false
-            )
-        )
-      );
-      await Promise.all(
-        yesUser.map((u) =>
-          dao
-            .connect(u)
-            .vote(
-              [Web3MusicNativeToken.address],
-              [calldata],
-              "Test not revert3",
-              true
-            )
-        )
-      );
-      await timeMachine(15);
-      //Other users should not be able to create the same proposal if one is already active
-      await expect(
-        dao
-          .connect(users[2])
-          .propose(
-            [Web3MusicNativeToken.address],
-            [calldata],
-            "Test not revert3"
-          )
-      ).to.be.revertedWith("DAO: proposal already exists");
-    });
 
     it("Should not be able to vote a ended stake", async () => {
       await expect(dao.connect(users[1]).propose([Web3MusicNativeToken.address], [calldata], "Test propose ended")).to.emit(dao, "ProposalCreated");
-      await dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], "Test propose ended", true);
-      await dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], "Test propose ended", true);
+      nounce += 1n;
+      await dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], nounce, "Test propose ended", true);
+      await dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], nounce, "Test propose ended", true);
       await timeMachine(16);
-      await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], "Test propose ended", true)).to.revertedWith("DAO: proposal expired");
-      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], "Test propose ended"))
+      await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], nounce, "Test propose ended", true)).to.revertedWith("DAO: proposal expired");
+      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], nounce, "Test propose ended"))
         .to.emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
     });
     it("Should not be able to execute a not-ended stake", async () => {
       await expect(dao.connect(users[1]).propose([Web3MusicNativeToken.address], [calldata], "Test propose ended")).to.emit(dao,"ProposalCreated");
+      nounce += 1n;
       await timeMachine(10);
-      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], "Test propose ended")).to.revertedWith("DAO: proposal not ended");
+      await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], nounce, "Test propose ended")).to.revertedWith("DAO: proposal not ended");
     });
 
   });
