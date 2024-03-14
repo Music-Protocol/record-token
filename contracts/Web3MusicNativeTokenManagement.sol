@@ -56,13 +56,13 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     }
 
     function transfer_and_lock(
+        address from,
         address to,
         uint256 amount,
         uint64 start,
         uint64 duration
     ) external onlyRole(TGE_ROLE) {
-        _web3MusicNativeToken.transferFrom(msg.sender, address(this), amount);
-        _web3MusicNativeToken.transfer_and_lock(to, amount, start, duration);
+        _web3MusicNativeToken.transfer_and_lock(from, to, amount, start, duration);
     }
 
     // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(Web3MusicNativeTokenManament)

@@ -135,21 +135,20 @@ describe("Voting Power", function () {
     });
 
     it('A user cannot delegate other accounts with delegateBySig', async () => {
-        const { fanToArtistStaking, addr1, addr2 } = await loadFixture(deploy);
+        const { fanToArtistStaking, addr1, addr2, owner } = await loadFixture(deploy);
 
+        const delegatee = addr2.address;
         const nonce = await fanToArtistStaking.nonces(addr1.address);
         const expiry = await getTimestamp() + 3600;
 
-        const digest = ethers.utils.solidityKeccak256(
-            ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
-            [addr2.address, nonce, expiry, 0, ethers.utils.hexZeroPad('0x0', 32), ethers.utils.hexZeroPad('0x0', 32)]
+        const message = ethers.utils.solidityPack(
+            ['address', 'uint256', 'uint256'],
+            [delegatee, nonce, expiry]
         );
 
-        const signature = await addr1.signMessage(ethers.utils.arrayify(digest));
+        const signature = await addr1.signMessage(message);
         const { v, r, s } = ethers.utils.splitSignature(signature);
 
-        await expect(fanToArtistStaking.delegateBySig(addr2.address, nonce, expiry, v, r, s)).to.revertedWith("FanToArtistStaking: users cannot delegate other accounts.");
-
-    });
-    
+        await expect(fanToArtistStaking.connect(addr1).delegateBySig(addr2.address, nonce, expiry, v, r, s)).to.rejectedWith("FanToArtistStaking: users cannot delegate other accounts.")
+    }); 
 });

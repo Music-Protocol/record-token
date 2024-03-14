@@ -241,7 +241,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         it("Owner should not be able to (tranfer/mint)_and_lock with amount equal to 0", async () => {
             const { Web3MusicNativeToken, owner, addr1 } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(addr1.address, 0, await getTimestamp(), 3600))
+            await expect(Web3MusicNativeToken.connect(owner).transfer_and_lock(owner.address, addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Web3MusicNativeToken: Amount can not be 0 or less in transfer_and_lock.")
             await expect(Web3MusicNativeToken.connect(owner).mint_and_lock(addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Web3MusicNativeToken: Amount can not be 0 or less in mint_and_lock.");
@@ -250,7 +250,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
         it("Only owner should be able to (tranfer/mint)_and_lock", async () => {
             const { Web3MusicNativeToken, owner, addr1 } = await loadFixture(deploy);
 
-            await expect(Web3MusicNativeToken.connect(addr1).transfer_and_lock(addr1.address, 0, await getTimestamp(), 3600))
+            await expect(Web3MusicNativeToken.connect(addr1).transfer_and_lock(owner.address, addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Ownable: caller is not the owner")
             await expect(Web3MusicNativeToken.connect(addr1).mint_and_lock(addr1.address, 0, await getTimestamp(), 3600))
                 .to.revertedWith("Ownable: caller is not the owner");

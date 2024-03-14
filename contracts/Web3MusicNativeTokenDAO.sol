@@ -15,7 +15,8 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         address[] targets,
         bytes[] calldatas,
         uint256 startTime,
-        string description
+        string description,
+        uint256 nounce
     );
     event ProposalExecuted(
         uint256 indexed hash,
@@ -36,6 +37,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         uint256 proposalVoters;
         uint256 votesFor;
         uint256 votesAgainst;
+        uint256 nounce;
         uint128 timeStart;
     }
 
@@ -43,8 +45,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     mapping(uint256 => mapping(address => bool)) private _votes; //hash collision of keccack256
 
     mapping(address => bool) public whitelistedAddresses;
-    bool public whitelistEnabled;
-
+    bool public whitelistEnabled;    uint256 private _nounce = 0;
     uint128 private immutable _maxValue = 10e8;
     uint128 private immutable _quorum; // 0 to 10e8
     uint128 private immutable _majority; // 0 to 10e8
@@ -133,10 +134,11 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     function hashProposal(
         address[] memory targets,
         bytes[] memory calldatas,
+        uint256 nounce,
         bytes32 descriptionHash
     ) public pure virtual returns (uint256) {
         return
-            uint256(keccak256(abi.encode(targets, calldatas, descriptionHash)));
+            uint256(keccak256(abi.encode(targets, calldatas, nounce, descriptionHash)));
     }
 
     function propose(
@@ -144,22 +146,18 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         bytes[] memory calldatas,
         string memory description
     ) external {
-        uint256 proposalId = hashProposal(
-            targets,
-            calldatas,
-            keccak256(bytes(description))
-        );
         require(
             targets.length == calldatas.length,
             "DAO: invalid proposal length"
         );
 
-        require(
-            _proposals[proposalId].timeStart == 0 ||
-                (block.timestamp >
-                    _proposals[proposalId].timeStart + _timeVotes &&
-                    !(_reachedQuorum(proposalId) && _votePassed(proposalId))),
-            "DAO: proposal already exists"
+        _nounce = _nounce + 1; 
+
+        uint256 proposalId = hashProposal(
+            targets,
+            calldatas,
+            _nounce,
+            keccak256(bytes(description))
         );
 
         _proposals[proposalId] = Proposal({
@@ -168,7 +166,8 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             proposalVoters: 0,
             blockNumber: block.number,
             votesFor: 0,
-            votesAgainst: 0
+            votesAgainst: 0,
+            nounce: _nounce
         });
 
         emit ProposalCreated(
@@ -177,13 +176,16 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             targets,
             calldatas,
             block.timestamp,
-            description
+            description,
+            _nounce
         );
+
     }
 
     function vote(
         address[] memory targets,
         bytes[] memory calldatas,
+        uint256 nounce,
         string memory description,
         bool isFor
     ) external {
@@ -194,6 +196,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
         uint256 proposalId = hashProposal(
             targets,
             calldatas,
+            nounce,
             keccak256(bytes(description))
         );
 
@@ -235,11 +238,13 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     function execute(
         address[] memory targets,
         bytes[] memory calldatas,
+        uint256 nounce,
         string memory description
     ) external {
         uint256 proposalId = hashProposal(
             targets,
             calldatas,
+            nounce,
             keccak256(bytes(description))
         );
 
@@ -275,11 +280,13 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     function getProposal(
         address[] memory targets,
         bytes[] memory calldatas,
+        uint256 nounce,
         string memory description
     ) external view returns (Proposal memory) {
         uint256 proposalId = hashProposal(
             targets,
             calldatas,
+            nounce,
             keccak256(bytes(description))
         );
         require(

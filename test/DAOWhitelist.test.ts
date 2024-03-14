@@ -3,6 +3,7 @@ import { ethers, web3, upgrades } from 'hardhat';
 import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNetworkDAO } from '../typechain-types/index';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { timeMachine } from './utils/utils';
+import { mine } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("DAO whitelist mode", function () {
@@ -16,6 +17,7 @@ describe("DAO whitelist mode", function () {
     let amount = 10n * 10n ** 18n;
     let calldata: string;
     let description: string;
+    let nounce: bigint = 0n;
     const defArtistReward = 10;
 
     before(async () => {
@@ -32,7 +34,7 @@ describe("DAO whitelist mode", function () {
         }, []);
 
         FTAS = await ethers.getContractFactory('FanToArtistStaking');
-        fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
+        fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], { initializer: false, kind: 'uups', timeout: 180000 }) as unknown as FanToArtistStaking;
         await fanToArtistStaking.deployed();
 
         cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
@@ -57,7 +59,7 @@ describe("DAO whitelist mode", function () {
         }));
 
         await Promise.allSettled(users.map(user => {
-              Web3MusicNativeToken.connect(user).approve(fanToArtistStaking.address, amount)
+            Web3MusicNativeToken.connect(user).approve(fanToArtistStaking.address, amount)
         }));
 
         await Promise.allSettled(artists.map(artist => {
@@ -68,15 +70,27 @@ describe("DAO whitelist mode", function () {
             fanToArtistStaking.connect(user).stake(artists[index].address, amount, 3600);
         }));
 
-        await Web3MusicNativeToken.connect(owner).transferOwnership(dao.address);
-        await dao.propose([Web3MusicNativeToken.address], [calldata], "transfer ownership");
+        await Web3MusicNativeToken.connect(owner).transferOwnership(dao.address); //give ownership of Web3MusicNativeToken to dao
 
-        await dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], "transfer ownership", true);
-        await dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], "transfer ownership", true);
-        await dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], "transfer ownership", true);
+        await mine(1);
+
+        await dao.propose([Web3MusicNativeToken.address], [calldata], "transfer ownership");
+        nounce += 1n;
+
+        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], nounce, "transfer ownership", true))
+            .emit(dao, "ProposalVoted")
+            .withArgs(
+                anyValue,
+                users[0].address,
+                await fanToArtistStaking.getVotes(users[0].address),
+                true
+            );
+        await dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], nounce, "transfer ownership", true);
+        await dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], nounce, "transfer ownership", true);
 
         await timeMachine(15);
-        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], "transfer ownership")).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
+
+        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], nounce, "transfer ownership")).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
 
         //PROPOSAL DATA
         calldata = web3.eth.abi.encodeFunctionCall({
@@ -104,7 +118,8 @@ describe("DAO whitelist mode", function () {
     });
 
     it('A user can make proposal also if he is not whitelisted', async () => {
-        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated");
+        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated"); //2
+        nounce++;
     });
 
     it('Propose must respect length format', async () => {
@@ -112,75 +127,80 @@ describe("DAO whitelist mode", function () {
     });
 
     it('A user whitelisted can vote', async () => {
-        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
+        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).emit(dao, "ProposalVoted");
     });
 
     it('A user not whitelisted cannot vote', async () => {
-        await expect(dao.connect(users[3]).vote([Web3MusicNativeToken.address], [calldata], description, true)).revertedWith("DAO: user not whitelisted");
+        await expect(dao.connect(users[3]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).revertedWith("DAO: user not whitelisted");
     });
 
     it('A user cannot vote twice', async () => {
-        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], description, true)).revertedWith("DAO: already voted");
+        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).revertedWith("DAO: already voted");
     });
 
     it('A proposal can be executed', async () => {
-        await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
-        await expect(dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], description, false)).emit(dao, "ProposalVoted");
+        await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).emit(dao, "ProposalVoted");
+        await expect(dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, false)).emit(dao, "ProposalVoted");
 
         await timeMachine(20);
-        await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
+        await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], nounce, description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
 
         expect(await Web3MusicNativeToken.balanceOf(users[3].address)).equal(1000);
     });
 
     it('A proposal that has not been voted cannot be executed', async () => {
-        await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
+        await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated"); //3
+        nounce++;
 
         await timeMachine(20);
 
-        await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
+        await expect(dao.connect(owner).execute([Web3MusicNativeToken.address], [calldata], nounce, description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
     });
 
-    it('Quorum is reached if the number of voters is greater than half of the whitelisted members at the proposal initialization', async() => {
-        await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
-        await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
-        await expect(dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
+    it('Quorum is reached if the number of voters is greater than half of the whitelisted members at the proposal initialization', async () => {
+        await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated"); //4
+        nounce++;
+        await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).emit(dao, "ProposalVoted");
+        await expect(dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).emit(dao, "ProposalVoted");
         await timeMachine(20);
-        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
+        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], 4, description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, true);
     });
 
-    it('Propose doesn\'t pass if the amount of negative votes are greater than the amount of the positive votes', async() => {
-        await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
-        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], description, true)).emit(dao, "ProposalVoted");
-        await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], description, false)).emit(dao, "ProposalVoted");
-        await expect(dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], description, false)).emit(dao, "ProposalVoted");
+    it('Propose doesn\'t pass if the amount of negative votes are greater than the amount of the positive votes', async () => {
+        await expect(dao.connect(users[0]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated"); //5
+        nounce++;
+        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).emit(dao, "ProposalVoted");
+        await expect(dao.connect(users[1]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, false)).emit(dao, "ProposalVoted");
+        await expect(dao.connect(users[2]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, false)).emit(dao, "ProposalVoted");
         await timeMachine(20);
-        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
+        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], nounce, description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
     });
 
-    it('Owner should not be able to add/remove users already added/removed', async() => {
+    it('Owner should not be able to add/remove users already added/removed', async () => {
         await expect(dao.connect(owner).manageWhitelist(users[0].address, true)).revertedWith("DAO: already added/removed.");
         await dao.connect(owner).manageWhitelist(users[1].address, false);
         await expect(dao.connect(owner).manageWhitelist(users[1].address, false)).revertedWith("DAO: already added/removed.");
     })
 
-    it('Proposals created while the whitelist was empty should not be executed. ', async() => {
+    it('Proposals created while the whitelist was empty should not be executed. ', async () => {
         await dao.connect(owner).manageWhitelist(users[0].address, false);
         await dao.connect(owner).manageWhitelist(users[2].address, false);
         //Now whitelist is empty
-        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
+        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated");
+        nounce++;
         await timeMachine(20);
-        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
+        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], nounce, description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
     })
 
-    it('Proposals created while the whitelist was empty should not be executed even if someone later votes for them.', async() => {
-        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao,"ProposalCreated");
-        
+    it('Proposals created while the whitelist was empty should not be executed even if someone later votes for them.', async () => {
+        await expect(dao.connect(users[3]).propose([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalCreated");
+        nounce++
+
         await dao.connect(owner).manageWhitelist(users[0].address, true);
-        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], description, true)).to.emit(dao, "ProposalVoted");
+        await expect(dao.connect(users[0]).vote([Web3MusicNativeToken.address], [calldata], nounce, description, true)).to.emit(dao, "ProposalVoted");
 
         await timeMachine(20);
-        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
+        await expect(dao.execute([Web3MusicNativeToken.address], [calldata], nounce, description)).emit(dao, "ProposalExecuted").withArgs(anyValue, anyValue, false);
     })
 
 });
