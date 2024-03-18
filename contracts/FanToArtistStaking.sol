@@ -331,7 +331,7 @@ contract FanToArtistStaking is
             _stake[artist][_msgSender()] = Stake({
                 amount: amount,
                 start: uint40(block.timestamp),
-                end: uint40(block.timestamp + end)
+                end: uint40(block.timestamp) + end
             });
             _transferVotingUnits(address(0), _msgSender(), amount);
             _votingPower[_msgSender()] += amount;
