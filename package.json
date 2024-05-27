@@ -15,7 +15,7 @@
     "test:ve": "npx hardhat test ./test/VotingPower.test.ts",
     "test:dao": "npx hardhat test ./test/DAO.test.ts",
     "test:int": "npx hardhat test ./test/Integral.test.ts",
-    "deploy:ganache": "npx hardhat run ./scripts/deploy.ts --network localganache"
+    "deploy:ganache": "npx hardhat run ./scripts/deploy.ts "
   },
   "repository": {
     "type": "git",
