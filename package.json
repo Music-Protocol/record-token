@@ -19,15 +19,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Web3Music-Network/token-protocol.git"
+    "url": "git+https://github.com/Music-Protocol/record-token.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Web3Music-Network/token-protocol/issues"
+    "url": "https://github.com/Music-Protocol/record-token/issues"
   },
-  "homepage": "https://github.com/Web3Music-Network/token-protocol#readme",
+  "homepage": "https://github.com/Music-Protocol/record-token#readme",
   "dependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
