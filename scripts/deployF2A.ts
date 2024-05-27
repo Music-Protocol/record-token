@@ -1,16 +1,16 @@
 import { ethers, upgrades } from "hardhat";
 
 async function deployFTA() {
-    const factoryFtas = await ethers.getContractFactory('FanToArtistStaking');
-    const fanToArtistStaking = await upgrades.deployProxy(factoryFtas, [], {initializer: false, kind: 'uups', timeout: 180000});
+    const factoryFtas = await ethers.getContractFactory('ArtistStaking');
+    const ArtistStaking = await upgrades.deployProxy(factoryFtas, [], { initializer: false, kind: 'uups', timeout: 180000 });
     console.log("FTA deploy");
-    await fanToArtistStaking.deployed();
+    await ArtistStaking.deployed();
     console.log("FTA deployed");
-    console.log("FTA address: " + fanToArtistStaking.address);
+    console.log("FTA address: " + ArtistStaking.address);
 }
 
 deployFTA().catch((error) => {
     console.error(error);
     process.exitCode = 1;
-  });
+});
 

@@ -9,7 +9,7 @@ const mgmtABI: AbiItem[] = [
         "inputs": [
             {
                 "internalType": "address",
-                "name": "Web3MusicNativeToken",
+                "name": "MusicProtocolRECORDToken",
                 "type": "address"
             },
             {
@@ -298,11 +298,11 @@ const mgmtABI: AbiItem[] = [
         "inputs": [
             {
                 "internalType": "address",
-                "name": "Web3MusicNativeToken",
+                "name": "MusicProtocolRECORDToken",
                 "type": "address"
             }
         ],
-        "name": "changeWeb3MusicNativeToken",
+        "name": "changeMusicProtocolRECORDToken",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -434,7 +434,7 @@ const mgmtABI: AbiItem[] = [
     },
     {
         "inputs": [],
-        "name": "pauseWeb3MusicNativeToken",
+        "name": "pauseMusicProtocolRECORDToken",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -515,7 +515,7 @@ const mgmtABI: AbiItem[] = [
                 "type": "address"
             }
         ],
-        "name": "transferFanToArtistStaking",
+        "name": "transferArtistStaking",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -528,7 +528,7 @@ const mgmtABI: AbiItem[] = [
                 "type": "address"
             }
         ],
-        "name": "transferWeb3MusicNativeToken",
+        "name": "transferMusicProtocolRECORDToken",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -563,7 +563,7 @@ const mgmtABI: AbiItem[] = [
     },
     {
         "inputs": [],
-        "name": "unpauseWeb3MusicNativeToken",
+        "name": "unpauseMusicProtocolRECORDToken",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -843,7 +843,7 @@ const daoABI: AbiItem[] = [
                         "type": "uint128"
                     }
                 ],
-                "internalType": "struct Web3MusicNetworkDAO.Proposal",
+                "internalType": "struct MusicProtocolDAO.Proposal",
                 "name": "",
                 "type": "tuple"
             }
@@ -1078,7 +1078,7 @@ const f2aABI: AbiItem[] = [
                 "type": "address"
             }
         ],
-        "name": "ArtistWeb3MusicNativeTokenRewardChanged",
+        "name": "ArtistMusicProtocolRECORDTokenRewardChanged",
         "type": "event"
     },
     {
@@ -1647,12 +1647,12 @@ const f2aABI: AbiItem[] = [
         "inputs": [
             {
                 "internalType": "address",
-                "name": "Web3MusicNativeToken_",
+                "name": "MusicProtocolRECORDToken_",
                 "type": "address"
             },
             {
                 "internalType": "uint256",
-                "name": "artistWeb3MusicNativeTokenRewardRate",
+                "name": "artistMusicProtocolRECORDTokenRewardRate",
                 "type": "uint256"
             },
             {

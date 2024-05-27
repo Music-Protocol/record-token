@@ -3,10 +3,10 @@
 pragma solidity 0.8.18;
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./interfaces/IFanToArtistStaking.sol";
+import "./interfaces/IArtistStaking.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-contract Web3MusicNetworkDAO is Ownable2Step {
+contract MusicProtocolDAO is Ownable2Step {
     using Math for uint256;
 
     event ProposalCreated(
@@ -52,7 +52,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     uint128 private immutable _timeVotes;
     uint128 private _membersNumber;
 
-    IFanToArtistStaking private immutable _ftas;
+    IArtistStaking private immutable _ftas;
 
     constructor(
         address ftas_,
@@ -63,7 +63,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
     ) {
         require(
             ftas_ != address(0),
-            "DAO: the fanToArtistStaking address can not be 0"
+            "DAO: the ArtistStaking address can not be 0"
         );
         require(
             time >= 600,
@@ -77,7 +77,7 @@ contract Web3MusicNetworkDAO is Ownable2Step {
             majority_ <= _maxValue,
             "DAO: the majority must be less than or equal 10e8"
         );
-        _ftas = IFanToArtistStaking(ftas_);
+        _ftas = IArtistStaking(ftas_);
         _quorum = quorum_;
         _majority = majority_;
         _timeVotes = time;

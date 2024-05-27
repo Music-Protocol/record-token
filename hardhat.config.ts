@@ -23,15 +23,15 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    sepolia: {
-      url: 'https://sepolia.base.org',
-      accounts: ['OWNER_PRIVATE_KEY']
-    },
-    moonbase: {
-      url: 'https://rpc.api.moonbase.moonbeam.network',
-      chainId: 1287,
-      accounts: ['OWNER_PRIVATE_KEY']
-    },
+    // sepolia: {
+    //   url: 'https://sepolia.base.org',
+    //   accounts: ['OWNER_PRIVATE_KEY']
+    // },
+    // moonbase: {
+    //   url: 'https://rpc.api.moonbase.moonbeam.network',
+    //   chainId: 1287,
+    //   accounts: ['OWNER_PRIVATE_KEY']
+    // },
   },
   etherscan: {
     apiKey: {
@@ -42,8 +42,8 @@ const config: HardhatUserConfig = {
         network: "sepolia",
         chainId: 84532,
         urls: {
-         apiURL: "https://api-sepolia.basescan.org/api",
-         browserURL: "https://sepolia.basescan.org/"
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org/"
         }
       }
     ]

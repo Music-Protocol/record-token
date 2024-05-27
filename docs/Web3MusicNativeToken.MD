@@ -1,43 +1,54 @@
-# Web3MusicNativeToken Smart Contract
-The `Web3MusicNativeToken` smart contract is based on the following **openzeppelin** standards:
-- `Pausable` to give the possibility to interrupt operations
-- `Ownable` to restrict access of certain functions to the owner's address only
-- `ERC20` to implement the functions of the fungible token
+# MusicProtocolRECORDToken Smart Contract
 
-There is also an `IWeb3MusicNativeToken` interface that allows other smart contracts to communicate with the additional functions of Web3MusicNativeToken
+The `MusicProtocolRECORDToken` smart contract is based on the following **openzeppelin** standards:
+
+-   `Pausable` to give the possibility to interrupt operations
+-   `Ownable` to restrict access of certain functions to the owner's address only
+-   `ERC20` to implement the functions of the fungible token
+
+There is also an `IMusicProtocolRECORDToken` interface that allows other smart contracts to communicate with the additional functions of MusicProtocolRECORDToken
 
 ## Contract Properties
-The contract is initialized with a constructor and not with a pattern function Initializable so it will **not** be possible to deploy via proxy and will not be updatable. 
+
+The contract is initialized with a constructor and not with a pattern function Initializable so it will **not** be possible to deploy via proxy and will not be updatable.
 
 ## code snippets
+
 ### deployment
-In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**FanToArtistStaking**)
+
+In order to deploy correctly this smart contract the following smart contracts must already be deployed in order to pass their addresses. (**ArtistStaking**)
+
 ```
 ...
-const Web3MusicNativeTokenFactory = await ethers.getContractFactory('Web3MusicNativeToken');
-Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address);
-await Web3MusicNativeToken.deployed();
+const MusicProtocolRECORDTokenFactory = await ethers.getContractFactory('MusicProtocolRECORDToken');
+MusicProtocolRECORDToken = await MusicProtocolRECORDTokenFactory.deploy(ArtistStaking.address);
+await MusicProtocolRECORDToken.deployed();
 ...
-await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
+await MusicProtocolRECORDToken.transferOwnership(MusicProtocolRECORDTokenManagement.address);
 
 ```
 
 ### mint and burn
+
 These three functions are restricted only to the address of the current contract owner this means that only one smart contract will always be able to call the functions (Management **OR** DAO).
-(note that **burn** destroys the tokens of the address calling the Web3MusicNativeToken contract, and that to use **burnFrom** the target address will have to provide the allowance for the amount to be burned to the address that will call burnFrom)
+(note that **burn** destroys the tokens of the address calling the MusicProtocolRECORDToken contract, and that to use **burnFrom** the target address will have to provide the allowance for the amount to be burned to the address that will call burnFrom)
+
 ```
-await Web3MusicNativeToken.mint(targetAddress, 10e18);
+await MusicProtocolRECORDToken.mint(targetAddress, 10e18);
 OR
-await Web3MusicNativeToken.burn(10e18);
+await MusicProtocolRECORDToken.burn(10e18);
 OR
-await Web3MusicNativeToken.burnFrom(targetAddress, 10e18);
+await MusicProtocolRECORDToken.burnFrom(targetAddress, 10e18);
 ```
 
 ### lock
-The `lock` function is restricted to the use of only the address of the `fanToArtistStaking` contract, which, being immutable, can never be changed, guaranteeing that the smart contract is secure.
+
+The `lock` function is restricted to the use of only the address of the `ArtistStaking` contract, which, being immutable, can never be changed, guaranteeing that the smart contract is secure.
 
 ### pay
+
 <!-- this function has the same kind of restriction that the lock function has but also for another address REMOVE PAY FUNCTION? -->
 
 # Key Takeaway
-The contract as it is now will not be able to be proxy upgraded, and the contract to which it is linked (fanToArtistStaking) can never be changed.
+
+The contract as it is now will not be able to be proxy upgraded, and the contract to which it is linked (ArtistStaking) can never be changed.

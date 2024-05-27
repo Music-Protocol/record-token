@@ -10,7 +10,7 @@
     "test": "npx hardhat test ",
     "test:token": "npx hardhat test ./test/Token.test.ts",
     "test:management": "npx hardhat test ./test/Management.test.ts",
-    "test:ftas": "npx hardhat test ./test/FanToArtistStaking.test.ts",
+    "test:ftas": "npx hardhat test ./test/ArtistStaking.test.ts",
     "test:stake": "npx hardhat test ./test/Stake.test.ts",
     "test:ve": "npx hardhat test ./test/VotingPower.test.ts",
     "test:dao": "npx hardhat test ./test/DAO.test.ts",

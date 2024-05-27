@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 
-interface IFanToArtistStaking {
+interface IArtistStaking {
     function addArtist(address artist, address sender) external;
 
     function removeArtist(address artist, address sender) external;

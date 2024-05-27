@@ -6,11 +6,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import "./interfaces/IWeb3MusicNativeToken.sol";
-import "./interfaces/IFanToArtistStaking.sol";
+import "./interfaces/IMusicProtocolRECORDToken.sol";
+import "./interfaces/IArtistStaking.sol";
 
-contract FanToArtistStaking is
-    IFanToArtistStaking,
+contract ArtistStaking is
+    IArtistStaking,
     Ownable2StepUpgradeable,
     VotesUpgradeable,
     UUPSUpgradeable
@@ -21,7 +21,7 @@ contract FanToArtistStaking is
     event ArtistRemoved(address indexed artist, address indexed sender);
     event ArtistPaid(address indexed artist, uint256 amount);
 
-    event ArtistWeb3MusicNativeTokenRewardChanged(
+    event ArtistMusicProtocolRECORDTokenRewardChanged(
         uint256 newRate,
         uint40 timestamp,
         address indexed sender
@@ -71,7 +71,7 @@ contract FanToArtistStaking is
 
     ArtistReward[] private _artistReward;
 
-    IWeb3MusicNativeToken private _Web3MusicNativeToken;
+    IMusicProtocolRECORDToken private _MusicProtocolRECORDToken;
 
     mapping(address => mapping(address => Stake)) private _stake;
     //_stake[artist][staker]
@@ -96,36 +96,36 @@ contract FanToArtistStaking is
     }
 
     function initialize(
-        address Web3MusicNativeToken_,
-        uint256 artistWeb3MusicNativeTokenRewardRate,
+        address MusicProtocolRECORDToken_,
+        uint256 artistMusicProtocolRECORDTokenRewardRate,
         uint40 min,
         uint40 max,
         uint256 limit_,
         uint256 changeRewardLimit_
     ) public initializer {
         require(
-            Web3MusicNativeToken_ != address(0),
-            "FanToArtistStaking: the Web3MusicNativeToken address can not be 0"
+            MusicProtocolRECORDToken_ != address(0),
+            "ArtistStaking: the MusicProtocolRECORDToken address can not be 0"
         );
         require(
-            artistWeb3MusicNativeTokenRewardRate != 0,
-            "FanToArtistStaking: the artist reward rate can not be 0"
+            artistMusicProtocolRECORDTokenRewardRate != 0,
+            "ArtistStaking: the artist reward rate can not be 0"
         );
         require(
             limit_ > 0,
-            "FanToArtistStaking: the reward limit must be greater than 0"
+            "ArtistStaking: the reward limit must be greater than 0"
         );
         require(
             changeRewardLimit_ >= 600,
-            "FanToArtistStaking: the minimum time to change the reward rate is 10 minutes"
+            "ArtistStaking: the minimum time to change the reward rate is 10 minutes"
         );
-        require(max > min, "FanToArtistStaking: min cant be greater than max");
-        _Web3MusicNativeToken = IWeb3MusicNativeToken(Web3MusicNativeToken_);
+        require(max > min, "ArtistStaking: min cant be greater than max");
+        _MusicProtocolRECORDToken = IMusicProtocolRECORDToken(MusicProtocolRECORDToken_);
         _artistReward.push(
             ArtistReward({
                 start: uint40(block.timestamp),
                 end: (2 ** 40) - 1,
-                rate: artistWeb3MusicNativeTokenRewardRate
+                rate: artistMusicProtocolRECORDTokenRewardRate
             })
         );
         __Ownable2Step_init();
@@ -139,7 +139,7 @@ contract FanToArtistStaking is
     modifier onlyVerifiedArtist(address artist) {
         require(
             _verifiedArtists[artist],
-            "FanToArtistStaking: the artist is not a verified artist"
+            "ArtistStaking: the artist is not a verified artist"
         );
         _;
     }
@@ -147,7 +147,7 @@ contract FanToArtistStaking is
     modifier onlyEnded(uint40 end) {
         require(
             end < block.timestamp,
-            "FanToArtistStaking: the stake is not ended"
+            "ArtistStaking: the stake is not ended"
         );
         _;
     }
@@ -161,7 +161,7 @@ contract FanToArtistStaking is
 
     function _getReward(address artist) internal {
         _calcSinceLastPosition(artist, 0, true);
-        _Web3MusicNativeToken.pay(artist, _artistCheckpoints[artist].amountAcc);
+        _MusicProtocolRECORDToken.pay(artist, _artistCheckpoints[artist].amountAcc);
         _artistCheckpoints[artist].amountAcc = 0;
     }
 
@@ -223,13 +223,13 @@ contract FanToArtistStaking is
     ) external onlyOwner {
         require(
             rate != 0,
-            "FanToArtistStaking: the artist reward rate can not be 0"
+            "ArtistStaking: the artist reward rate can not be 0"
         );
         require(
             _artistReward[_artistReward.length - 1].start +
                 _changeRewardLimit <=
                 block.timestamp,
-            "FanToArtistStaking: the artist reward cannot be changed yet"
+            "ArtistStaking: the artist reward cannot be changed yet"
         );
         _artistReward[_artistReward.length - 1].end = uint40(block.timestamp);
         _artistReward.push(
@@ -239,7 +239,7 @@ contract FanToArtistStaking is
                 rate: rate
             })
         );
-        emit ArtistWeb3MusicNativeTokenRewardChanged(
+        emit ArtistMusicProtocolRECORDTokenRewardChanged(
             rate,
             uint40(block.timestamp),
             sender
@@ -262,7 +262,7 @@ contract FanToArtistStaking is
     ) external override onlyOwner {
         require(
             artist != address(0),
-            "FanToArtistStaking: the artist address can not be 0"
+            "ArtistStaking: the artist address can not be 0"
         );
         if (!_verifiedArtists[artist]) {
             //Check if the artist is already verified
@@ -288,7 +288,7 @@ contract FanToArtistStaking is
 
     function transferOwnership(
         address to
-    ) public override(IFanToArtistStaking, Ownable2StepUpgradeable) onlyOwner {
+    ) public override(IArtistStaking, Ownable2StepUpgradeable) onlyOwner {
         super.transferOwnership(to);
     }
 
@@ -299,7 +299,7 @@ contract FanToArtistStaking is
     ) external {
         require(
             artists.length == amounts.length && amounts.length == ends.length,
-            "FanToArtistStaking: calldata format error"
+            "ArtistStaking: calldata format error"
         );
         for (uint256 i = 0; i < artists.length; i++) {
             stake(artists[i], amounts[i], ends[i]);
@@ -313,21 +313,21 @@ contract FanToArtistStaking is
     ) public onlyVerifiedArtist(artist) {
         require(
             !_isStakingNow(artist, _msgSender()),
-            "FanToArtistStaking: already staking"
+            "ArtistStaking: already staking"
         );
-        require(amount > 0, "FanToArtistStaking: the amount can not be zero");
+        require(amount > 0, "ArtistStaking: the amount can not be zero");
         require(
             end > _minStakePeriod,
-            "FanToArtistStaking: the end period is less than minimum"
+            "ArtistStaking: the end period is less than minimum"
         );
         require(
             end <= _maxStakePeriod,
-            "FanToArtistStaking: the stake period exceed the maximum"
+            "ArtistStaking: the stake period exceed the maximum"
         );
         if (_msgSender() != delegates(_msgSender())) {
             delegate(_msgSender());
         }
-        if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
+        if (_MusicProtocolRECORDToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()] = Stake({
                 amount: amount,
                 start: uint40(block.timestamp),
@@ -351,15 +351,15 @@ contract FanToArtistStaking is
     ) external onlyVerifiedArtist(artist) {
         require(
             _isStakingNow(artist, _msgSender()),
-            "FanToArtistStaking: no stake found"
+            "ArtistStaking: no stake found"
         );
-        require(amount > 0, "FanToArtistStaking: the amount can not be zero");
+        require(amount > 0, "ArtistStaking: the amount can not be zero");
         require(
             _stake[artist][_msgSender()].end - _minStakePeriod >=
                 block.timestamp,
-            "FanToArtistStaking: can not increase the amount below the minimum stake period"
+            "ArtistStaking: can not increase the amount below the minimum stake period"
         );
-        if (_Web3MusicNativeToken.lock(_msgSender(), amount)) {
+        if (_MusicProtocolRECORDToken.lock(_msgSender(), amount)) {
             _stake[artist][_msgSender()].amount += amount;
             _transferVotingUnits(address(0), _msgSender(), amount);
             _votingPower[_msgSender()] += amount;
@@ -374,20 +374,20 @@ contract FanToArtistStaking is
     ) external onlyVerifiedArtist(artist) {
         require(
             _isStakingNow(artist, _msgSender()),
-            "FanToArtistStaking: no stake found"
+            "ArtistStaking: no stake found"
         );
         require(
             _stake[artist][_msgSender()].end > block.timestamp,
-            "FanToArtistStaking: last stake cant be changed"
+            "ArtistStaking: last stake cant be changed"
         );
         require(
             _minStakePeriod <= newEnd && newEnd <= _maxStakePeriod,
-            "FanToArtistStaking: the stake period exceed the maximum or less than minimum"
+            "ArtistStaking: the stake period exceed the maximum or less than minimum"
         );
         require(
             _stake[artist][_msgSender()].end + newEnd <
                 block.timestamp + _maxStakePeriod,
-            "FanToArtistStaking: the new stake period exceeds the maximum"
+            "ArtistStaking: the new stake period exceeds the maximum"
         );
         _stake[artist][_msgSender()].end += newEnd;
         emit StakeEndChanged(
@@ -403,19 +403,19 @@ contract FanToArtistStaking is
     ) external onlyVerifiedArtist(newArtist) {
         require(
             _isStakingNow(artist, _msgSender()),
-            "FanToArtistStaking: no stake found"
+            "ArtistStaking: no stake found"
         );
         require(
             !_isStakingNow(newArtist, _msgSender()),
-            "FanToArtistStaking: already staking the new artist"
+            "ArtistStaking: already staking the new artist"
         );
         require(
             _stake[artist][_msgSender()].end > block.timestamp,
-            "FanToArtistStaking: last stake cant be changed"
+            "ArtistStaking: last stake cant be changed"
         );
         require(
             artist != newArtist,
-            "FanToArtistStaking: the new artist is the same as the old one"
+            "ArtistStaking: the new artist is the same as the old one"
         );
 
         _stake[newArtist][_msgSender()] = Stake({
@@ -447,11 +447,11 @@ contract FanToArtistStaking is
     ) external onlyEnded(_stake[artist][user].end) {
         require(
             _isStakingNow(artist, user),
-            "FanToArtistStaking: stake not found"
+            "ArtistStaking: stake not found"
         );
         require(
-            _Web3MusicNativeToken.transfer(user, _stake[artist][user].amount),
-            "FanToArtistStaking: error while redeeming"
+            _MusicProtocolRECORDToken.transfer(user, _stake[artist][user].amount),
+            "ArtistStaking: error while redeeming"
         );
         _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
         _transferVotingUnits(user, address(0), _stake[artist][user].amount);
@@ -475,7 +475,7 @@ contract FanToArtistStaking is
     )
         public
         view
-        override(IFanToArtistStaking, VotesUpgradeable)
+        override(IArtistStaking, VotesUpgradeable)
         returns (uint256)
     {
         return super.getPastTotalSupply(blockNumber);
@@ -486,7 +486,7 @@ contract FanToArtistStaking is
     )
         public
         view
-        override(IFanToArtistStaking, VotesUpgradeable)
+        override(IArtistStaking, VotesUpgradeable)
         returns (uint256)
     {
         return super.getVotes(account);
@@ -498,7 +498,7 @@ contract FanToArtistStaking is
     )
         public
         view
-        override(IFanToArtistStaking, VotesUpgradeable)
+        override(IArtistStaking, VotesUpgradeable)
         returns (uint256)
     {
         return super.getPastVotes(account, blockNumber);
@@ -514,7 +514,7 @@ contract FanToArtistStaking is
     function _delegate(address account, address delegatee) internal override {
         require(
             account == delegatee,
-            "FanToArtistStaking: users cannot delegate other accounts."
+            "ArtistStaking: users cannot delegate other accounts."
         );
         super._delegate(account, delegatee);
     }

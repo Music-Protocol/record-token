@@ -2,12 +2,12 @@ import { ethers } from "hardhat";
 import { addressF2A } from "./utils/contracts";
 
 async function deployTOK() {
-    const Web3MusicNativeTokenFactory = await ethers.getContractFactory('Web3MusicNativeToken');
-    const Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(addressF2A);
+    const MusicProtocolRECORDTokenFactory = await ethers.getContractFactory('MusicProtocolRECORDToken');
+    const MusicProtocolRECORDToken = await MusicProtocolRECORDTokenFactory.deploy(addressF2A);
     console.log("ERC20 deploy");
-    await Web3MusicNativeToken.deployed();
+    await MusicProtocolRECORDToken.deployed();
     console.log("ERC20 deployed");
-    console.log("ERC20 address: " + Web3MusicNativeToken.address);
+    console.log("ERC20 address: " + MusicProtocolRECORDToken.address);
 }
 
 deployTOK().catch((error) => {

@@ -5,7 +5,7 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 import { ethers } from "hardhat";
-import { Web3MusicNetworkDAO } from "../typechain-types";
+import { MusicProtocolDAO } from "../typechain-types";
 
 async function main() {
   const defArtistReward = 10;
@@ -16,45 +16,45 @@ async function main() {
   const daoQuorum = 10e7;
   const daoMajority = 50e7 + 1;
 
-  const factoryFtas = await ethers.getContractFactory('FanToArtistStaking');
-  let fanToArtistStaking = await factoryFtas.deploy();
+  const factoryFtas = await ethers.getContractFactory('ArtistStaking');
+  let ArtistStaking = await factoryFtas.deploy();
   console.log("FTA deploy");
-  await fanToArtistStaking.deployed();
+  await ArtistStaking.deployed();
   console.log("FTA deployed");
 
-  const Web3MusicNativeTokenFactory = await ethers.getContractFactory('Web3MusicNativeToken');
-  let Web3MusicNativeToken = await Web3MusicNativeTokenFactory.deploy(fanToArtistStaking.address);
+  const MusicProtocolRECORDTokenFactory = await ethers.getContractFactory('MusicProtocolRECORDToken');
+  let MusicProtocolRECORDToken = await MusicProtocolRECORDTokenFactory.deploy(ArtistStaking.address);
   console.log("ERC20 deploy");
-  await Web3MusicNativeToken.deployed();
+  await MusicProtocolRECORDToken.deployed();
   console.log("ERC20 deployed");
 
-  await fanToArtistStaking.initialize(Web3MusicNativeToken.address, defArtistReward, minStakeTime, maxStakeTime, limit, changeRewardLimit);
+  await ArtistStaking.initialize(MusicProtocolRECORDToken.address, defArtistReward, minStakeTime, maxStakeTime, limit, changeRewardLimit);
 
-  const managementFactory = await ethers.getContractFactory("Web3MusicNativeTokenManagement");
-  const Web3MusicNativeTokenManagement = await managementFactory.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
+  const managementFactory = await ethers.getContractFactory("MusicProtocolRECORDTokenManagement");
+  const MusicProtocolRECORDTokenManagement = await managementFactory.deploy(MusicProtocolRECORDToken.address, ArtistStaking.address);
   console.log("MGMT deploy");
-  await Web3MusicNativeTokenManagement.deployed();
+  await MusicProtocolRECORDTokenManagement.deployed();
   console.log("MGMT deployed");
 
-  const daoFactory = await ethers.getContractFactory('Web3MusicNetworkDAO');            //The proposal can be executed only after 10 minutes
-  let dao = await daoFactory.deploy(fanToArtistStaking.address, daoQuorum, daoMajority, 600, true) as Web3MusicNetworkDAO;
+  const daoFactory = await ethers.getContractFactory('MusicProtocolDAO');            //The proposal can be executed only after 10 minutes
+  let dao = await daoFactory.deploy(ArtistStaking.address, daoQuorum, daoMajority, 600, true) as MusicProtocolDAO;
   console.log("DAO deploy");
   await dao.deployed();
   console.log("DAO deployed");
 
-  const tokown = await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
+  const tokown = await MusicProtocolRECORDToken.transferOwnership(MusicProtocolRECORDTokenManagement.address);
   await tokown.wait();
   console.log("Ownership 1");
-  const f2aown = await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
+  const f2aown = await ArtistStaking.transferOwnership(MusicProtocolRECORDTokenManagement.address);
   await f2aown.wait();
   console.log("Ownership 2");
-  const daoown = await dao.transferOwnership(Web3MusicNativeTokenManagement.address);
+  const daoown = await dao.transferOwnership(MusicProtocolRECORDTokenManagement.address);
   await daoown.wait();
   console.log("Ownership 3");
 
-  console.log('Web3MusicNativeTokenManagement address', Web3MusicNativeTokenManagement.address);
-  console.log('Web3MusicNativeToken address', Web3MusicNativeToken.address);
-  console.log('FanToArtistStaking address', fanToArtistStaking.address);
+  console.log('MusicProtocolRECORDTokenManagement address', MusicProtocolRECORDTokenManagement.address);
+  console.log('MusicProtocolRECORDToken address', MusicProtocolRECORDToken.address);
+  console.log('ArtistStaking address', ArtistStaking.address);
   console.log('DAO address', dao.address);
 }
 
