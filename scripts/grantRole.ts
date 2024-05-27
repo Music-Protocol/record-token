@@ -1,18 +1,17 @@
-import { web3, daoABI, tokenABI, addressF2A, addressMGMT, } from './utils/contracts';
-import { ownerKey } from "./utils/wallets";
+import { web3, addressMGMT, mgmtABI } from './utils/contracts';
+import { ownerKey, user1Key } from "./utils/wallets";
 
 async function main() {
-    const dao = new web3.eth.Contract(tokenABI, addressF2A);
-
+    const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
-    
-    const functionToSend = dao.methods.transferOwnership(addressMGMT);
+
+    const functionToSend = mgmt.methods.grantRole('0x0000000000000000000000000000000000000000000000000000000000000000', '0xD459D743E920Dd2b7C3D0cA92840E785685baEf5');
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {
         from: owner.address,
-        to: addressF2A,
+        to: addressMGMT,
         gas: 2000000,
         data: functionABI
     };
