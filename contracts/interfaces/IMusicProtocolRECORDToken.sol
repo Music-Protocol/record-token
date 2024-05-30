@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IWeb3MusicNativeToken is IERC20 {
+interface IMusicProtocolRECORDToken is IERC20 {
     function lock(address from, uint256 amount) external returns (bool);
 
     function pay(address to, uint256 amount) external;

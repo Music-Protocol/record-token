@@ -1,13 +1,13 @@
 import { ethers } from "hardhat";
 import { addressToken, addressF2A } from "./utils/contracts";
 
-async function deployMGMT(){
-    const managementFactory = await ethers.getContractFactory("Web3MusicNativeTokenManagement");
-    const Web3MusicNativeTokenManagement = await managementFactory.deploy(addressToken, addressF2A);
+async function deployMGMT() {
+    const managementFactory = await ethers.getContractFactory("MusicProtocolRECORDTokenManagement");
+    const MusicProtocolRECORDTokenManagement = await managementFactory.deploy(addressToken, addressF2A);
     console.log("MGMT deploy");
-    await Web3MusicNativeTokenManagement.deployed();
+    await MusicProtocolRECORDTokenManagement.deployed();
     console.log("MGMT deployed");
-    console.log("MGMT address: " + Web3MusicNativeTokenManagement.address);
+    console.log("MGMT address: " + MusicProtocolRECORDTokenManagement.address);
 }
 
 deployMGMT().catch((error) => {

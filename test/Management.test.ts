@@ -2,12 +2,12 @@ import { expect } from 'chai';
 import { BytesLike } from 'ethers';
 import { ethers, web3, upgrades } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { FanToArtistStaking, Web3MusicNativeToken, Web3MusicNativeTokenManagement } from '../typechain-types/index';
+import { ArtistStaking, MusicProtocolRECORDToken, MusicProtocolRECORDTokenManagement } from '../typechain-types/index';
 
-describe('Web3MusicNativeTokenManagement', () => {
-  let Web3MusicNativeToken: Web3MusicNativeToken;
-  let Web3MusicNativeTokenManagement: Web3MusicNativeTokenManagement;
-  let fanToArtistStaking: FanToArtistStaking;
+describe('MusicProtocolRECORDTokenManagement', () => {
+  let MusicProtocolRECORDToken: MusicProtocolRECORDToken;
+  let MusicProtocolRECORDTokenManagement: MusicProtocolRECORDTokenManagement;
+  let ArtistStaking: ArtistStaking;
   let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, fakeStaking: SignerWithAddress, fakeDAO: SignerWithAddress;
   let artist1: SignerWithAddress, artist2: SignerWithAddress;
   let adminRole: BytesLike, minterRole: BytesLike, tgeRole: BytesLike, burnerRole: BytesLike, verifyArtistRole: BytesLike, removeArtistRole: BytesLike;
@@ -21,70 +21,70 @@ describe('Web3MusicNativeTokenManagement', () => {
     [owner, addr1, addr2, fakeStaking, fakeDAO, artist1, artist2] = await ethers.getSigners();
 
 
-    const FTAS = await ethers.getContractFactory('FanToArtistStaking');
-    fanToArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000}) as unknown as FanToArtistStaking;
+    const FTAS = await ethers.getContractFactory('ArtistStaking');
+    ArtistStaking = await upgrades.deployProxy(FTAS.connect(owner), [], { initializer: false, kind: 'uups', timeout: 180000 }) as unknown as ArtistStaking;
 
-    const cWeb3MusicNativeToken = await ethers.getContractFactory('Web3MusicNativeToken');
-    Web3MusicNativeToken = await cWeb3MusicNativeToken.deploy(fanToArtistStaking.address);
-    await Web3MusicNativeToken.deployed();
-    fanToArtistStaking.initialize(Web3MusicNativeToken.address, 10, 10, 86400, 3, 600);
+    const cMusicProtocolRECORDToken = await ethers.getContractFactory('MusicProtocolRECORDToken');
+    MusicProtocolRECORDToken = await cMusicProtocolRECORDToken.deploy(ArtistStaking.address);
+    await MusicProtocolRECORDToken.deployed();
+    ArtistStaking.initialize(MusicProtocolRECORDToken.address, 10, 10, 86400, 3, 600);
 
-    const cWeb3MusicNativeTokenManagement = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
-    Web3MusicNativeTokenManagement = await cWeb3MusicNativeTokenManagement.deploy(Web3MusicNativeToken.address, fanToArtistStaking.address);
-    await Web3MusicNativeTokenManagement.deployed();
-    await Web3MusicNativeToken.transferOwnership(Web3MusicNativeTokenManagement.address);
+    const cMusicProtocolRECORDTokenManagement = await ethers.getContractFactory('MusicProtocolRECORDTokenManagement');
+    MusicProtocolRECORDTokenManagement = await cMusicProtocolRECORDTokenManagement.deploy(MusicProtocolRECORDToken.address, ArtistStaking.address);
+    await MusicProtocolRECORDTokenManagement.deployed();
+    await MusicProtocolRECORDToken.transferOwnership(MusicProtocolRECORDTokenManagement.address);
 
-    await Web3MusicNativeTokenManagement.custom([Web3MusicNativeToken.address], [calldata]);
-    await fanToArtistStaking.transferOwnership(Web3MusicNativeTokenManagement.address);
-    await Web3MusicNativeTokenManagement.custom([fanToArtistStaking.address], [calldata]);
-    // await Web3MusicNativeTokenManagement.custom([calldata]);
+    await MusicProtocolRECORDTokenManagement.custom([MusicProtocolRECORDToken.address], [calldata]);
+    await ArtistStaking.transferOwnership(MusicProtocolRECORDTokenManagement.address);
+    await MusicProtocolRECORDTokenManagement.custom([ArtistStaking.address], [calldata]);
+    // await MusicProtocolRECORDTokenManagement.custom([calldata]);
 
 
-    adminRole = await Web3MusicNativeTokenManagement.DEFAULT_ADMIN_ROLE();
-    minterRole = await Web3MusicNativeTokenManagement.MINTER_ROLE();
-    tgeRole = await Web3MusicNativeTokenManagement.TGE_ROLE();
-    burnerRole = await Web3MusicNativeTokenManagement.BURNER_ROLE();
-    verifyArtistRole = await Web3MusicNativeTokenManagement.VERIFY_ARTIST_ROLE();
-    removeArtistRole = await Web3MusicNativeTokenManagement.REMOVE_ARTIST_ROLE();
+    adminRole = await MusicProtocolRECORDTokenManagement.DEFAULT_ADMIN_ROLE();
+    minterRole = await MusicProtocolRECORDTokenManagement.MINTER_ROLE();
+    tgeRole = await MusicProtocolRECORDTokenManagement.TGE_ROLE();
+    burnerRole = await MusicProtocolRECORDTokenManagement.BURNER_ROLE();
+    verifyArtistRole = await MusicProtocolRECORDTokenManagement.VERIFY_ARTIST_ROLE();
+    removeArtistRole = await MusicProtocolRECORDTokenManagement.REMOVE_ARTIST_ROLE();
   });
 
   describe('Deployment', () => {
-    it('The owner of Web3MusicNativeToken should be the Web3MusicNativeTokenManagement contract', async () => {
-      expect(await Web3MusicNativeToken.owner()).to.equal(Web3MusicNativeTokenManagement.address);
+    it('The owner of MusicProtocolRECORDToken should be the MusicProtocolRECORDTokenManagement contract', async () => {
+      expect(await MusicProtocolRECORDToken.owner()).to.equal(MusicProtocolRECORDTokenManagement.address);
     });
 
-    it('The owner of FanToArtistStaking should be the Web3MusicNativeTokenManagement contract', async () => {
-      expect(await fanToArtistStaking.owner()).to.equal(Web3MusicNativeTokenManagement.address);
+    it('The owner of ArtistStaking should be the MusicProtocolRECORDTokenManagement contract', async () => {
+      expect(await ArtistStaking.owner()).to.equal(MusicProtocolRECORDTokenManagement.address);
     });
 
     it('The deployer of the contract should have all the roles', async () => {
-      expect(await Web3MusicNativeTokenManagement.hasRole(adminRole, owner.address)).to.be.true;
-      expect(await Web3MusicNativeTokenManagement.hasRole(minterRole, owner.address)).to.be.true;
-      expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
-      expect(await Web3MusicNativeTokenManagement.hasRole(burnerRole, owner.address)).to.be.true;
-      expect(await Web3MusicNativeTokenManagement.hasRole(verifyArtistRole, owner.address)).to.be.true;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(adminRole, owner.address)).to.be.true;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(minterRole, owner.address)).to.be.true;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(burnerRole, owner.address)).to.be.true;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(verifyArtistRole, owner.address)).to.be.true;
     });
     it('Another user should have no role', async () => {
-      expect(await Web3MusicNativeTokenManagement.hasRole(adminRole, addr1.address)).to.be.false;
-      expect(await Web3MusicNativeTokenManagement.hasRole(minterRole, addr1.address)).to.be.false;
-      expect(await Web3MusicNativeTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
-      expect(await Web3MusicNativeTokenManagement.hasRole(burnerRole, addr1.address)).to.be.false;
-      expect(await Web3MusicNativeTokenManagement.hasRole(verifyArtistRole, addr1.address)).to.be.false;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(adminRole, addr1.address)).to.be.false;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(minterRole, addr1.address)).to.be.false;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(tgeRole, owner.address)).to.be.true;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(burnerRole, addr1.address)).to.be.false;
+      expect(await MusicProtocolRECORDTokenManagement.hasRole(verifyArtistRole, addr1.address)).to.be.false;
     });
   });
 
   it("The deployer of the contract should have all the roles", async () => {
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(adminRole, owner.address)
+      await MusicProtocolRECORDTokenManagement.hasRole(adminRole, owner.address)
     ).to.be.true;
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(minterRole, owner.address)
+      await MusicProtocolRECORDTokenManagement.hasRole(minterRole, owner.address)
     ).to.be.true;
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(burnerRole, owner.address)
+      await MusicProtocolRECORDTokenManagement.hasRole(burnerRole, owner.address)
     ).to.be.true;
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(
+      await MusicProtocolRECORDTokenManagement.hasRole(
         verifyArtistRole,
         owner.address
       )
@@ -92,79 +92,79 @@ describe('Web3MusicNativeTokenManagement', () => {
   });
   it("Another user should have no role", async () => {
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(adminRole, addr1.address)
+      await MusicProtocolRECORDTokenManagement.hasRole(adminRole, addr1.address)
     ).to.be.false;
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(minterRole, addr1.address)
+      await MusicProtocolRECORDTokenManagement.hasRole(minterRole, addr1.address)
     ).to.be.false;
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(burnerRole, addr1.address)
+      await MusicProtocolRECORDTokenManagement.hasRole(burnerRole, addr1.address)
     ).to.be.false;
     expect(
-      await Web3MusicNativeTokenManagement.hasRole(
+      await MusicProtocolRECORDTokenManagement.hasRole(
         verifyArtistRole,
         addr1.address
       )
     ).to.be.false;
   });
 
-  describe("Web3MusicNativeToken", () => {
-    it("The deployer of Web3MusicNativeToken should not be able to call a onlyOwner method", async () => {
+  describe("MusicProtocolRECORDToken", () => {
+    it("The deployer of MusicProtocolRECORDToken should not be able to call a onlyOwner method", async () => {
       await expect(
-        Web3MusicNativeToken.connect(owner).mint(addr1.address, 10)
+        MusicProtocolRECORDToken.connect(owner).mint(addr1.address, 10)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     describe("Pausable", () => {
-      it("An address without the DEFAULT_ADMIN_ROLE should not be able to pause Web3MusicNativeToken", async () => {
+      it("An address without the DEFAULT_ADMIN_ROLE should not be able to pause MusicProtocolRECORDToken", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(
+          MusicProtocolRECORDTokenManagement.connect(
             addr1
-          ).pauseWeb3MusicNativeToken()
+          ).pauseMusicProtocolRECORDToken()
         ).to.be.revertedWith(
           `AccessControl: account ${addr1.address.toLowerCase()} is missing role ${adminRole}`
         );
       });
 
-      it("An address with the DEFAULT_ADMIN_ROLE should be able to pause Web3MusicNativeToken", async () => {
-        await Web3MusicNativeTokenManagement.connect(
+      it("An address with the DEFAULT_ADMIN_ROLE should be able to pause MusicProtocolRECORDToken", async () => {
+        await MusicProtocolRECORDTokenManagement.connect(
           owner
-        ).pauseWeb3MusicNativeToken();
-        expect(await Web3MusicNativeToken.paused()).to.equal(true);
+        ).pauseMusicProtocolRECORDToken();
+        expect(await MusicProtocolRECORDToken.paused()).to.equal(true);
       });
 
-      it("An address without the DEFAULT_ADMIN_ROLE should not be able to unpause Web3MusicNativeToken", async () => {
+      it("An address without the DEFAULT_ADMIN_ROLE should not be able to unpause MusicProtocolRECORDToken", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(
+          MusicProtocolRECORDTokenManagement.connect(
             addr1
-          ).unpauseWeb3MusicNativeToken()
+          ).unpauseMusicProtocolRECORDToken()
         ).to.be.revertedWith(
           `AccessControl: account ${addr1.address.toLowerCase()} is missing role ${adminRole}`
         );
       });
 
-      it("An address with the DEFAULT_ADMIN_ROLE should be able to unpause Web3MusicNativeToken", async () => {
-        await Web3MusicNativeTokenManagement.connect(
+      it("An address with the DEFAULT_ADMIN_ROLE should be able to unpause MusicProtocolRECORDToken", async () => {
+        await MusicProtocolRECORDTokenManagement.connect(
           owner
-        ).unpauseWeb3MusicNativeToken();
-        expect(await Web3MusicNativeToken.paused()).to.equal(false);
+        ).unpauseMusicProtocolRECORDToken();
+        expect(await MusicProtocolRECORDToken.paused()).to.equal(false);
       });
     });
 
     describe("Minting", () => {
-      it("An address with the MINTER_ROLE should be able to mint Web3MusicNativeToken", async () => {
-        await Web3MusicNativeTokenManagement.connect(owner).mint(
+      it("An address with the MINTER_ROLE should be able to mint MusicProtocolRECORDToken", async () => {
+        await MusicProtocolRECORDTokenManagement.connect(owner).mint(
           addr1.address,
           10
         );
-        expect(await Web3MusicNativeToken.balanceOf(addr1.address)).to.equal(
+        expect(await MusicProtocolRECORDToken.balanceOf(addr1.address)).to.equal(
           10
         );
       });
 
-      it("An address without the MINTER_ROLE should not be able to mint Web3MusicNativeToken", async () => {
+      it("An address without the MINTER_ROLE should not be able to mint MusicProtocolRECORDToken", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(addr1).mint(addr1.address, 10)
+          MusicProtocolRECORDTokenManagement.connect(addr1).mint(addr1.address, 10)
         ).to.be.revertedWith(
           `AccessControl: account ${addr1.address.toLowerCase()} is missing role ${minterRole}`
         );
@@ -173,49 +173,49 @@ describe('Web3MusicNativeTokenManagement', () => {
 
     describe("Burning", () => {
       before(async () => {
-        await Web3MusicNativeTokenManagement.connect(owner).mint(
-          Web3MusicNativeTokenManagement.address,
+        await MusicProtocolRECORDTokenManagement.connect(owner).mint(
+          MusicProtocolRECORDTokenManagement.address,
           10
         );
       });
 
-      it("An address without the BURNERN_ROLE should not be able to burn Web3MusicNativeToken", async () => {
+      it("An address without the BURNERN_ROLE should not be able to burn MusicProtocolRECORDToken", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(addr1).burn(10)
+          MusicProtocolRECORDTokenManagement.connect(addr1).burn(10)
         ).to.be.revertedWith(
           `AccessControl: account ${addr1.address.toLowerCase()} is missing role ${burnerRole}`
         );
       });
 
-      it("An address with the BURNERN_ROLE should be able to burn Web3MusicNativeToken", async () => {
-        await Web3MusicNativeTokenManagement.grantRole(
+      it("An address with the BURNERN_ROLE should be able to burn MusicProtocolRECORDToken", async () => {
+        await MusicProtocolRECORDTokenManagement.grantRole(
           burnerRole,
           addr1.address
         );
-        await Web3MusicNativeTokenManagement.connect(addr1).burn(10);
-        expect(await Web3MusicNativeToken.balanceOf(owner.address)).to.equal(0);
+        await MusicProtocolRECORDTokenManagement.connect(addr1).burn(10);
+        expect(await MusicProtocolRECORDToken.balanceOf(owner.address)).to.equal(0);
       });
     });
 
     describe("Burning From", () => {
       before(async () => {
-        await Web3MusicNativeTokenManagement.connect(owner).mint(
+        await MusicProtocolRECORDTokenManagement.connect(owner).mint(
           addr2.address,
           10
         );
-        await Web3MusicNativeToken.connect(addr2).approve(
-          Web3MusicNativeTokenManagement.address,
+        await MusicProtocolRECORDToken.connect(addr2).approve(
+          MusicProtocolRECORDTokenManagement.address,
           10
         );
-        await Web3MusicNativeTokenManagement.revokeRole(
+        await MusicProtocolRECORDTokenManagement.revokeRole(
           burnerRole,
           addr1.address
         );
       });
 
-      it("An address without the BURNERN_ROLE should not be able to burn Web3MusicNativeToken", async () => {
+      it("An address without the BURNERN_ROLE should not be able to burn MusicProtocolRECORDToken", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(addr1).burnFrom(
+          MusicProtocolRECORDTokenManagement.connect(addr1).burnFrom(
             addr2.address,
             10
           )
@@ -224,58 +224,58 @@ describe('Web3MusicNativeTokenManagement', () => {
         );
       });
 
-      it("An address with the BURNERN_ROLE should be able to burn Web3MusicNativeToken", async () => {
-        await Web3MusicNativeTokenManagement.grantRole(
+      it("An address with the BURNERN_ROLE should be able to burn MusicProtocolRECORDToken", async () => {
+        await MusicProtocolRECORDTokenManagement.grantRole(
           burnerRole,
           addr1.address
         );
-        await Web3MusicNativeTokenManagement.connect(addr1).burnFrom(
+        await MusicProtocolRECORDTokenManagement.connect(addr1).burnFrom(
           addr2.address,
           10
         );
-        expect(await Web3MusicNativeToken.balanceOf(owner.address)).to.equal(0);
+        expect(await MusicProtocolRECORDToken.balanceOf(owner.address)).to.equal(0);
       });
     });
 
     describe("Transfer Ownership", () => {
-      it("An address without the DEFAULT_ADMIN_ROLE should not be able to transfer the ownership of Web3MusicNativeToken contract", async () => {
+      it("An address without the DEFAULT_ADMIN_ROLE should not be able to transfer the ownership of MusicProtocolRECORDToken contract", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(
+          MusicProtocolRECORDTokenManagement.connect(
             addr1
-          ).transferWeb3MusicNativeToken(fakeDAO.address)
+          ).transferMusicProtocolRECORDToken(fakeDAO.address)
         ).to.be.revertedWith(
           `AccessControl: account ${addr1.address.toLowerCase()} is missing role ${adminRole}`
         );
       });
 
-      it("An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of Web3MusicNativeToken contract", async () => {
-        await Web3MusicNativeTokenManagement.connect(
+      it("An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of MusicProtocolRECORDToken contract", async () => {
+        await MusicProtocolRECORDTokenManagement.connect(
           owner
-        ).transferWeb3MusicNativeToken(fakeDAO.address);
-        await Web3MusicNativeToken.connect(fakeDAO).acceptOwnership();
-        expect(await Web3MusicNativeToken.owner()).to.equal(fakeDAO.address);
+        ).transferMusicProtocolRECORDToken(fakeDAO.address);
+        await MusicProtocolRECORDToken.connect(fakeDAO).acceptOwnership();
+        expect(await MusicProtocolRECORDToken.owner()).to.equal(fakeDAO.address);
       });
 
       after(async () => {
-        await Web3MusicNativeToken.connect(fakeDAO).transferOwnership(
-          Web3MusicNativeTokenManagement.address
+        await MusicProtocolRECORDToken.connect(fakeDAO).transferOwnership(
+          MusicProtocolRECORDTokenManagement.address
         );
-        await Web3MusicNativeTokenManagement.custom(
-          [Web3MusicNativeToken.address],
+        await MusicProtocolRECORDTokenManagement.custom(
+          [MusicProtocolRECORDToken.address],
           [calldata]
         );
       });
     });
   });
 
-  describe("FanToArtistStaking", () => {
+  describe("ArtistStaking", () => {
     describe("Verified Artist", () => {
       before(async () => {
-        await Web3MusicNativeTokenManagement.grantRole(
+        await MusicProtocolRECORDTokenManagement.grantRole(
           verifyArtistRole,
           addr1.address
         );
-        await Web3MusicNativeTokenManagement.grantRole(
+        await MusicProtocolRECORDTokenManagement.grantRole(
           removeArtistRole,
           addr1.address
         );
@@ -283,42 +283,42 @@ describe('Web3MusicNativeTokenManagement', () => {
 
       it("When an artist is added through ftas should emit an event", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(addr1).addArtist(
+          MusicProtocolRECORDTokenManagement.connect(addr1).addArtist(
             [artist1.address]
           )
-        ).to.emit(fanToArtistStaking, "ArtistAdded"); //emit event correct
+        ).to.emit(ArtistStaking, "ArtistAdded"); //emit event correct
       });
 
       it("When an artist is removed through ftas should emit an event", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(addr1).removeArtist(
+          MusicProtocolRECORDTokenManagement.connect(addr1).removeArtist(
             [artist1.address]
           )
-        ).to.emit(fanToArtistStaking, "ArtistRemoved"); //emit event correct
+        ).to.emit(ArtistStaking, "ArtistRemoved"); //emit event correct
       });
 
       it("Artists can be added by group", async () => {
-        await Web3MusicNativeTokenManagement.connect(addr1).addArtist([artist1.address, artist2.address]);
-        expect(await fanToArtistStaking.isVerified(artist1.address)).to.be.true;
-        expect(await fanToArtistStaking.isVerified(artist2.address)).to.be.true;
+        await MusicProtocolRECORDTokenManagement.connect(addr1).addArtist([artist1.address, artist2.address]);
+        expect(await ArtistStaking.isVerified(artist1.address)).to.be.true;
+        expect(await ArtistStaking.isVerified(artist2.address)).to.be.true;
       });
 
       it("Artists can be removed by group", async () => {
-        await Web3MusicNativeTokenManagement.connect(addr1).removeArtist([artist1.address, artist2.address]);
-        expect(await fanToArtistStaking.isVerified(artist1.address)).to.be.false;
-        expect(await fanToArtistStaking.isVerified(artist2.address)).to.be.false;
+        await MusicProtocolRECORDTokenManagement.connect(addr1).removeArtist([artist1.address, artist2.address]);
+        expect(await ArtistStaking.isVerified(artist1.address)).to.be.false;
+        expect(await ArtistStaking.isVerified(artist2.address)).to.be.false;
       });
 
       it("Should revert", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(artist1).addArtist(
+          MusicProtocolRECORDTokenManagement.connect(artist1).addArtist(
             [artist1.address]
           )
         ).to.be.revertedWith(
           `AccessControl: account ${artist1.address.toLowerCase()} is missing role ${verifyArtistRole}`
         );
         await expect(
-          Web3MusicNativeTokenManagement.connect(artist1).removeArtist(
+          MusicProtocolRECORDTokenManagement.connect(artist1).removeArtist(
             [artist1.address]
           )
         ).to.be.revertedWith(
@@ -330,28 +330,28 @@ describe('Web3MusicNativeTokenManagement', () => {
     describe("Transfer Ownership", () => {
       it("An address without the DEFAULT_ADMIN_ROLE should not be able to transfer the ownership of FTAS contract", async () => {
         await expect(
-          Web3MusicNativeTokenManagement.connect(
+          MusicProtocolRECORDTokenManagement.connect(
             addr1
-          ).transferFanToArtistStaking(fakeDAO.address)
+          ).transferArtistStaking(fakeDAO.address)
         ).to.be.revertedWith(
           `AccessControl: account ${addr1.address.toLowerCase()} is missing role ${adminRole}`
         );
       });
 
       it("An address with the DEFAULT_ADMIN_ROLE should be able to transfer the ownership of FTAS contract", async () => {
-        await Web3MusicNativeTokenManagement.connect(
+        await MusicProtocolRECORDTokenManagement.connect(
           owner
-        ).transferFanToArtistStaking(fakeDAO.address);
-        await fanToArtistStaking.connect(fakeDAO).acceptOwnership();
-        expect(await fanToArtistStaking.owner()).to.equal(fakeDAO.address);
+        ).transferArtistStaking(fakeDAO.address);
+        await ArtistStaking.connect(fakeDAO).acceptOwnership();
+        expect(await ArtistStaking.owner()).to.equal(fakeDAO.address);
       });
 
       after(async () => {
-        await fanToArtistStaking
+        await ArtistStaking
           .connect(fakeDAO)
-          .transferOwnership(Web3MusicNativeTokenManagement.address);
-        await Web3MusicNativeTokenManagement.custom(
-          [fanToArtistStaking.address],
+          .transferOwnership(MusicProtocolRECORDTokenManagement.address);
+        await MusicProtocolRECORDTokenManagement.custom(
+          [ArtistStaking.address],
           [calldata]
         );
       });
@@ -361,24 +361,24 @@ describe('Web3MusicNativeTokenManagement', () => {
   describe("Event emitting", () => {
     it("The minting should emit a Mint event", async () => {
       await expect(
-        Web3MusicNativeTokenManagement.connect(owner).mint(addr1.address, 100)
+        MusicProtocolRECORDTokenManagement.connect(owner).mint(addr1.address, 100)
       )
-        .to.emit(Web3MusicNativeTokenManagement, "Mint")
+        .to.emit(MusicProtocolRECORDTokenManagement, "Mint")
         .withArgs(addr1.address, 100, owner.address);
     });
 
     it("The burning should emit a Burn event", async () => {
-      await Web3MusicNativeToken.connect(addr1).approve(
-        Web3MusicNativeTokenManagement.address,
+      await MusicProtocolRECORDToken.connect(addr1).approve(
+        MusicProtocolRECORDTokenManagement.address,
         100
       );
       await expect(
-        Web3MusicNativeTokenManagement.connect(owner).burnFrom(
+        MusicProtocolRECORDTokenManagement.connect(owner).burnFrom(
           addr1.address,
           100
         )
       )
-        .to.emit(Web3MusicNativeTokenManagement, "Burn")
+        .to.emit(MusicProtocolRECORDTokenManagement, "Burn")
         .withArgs(addr1.address, 100, owner.address);
     });
   });

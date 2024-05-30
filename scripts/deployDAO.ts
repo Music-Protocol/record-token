@@ -5,7 +5,7 @@ async function deployDAO() {
     const daoQuorum = 10e7;
     const daoMajority = 50e7 + 1;
 
-    const daoFactory = await ethers.getContractFactory('Web3MusicNetworkDAO');            
+    const daoFactory = await ethers.getContractFactory('MusicProtocolDAO');
     let dao = await daoFactory.deploy(addressF2A, daoQuorum, daoMajority, 600, true) //The proposal can be executed only after 10 minutes
     console.log("DAO deploy");
     await dao.deployed();

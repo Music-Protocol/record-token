@@ -4,17 +4,17 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "./interfaces/IWeb3MusicNativeToken.sol";
+import "./interfaces/IMusicProtocolRECORDToken.sol";
 
-contract Web3MusicNativeToken is
-    IWeb3MusicNativeToken,
+contract MusicProtocolRECORDToken is
+    IMusicProtocolRECORDToken,
     ERC20,
     Ownable2Step,
     Pausable
 {
     uint256 private constant MAX_MINT = 1000000000000000000000000000;
     uint256 public minted = 0;
-    address private immutable _fanToArtistStaking;
+    address private immutable _ArtistStaking;
     mapping(address => ReleasablePayment) public releasablePayments;
 
     struct ReleasablePayment {
@@ -37,33 +37,33 @@ contract Web3MusicNativeToken is
         uint64 indexed recipientUpdatedDuration
     );
 
-    //for the function callable only by FanToArtistStaking.sol
+    //for the function callable only by ArtistStaking.sol
     modifier onlyStaking() {
         require(
-            _fanToArtistStaking == _msgSender(),
-            "Web3MusicNativeToken: caller is not the FanToArtistStaking contract"
+            _ArtistStaking == _msgSender(),
+            "MusicProtocolRECORDToken: caller is not the ArtistStaking contract"
         );
         _;
     }
 
-    constructor(address staking_) ERC20("Web3MusicNativeToken", "W3M") {
+    constructor(address staking_) ERC20("MusicProtocolRECORDToken", "RECORD") {
         require(
             staking_ != address(0),
-            "Web3MusicNativeToken: the address of FanToArtistStaking is 0"
+            "MusicProtocolRECORDToken: the address of ArtistStaking is 0"
         );
-        _fanToArtistStaking = staking_;
+        _ArtistStaking = staking_;
     }
 
     function transferOwnership(
         address to
-    ) public override(IWeb3MusicNativeToken, Ownable2Step) onlyOwner {
+    ) public override(IMusicProtocolRECORDToken, Ownable2Step) onlyOwner {
         super.transferOwnership(to);
     }
 
     function renounceOwnership() public override(Ownable) onlyOwner {
         require(
             false, 
-            "Web3MusicNativeToken: function disabled"
+            "MusicProtocolRECORDToken: function disabled"
         );
         super.renounceOwnership();
     }
@@ -91,7 +91,7 @@ contract Web3MusicNativeToken is
                 _release(from); //Release of earned tokens
 
                 //It's not a mint, it's not a stake and it's not a redeem: TRANSFER
-                if (from != address(0) && to != _fanToArtistStaking && from != _fanToArtistStaking) {
+                if (from != address(0) && to != _ArtistStaking && from != _ArtistStaking) {
                     //Calculating the tokens actually held:
                     uint256 ownedTokens = balanceOf(from) - 
                         (releasablePayments[from].tokens -
@@ -99,12 +99,12 @@ contract Web3MusicNativeToken is
                     //To continue the transaction, it checks that the tokens actually held are greater than those sent:
                     require(
                         ownedTokens >= amount, 
-                        "Web3MusicNativeToken: transfer amount exceeds balance"
+                        "MusicProtocolRECORDToken: transfer amount exceeds balance"
                     );
                 }
 
                 //It's a transfer to the stake: STAKE
-                if (to == _fanToArtistStaking) {
+                if (to == _ArtistStaking) {
                     //Calculating the tokens actually held:
                     uint256 ownedTokens = balanceOf(from) - 
                         (releasablePayments[from].tokens - 
@@ -128,7 +128,7 @@ contract Web3MusicNativeToken is
 
             //If a user who has received a gradual release of tokens does a REDEEM:
             if (
-                from == _fanToArtistStaking && //It's a redeem, it is sent by the fanToArtistStaking contract
+                from == _ArtistStaking && //It's a redeem, it is sent by the ArtistStaking contract
                 releasablePayments[to].releasableBalance > 0 //The recipient address received a phased release of tokens
             )   {
                 //Calculating the possible debt:
@@ -167,7 +167,7 @@ contract Web3MusicNativeToken is
     function mint(address to, uint256 amount) external override onlyOwner {
         require(
             minted + amount <= MAX_MINT,
-            "Web3MusicNativeToken: Maximum limit of mintable tokens reached"
+            "MusicProtocolRECORDToken: Maximum limit of mintable tokens reached"
         );
         minted += amount;
         _mint(to, amount);
@@ -181,23 +181,23 @@ contract Web3MusicNativeToken is
     ) external override onlyOwner {
         require(
             _amount > 0,
-            "Web3MusicNativeToken: Amount can not be 0 or less in mint_and_lock."
+            "MusicProtocolRECORDToken: Amount can not be 0 or less in mint_and_lock."
         );
         require(
             releasablePayments[_beneficiary].releasableBalance == 0,
-            "Web3MusicNativeToken: Releasable payment already used."
+            "MusicProtocolRECORDToken: Releasable payment already used."
         );
         require(
             minted + _amount <= MAX_MINT,
-            "Web3MusicNativeToken: Maximum limit of mintable tokens reached"
+            "MusicProtocolRECORDToken: Maximum limit of mintable tokens reached"
         );
         require(
             _start >= block.timestamp, 
-            "Web3MusicNativeToken: Releasable payment cannot begin in the past"
+            "MusicProtocolRECORDToken: Releasable payment cannot begin in the past"
         );
         require(
             _duration >= 600, 
-            "Web3MusicNativeToken: The duration of releasable payment must be at least 10 minutes"
+            "MusicProtocolRECORDToken: The duration of releasable payment must be at least 10 minutes"
         );
         releasablePayments[_beneficiary] = ReleasablePayment(
             _amount,
@@ -233,19 +233,19 @@ contract Web3MusicNativeToken is
     ) external override onlyOwner {
         require(
             _amount > 0,
-            "Web3MusicNativeToken: Amount can not be 0 or less in transfer_and_lock."
+            "MusicProtocolRECORDToken: Amount can not be 0 or less in transfer_and_lock."
         );
         require(
             releasablePayments[_beneficiary].releasableBalance == 0,
-            "Web3MusicNativeToken: Releasable payment already used."
+            "MusicProtocolRECORDToken: Releasable payment already used."
         );
         require(
             _start >= block.timestamp, 
-            "Web3MusicNativeToken: Releasable payment cannot begin in the past"
+            "MusicProtocolRECORDToken: Releasable payment cannot begin in the past"
         );
         require(
             _duration >= 600, 
-            "Web3MusicNativeToken: The duration of releasable payment must be at least 10 minutes"
+            "MusicProtocolRECORDToken: The duration of releasable payment must be at least 10 minutes"
         );
         releasablePayments[_beneficiary] = ReleasablePayment(
             _amount,
@@ -296,7 +296,7 @@ contract Web3MusicNativeToken is
         }
     }
 
-    //Safe since it can be called only by FanToArtistStaking, could add a mapping(address => amount) to check if someone is unlocking more than what he previously locked
+    //Safe since it can be called only by ArtistStaking, could add a mapping(address => amount) to check if someone is unlocking more than what he previously locked
     function lock(
         address from,
         uint256 amount

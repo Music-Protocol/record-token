@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat';
-import { FanToArtistStaking } from '../../typechain-types/index';
+import { ArtistStaking } from '../../typechain-types/index';
 import { expect } from 'chai';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { string } from 'hardhat/internal/core/params/argumentTypes';
@@ -52,7 +52,7 @@ function matchDetailedStakes(element: any, artist: string, user: string, amount:
 async function getTimestamp() {
     const blockNumBefore = await ethers.provider.getBlockNumber();
     const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    return blockBefore.timestamp+1;
+    return blockBefore.timestamp + 1;
 }
 
 async function getStakeFromEvent(receipt: ContractTransaction) {
