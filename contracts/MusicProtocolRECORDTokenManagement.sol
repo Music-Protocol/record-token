@@ -4,14 +4,14 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/AccessControl.sol"; //to mint and burn
 import "@openzeppelin/contracts/utils/Address.sol";
-import "./interfaces/IWeb3MusicNativeToken.sol";
-import "./interfaces/IFanToArtistStaking.sol";
+import "./interfaces/IMusicProtocolRECORDToken.sol";
+import "./interfaces/IArtistStaking.sol";
 
-contract Web3MusicNativeTokenManagement is AccessControl {
+contract MusicProtocolRECORDTokenManagement is AccessControl {
     event Mint(address indexed to, uint256 amount, address indexed sender);
     event Burn(address indexed from, uint256 amount, address indexed sender);
-    event Web3MusicNativeTokenChanged(address indexed newAddress);
-    event FanToArtistStakingChanged(address indexed newAddress);
+    event MusicProtocolRECORDTokenChanged(address indexed newAddress);
+    event ArtistStakingChanged(address indexed newAddress);
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant TGE_ROLE = keccak256("TGE_ROLE");
@@ -19,20 +19,20 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     bytes32 public constant VERIFY_ARTIST_ROLE = keccak256("VERIFY_ARTIST_ROLE");
     bytes32 public constant REMOVE_ARTIST_ROLE = keccak256("REMOVE_ARTIST_ROLE");
 
-    IWeb3MusicNativeToken private _web3MusicNativeToken;
-    IFanToArtistStaking private _ftas;
+    IMusicProtocolRECORDToken private _MusicProtocolRECORDToken;
+    IArtistStaking private _ftas;
 
-    constructor(address web3MusicNativeToken_, address ftas_) {
+    constructor(address MusicProtocolRECORDToken_, address ftas_) {
         require(
-            web3MusicNativeToken_ != address(0),
-            "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0"
+            MusicProtocolRECORDToken_ != address(0),
+            "MusicProtocolRECORDTokenManagement: MusicProtocolRECORDToken address can not be 0"
         );
         require(
             ftas_ != address(0),
-            "Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0"
+            "MusicProtocolRECORDTokenManagement: ArtistStaking address can not be 0"
         );
-        _web3MusicNativeToken = IWeb3MusicNativeToken(web3MusicNativeToken_);
-        _ftas = IFanToArtistStaking(ftas_);
+        _MusicProtocolRECORDToken = IMusicProtocolRECORDToken(MusicProtocolRECORDToken_);
+        _ftas = IArtistStaking(ftas_);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(BURNER_ROLE, msg.sender);
@@ -42,7 +42,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
     }
 
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
-        _web3MusicNativeToken.mint(to, amount);
+        _MusicProtocolRECORDToken.mint(to, amount);
         emit Mint(to, amount, _msgSender());
     }
 
@@ -52,7 +52,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         uint64 start,
         uint64 duration
     ) external onlyRole(TGE_ROLE) {
-        _web3MusicNativeToken.mint_and_lock(to, amount, start, duration);
+        _MusicProtocolRECORDToken.mint_and_lock(to, amount, start, duration);
     }
 
     function transfer_and_lock(
@@ -62,12 +62,12 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         uint64 start,
         uint64 duration
     ) external onlyRole(TGE_ROLE) {
-        _web3MusicNativeToken.transfer_and_lock(from, to, amount, start, duration);
+        _MusicProtocolRECORDToken.transfer_and_lock(from, to, amount, start, duration);
     }
 
-    // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(Web3MusicNativeTokenManament)
+    // note that with burn you do not burn the tokens of the caller(msg.sender) but of the current contract(MusicProtocolRECORDTokenManament)
     function burn(uint256 amount) external onlyRole(BURNER_ROLE) {
-        _web3MusicNativeToken.burn(amount);
+        _MusicProtocolRECORDToken.burn(amount);
         emit Burn(address(this), amount, _msgSender());
     }
 
@@ -75,17 +75,17 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         address account,
         uint256 amount
     ) external onlyRole(BURNER_ROLE) {
-        _web3MusicNativeToken.burnFrom(account, amount);
+        _MusicProtocolRECORDToken.burnFrom(account, amount);
         emit Burn(account, amount, _msgSender());
     }
 
-    function transferWeb3MusicNativeToken(
+    function transferMusicProtocolRECORDToken(
         address to
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _web3MusicNativeToken.transferOwnership(to);
+        _MusicProtocolRECORDToken.transferOwnership(to);
     }
 
-    function transferFanToArtistStaking(
+    function transferArtistStaking(
         address to
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _ftas.transferOwnership(to);
@@ -107,15 +107,15 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         }
     }
 
-    function pauseWeb3MusicNativeToken() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _web3MusicNativeToken.pause();
+    function pauseMusicProtocolRECORDToken() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _MusicProtocolRECORDToken.pause();
     }
 
-    function unpauseWeb3MusicNativeToken()
+    function unpauseMusicProtocolRECORDToken()
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        _web3MusicNativeToken.unpause();
+        _MusicProtocolRECORDToken.unpause();
     }
 
     function changeArtistRewardRate(
@@ -124,24 +124,24 @@ contract Web3MusicNativeTokenManagement is AccessControl {
         _ftas.changeArtistRewardRate(rate, _msgSender());
     }
 
-    function changeWeb3MusicNativeToken(
-        address web3MusicNativeToken
+    function changeMusicProtocolRECORDToken(
+        address MusicProtocolRECORDToken
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
-            web3MusicNativeToken != address(0),
-            "Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0"
+            MusicProtocolRECORDToken != address(0),
+            "MusicProtocolRECORDTokenManagement: MusicProtocolRECORDToken address can not be 0"
         );
-        _web3MusicNativeToken = IWeb3MusicNativeToken(web3MusicNativeToken);
-        emit Web3MusicNativeTokenChanged(web3MusicNativeToken);
+        _MusicProtocolRECORDToken = IMusicProtocolRECORDToken(MusicProtocolRECORDToken);
+        emit MusicProtocolRECORDTokenChanged(MusicProtocolRECORDToken);
     }
 
     function changeFTAS(address ftas) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             ftas != address(0),
-            "Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0"
+            "MusicProtocolRECORDTokenManagement: ArtistStaking address can not be 0"
         );
-        _ftas = IFanToArtistStaking(ftas);
-        emit FanToArtistStakingChanged(ftas);
+        _ftas = IArtistStaking(ftas);
+        emit ArtistStakingChanged(ftas);
     }
 
     function custom(
@@ -155,7 +155,7 @@ contract Web3MusicNativeTokenManagement is AccessControl {
             Address.verifyCallResult(
                 success,
                 returndata,
-                "Web3MusicNativeTokenManagement: call reverted without message"
+                "MusicProtocolRECORDTokenManagement: call reverted without message"
             );
         }
     }

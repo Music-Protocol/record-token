@@ -16,40 +16,40 @@ describe("Constructors", () => {
         const defArtistReward = 10;
         let FTA, TOK, DAO, MNG;
 
-        FTA = await ethers.getContractFactory('FanToArtistStaking');
+        FTA = await ethers.getContractFactory('ArtistStaking');
 
-        TOK = await ethers.getContractFactory('Web3MusicNativeToken');
+        TOK = await ethers.getContractFactory('MusicProtocolRECORDToken');
 
-        DAO = await ethers.getContractFactory('Web3MusicNetworkDAO');
+        DAO = await ethers.getContractFactory('MusicProtocolDAO');
 
-        MNG = await ethers.getContractFactory('Web3MusicNativeTokenManagement');
+        MNG = await ethers.getContractFactory('MusicProtocolRECORDTokenManagement');
 
-        return { FTA , DAO, MNG, TOK, owner, defArtistReward, defVeReward, artist1}
+        return { FTA, DAO, MNG, TOK, owner, defArtistReward, defVeReward, artist1 }
     }
 
-    it("FanToArtistStaking", async () => {
+    it("ArtistStaking", async () => {
         const { FTA, TOK, defArtistReward, owner } = await loadFixture(deploy);
 
-        const fta = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
+        const fta = await upgrades.deployProxy(FTA.connect(owner), [], { initializer: false, kind: 'uups', timeout: 180000 });
         await fta.deployed();
 
         const tok = await TOK.deploy(fta.address);
         await tok.deployed();
 
         await expect(fta.initialize(ethers.constants.AddressZero, defArtistReward, 10, 86400, 3, 600))
-            .to.revertedWith("FanToArtistStaking: the Web3MusicNativeToken address can not be 0");
+            .to.revertedWith("ArtistStaking: the MusicProtocolRECORDToken address can not be 0");
 
         await expect(fta.initialize(tok.address, 0, 10, 86400, 3, 600))
-            .to.revertedWith("FanToArtistStaking: the artist reward rate can not be 0");
+            .to.revertedWith("ArtistStaking: the artist reward rate can not be 0");
 
         await expect(fta.initialize(tok.address, defArtistReward, 86400, 10, 3, 600))
-            .to.revertedWith("FanToArtistStaking: min cant be greater than max");
+            .to.revertedWith("ArtistStaking: min cant be greater than max");
 
         await expect(fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 60))
-            .to.revertedWith("FanToArtistStaking: the minimum time to change the reward rate is 10 minutes");
+            .to.revertedWith("ArtistStaking: the minimum time to change the reward rate is 10 minutes");
 
         await expect(fta.initialize(tok.address, defArtistReward, 86400, 10, 0, 600))
-            .to.revertedWith("FanToArtistStaking: the reward limit must be greater than 0");
+            .to.revertedWith("ArtistStaking: the reward limit must be greater than 0");
 
         await fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 600);
 
@@ -58,10 +58,10 @@ describe("Constructors", () => {
 
     });
 
-    it("Web3MusicNetworkDAO", async () => {
-        const { FTA, TOK, DAO, defArtistReward, owner} = await loadFixture(deploy);
+    it("MusicProtocolDAO", async () => {
+        const { FTA, TOK, DAO, defArtistReward, owner } = await loadFixture(deploy);
 
-        const fta = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
+        const fta = await upgrades.deployProxy(FTA.connect(owner), [], { initializer: false, kind: 'uups', timeout: 180000 });
         await fta.deployed();
 
         const tok = await TOK.deploy(fta.address);
@@ -70,7 +70,7 @@ describe("Constructors", () => {
         await fta.initialize(tok.address, defArtistReward, 10, 86400, 3, 600);
 
         await expect(DAO.deploy(ethers.constants.AddressZero, 10e7, 50e7 + 1, 900, true))
-            .to.revertedWith("DAO: the fanToArtistStaking address can not be 0");
+            .to.revertedWith("DAO: the ArtistStaking address can not be 0");
 
         await expect(DAO.deploy(fta.address, 10e9, 50e7 + 1, 900, true))
             .to.revertedWith("DAO: the quorum must be less than or equal 10e8");
@@ -80,13 +80,13 @@ describe("Constructors", () => {
 
     });
 
-    it("Web3MusicNativeTokenManagement", async () => {
-        const { owner, FTA, TOK, MNG, artist1, defArtistReward} =  await loadFixture(deploy);
+    it("MusicProtocolRECORDTokenManagement", async () => {
+        const { owner, FTA, TOK, MNG, artist1, defArtistReward } = await loadFixture(deploy);
 
-        const fta1 = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
+        const fta1 = await upgrades.deployProxy(FTA.connect(owner), [], { initializer: false, kind: 'uups', timeout: 180000 });
         await fta1.deployed();
 
-        const fta2 = await upgrades.deployProxy(FTA.connect(owner), [], {initializer: false, kind: 'uups', timeout: 180000});
+        const fta2 = await upgrades.deployProxy(FTA.connect(owner), [], { initializer: false, kind: 'uups', timeout: 180000 });
         await fta2.deployed();
 
         const tok1 = await TOK.deploy(fta1.address);
@@ -99,28 +99,28 @@ describe("Constructors", () => {
         await fta2.initialize(tok2.address, defArtistReward, 10, 86400, 3, 600);
 
         await expect(MNG.deploy(ethers.constants.AddressZero, fta1.address))
-            .to.revertedWith("Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0");
+            .to.revertedWith("MusicProtocolRECORDTokenManagement: MusicProtocolRECORDToken address can not be 0");
 
         await expect(MNG.deploy(tok1.address, ethers.constants.AddressZero))
-            .to.revertedWith("Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0");
+            .to.revertedWith("MusicProtocolRECORDTokenManagement: ArtistStaking address can not be 0");
 
         const mng = await MNG.deploy(tok1.address, fta1.address);
 
         await expect(mng.changeFTAS(ethers.constants.AddressZero))
-            .to.revertedWith("Web3MusicNativeTokenManagement: fanToArtistStaking address can not be 0")
+            .to.revertedWith("MusicProtocolRECORDTokenManagement: ArtistStaking address can not be 0")
 
-        await expect(mng.changeWeb3MusicNativeToken(ethers.constants.AddressZero))
-            .to.revertedWith("Web3MusicNativeTokenManagement: Web3MusicNativeToken address can not be 0")
+        await expect(mng.changeMusicProtocolRECORDToken(ethers.constants.AddressZero))
+            .to.revertedWith("MusicProtocolRECORDTokenManagement: MusicProtocolRECORDToken address can not be 0")
 
         //CHANGE SMART CONTRACTS
-        await expect(mng.changeFTAS(fta2.address)).emit(mng, "FanToArtistStakingChanged").withArgs(fta2.address);
-        await expect(mng.changeWeb3MusicNativeToken(tok2.address)).emit(mng, "Web3MusicNativeTokenChanged").withArgs(tok2.address);;
-        
+        await expect(mng.changeFTAS(fta2.address)).emit(mng, "ArtistStakingChanged").withArgs(fta2.address);
+        await expect(mng.changeMusicProtocolRECORDToken(tok2.address)).emit(mng, "MusicProtocolRECORDTokenChanged").withArgs(tok2.address);;
+
         //ONLY OWNER CAN CHANGE SMART CONTRACTS
         await expect(mng.connect(artist1).changeFTAS(fta2.address))
             .to.revertedWith(`AccessControl: account ${artist1.address.toLowerCase()} is missing role ${await mng.DEFAULT_ADMIN_ROLE()}`);
-        
-        await expect(mng.connect(artist1).changeWeb3MusicNativeToken(tok2.address))
+
+        await expect(mng.connect(artist1).changeMusicProtocolRECORDToken(tok2.address))
             .to.revertedWith(`AccessControl: account ${artist1.address.toLowerCase()} is missing role ${await mng.DEFAULT_ADMIN_ROLE()}`);
 
         //OWNERSHIP2
@@ -134,13 +134,13 @@ describe("Constructors", () => {
         expect(await tok2.balanceOf(owner.address)).to.equal(1000);
 
         //TEST F2A CHANGE
-        await expect(mng.connect(owner).addArtist([artist1.address])).to.emit(fta2, "ArtistAdded"); 
+        await expect(mng.connect(owner).addArtist([artist1.address])).to.emit(fta2, "ArtistAdded");
         //If artist 1 was already added to the artist list it would not issue any events
         await expect(fta1.connect(owner).addArtist(artist1.address, owner.address)).to.emit(fta1, "ArtistAdded");
 
     });
-    
-    
 
-    
+
+
+
 });

@@ -6,7 +6,9 @@ async function main() {
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
 
-    const functionToSend = mgmt.methods.grantRole('0x0000000000000000000000000000000000000000000000000000000000000000', '0xD459D743E920Dd2b7C3D0cA92840E785685baEf5');
+    const functionToSend = mgmt.methods.grantRole(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        '0xadF7eEf38D4dED93C8591c9BecF35e8A6Fe7b290');
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {

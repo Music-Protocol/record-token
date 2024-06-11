@@ -1,0 +1,443 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0xE825F044d52194dc579780ab62466117f34cb7ce",
+      "txHash": "0x11a52731d18d5b87de341109a07dbcc73d4c4a5183cf450191f22fac2b2edf37",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "3ea726270e2f68508c99ab53d523d49d5b4f2b2c5db724329b22b13aeb21e4f5": {
+      "address": "0xBfB556dC715B9Bce5dC02dc93DB8B957D1687020",
+      "txHash": "0xfb0cf5e10dc35c1be914d6ca0714e0d828c1fb33847d30d6b8d2c8643aa4d370",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_pendingOwner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:27"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "Ownable2StepUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:70"
+          },
+          {
+            "label": "_HASHED_NAME",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:32"
+          },
+          {
+            "label": "_HASHED_VERSION",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:33"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:120"
+          },
+          {
+            "label": "_delegation",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "VotesUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol:44"
+          },
+          {
+            "label": "_delegateCheckpoints",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_address,t_struct(History)1777_storage)",
+            "contract": "VotesUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol:45"
+          },
+          {
+            "label": "_totalCheckpoints",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_struct(History)1777_storage",
+            "contract": "VotesUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol:46"
+          },
+          {
+            "label": "_nonces",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_mapping(t_address,t_struct(Counter)3186_storage)",
+            "contract": "VotesUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol:48"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_array(t_uint256)46_storage",
+            "contract": "VotesUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol:223"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "303",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "_artistReward",
+            "offset": 0,
+            "slot": "353",
+            "type": "t_array(t_struct(ArtistReward)9322_storage)dyn_storage",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:72"
+          },
+          {
+            "label": "_MusicProtocolRECORDToken",
+            "offset": 0,
+            "slot": "354",
+            "type": "t_contract(IMusicProtocolRECORDToken)12850",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:74"
+          },
+          {
+            "label": "_stake",
+            "offset": 0,
+            "slot": "355",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_struct(Stake)9315_storage))",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:76"
+          },
+          {
+            "label": "_artistCheckpoints",
+            "offset": 0,
+            "slot": "356",
+            "type": "t_mapping(t_address,t_struct(ArtistCheckpoint)9329_storage)",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:81"
+          },
+          {
+            "label": "_verifiedArtists",
+            "offset": 0,
+            "slot": "357",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:83"
+          },
+          {
+            "label": "_minStakePeriod",
+            "offset": 0,
+            "slot": "358",
+            "type": "t_uint40",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:85"
+          },
+          {
+            "label": "_maxStakePeriod",
+            "offset": 5,
+            "slot": "358",
+            "type": "t_uint40",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:86"
+          },
+          {
+            "label": "_votingPower",
+            "offset": 0,
+            "slot": "359",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:88"
+          },
+          {
+            "label": "_rewardLimit",
+            "offset": 0,
+            "slot": "360",
+            "type": "t_uint256",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:90"
+          },
+          {
+            "label": "_changeRewardLimit",
+            "offset": 0,
+            "slot": "361",
+            "type": "t_uint256",
+            "contract": "ArtistStaking",
+            "src": "contracts/ArtistStaking.sol:91"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(ArtistReward)9322_storage)dyn_storage": {
+            "label": "struct ArtistStaking.ArtistReward[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Checkpoint)1782_storage)dyn_storage": {
+            "label": "struct CheckpointsUpgradeable.Checkpoint[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)46_storage": {
+            "label": "uint256[46]",
+            "numberOfBytes": "1472"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IMusicProtocolRECORDToken)12850": {
+            "label": "contract IMusicProtocolRECORDToken",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_struct(Stake)9315_storage))": {
+            "label": "mapping(address => mapping(address => struct ArtistStaking.Stake))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ArtistCheckpoint)9329_storage)": {
+            "label": "mapping(address => struct ArtistStaking.ArtistCheckpoint)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Counter)3186_storage)": {
+            "label": "mapping(address => struct CountersUpgradeable.Counter)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(History)1777_storage)": {
+            "label": "mapping(address => struct CheckpointsUpgradeable.History)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Stake)9315_storage)": {
+            "label": "mapping(address => struct ArtistStaking.Stake)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ArtistCheckpoint)9329_storage": {
+            "label": "struct ArtistStaking.ArtistCheckpoint",
+            "members": [
+              {
+                "label": "tokenAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "lastRedeem",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "amountAcc",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(ArtistReward)9322_storage": {
+            "label": "struct ArtistStaking.ArtistReward",
+            "members": [
+              {
+                "label": "rate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "start",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "end",
+                "type": "t_uint40",
+                "offset": 5,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Checkpoint)1782_storage": {
+            "label": "struct CheckpointsUpgradeable.Checkpoint",
+            "members": [
+              {
+                "label": "_blockNumber",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_value",
+                "type": "t_uint224",
+                "offset": 4,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Counter)3186_storage": {
+            "label": "struct CountersUpgradeable.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(History)1777_storage": {
+            "label": "struct CheckpointsUpgradeable.History",
+            "members": [
+              {
+                "label": "_checkpoints",
+                "type": "t_array(t_struct(Checkpoint)1782_storage)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Stake)9315_storage": {
+            "label": "struct ArtistStaking.Stake",
+            "members": [
+              {
+                "label": "amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "start",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "end",
+                "type": "t_uint40",
+                "offset": 5,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint224": {
+            "label": "uint224",
+            "numberOfBytes": "28"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {}
+      }
+    }
+  }
+}

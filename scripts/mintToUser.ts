@@ -5,9 +5,9 @@ async function main() {
     const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
 
     const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
-    const user = web3.eth.accounts.privateKeyToAccount(user1Key);
+    // const user = web3.eth.accounts.privateKeyToAccount(user1Key);
     //The owner mints 10 tokens to user
-    const functionToSend = mgmt.methods.mint(user.address, 10n*10n**18n);
+    const functionToSend = mgmt.methods.mint('0xf033BFb7ADb304C57782c9Ea18F36cB6c901785f', 1000n*10n**18n);
     const functionABI = functionToSend.encodeABI();
 
     const transactionObject = {

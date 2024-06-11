@@ -1,4 +1,4 @@
-import { web3, addressMGMT2, mgmtABI, addressF2A, addressToken, addressDAO } from './utils/contracts';
+import { web3, addressMGMT, mgmtABI, addressF2A, addressToken, addressDAO } from './utils/contracts';
 import { ownerKey } from "./utils/wallets";
 
 async function main() {
@@ -8,7 +8,7 @@ async function main() {
     inputs: []
   }, []);
 
-  const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT2);
+  const mgmt = new web3.eth.Contract(mgmtABI, addressMGMT);
   //Runs the Web3NativeTokenManagement custom method to acquire ownership of other contracts
   const owner = web3.eth.accounts.privateKeyToAccount(ownerKey);
   const functionToSend = mgmt.methods.custom([addressF2A, addressToken, addressDAO], [calldata, calldata, calldata]);
@@ -16,7 +16,7 @@ async function main() {
 
   const transactionObject = {
     from: owner.address,
-    to: addressMGMT2,
+    to: addressMGMT,
     gas: 2000000,
     data: functionABI
   };
