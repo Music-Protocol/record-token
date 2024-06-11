@@ -46,7 +46,7 @@ describe("ArtistStaking2", function () {
 
         await timeMachine(1);
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address,))
             .to.emit(ArtistStaking, 'StakeRedeemed')
             .withArgs(artist1.address, addr1.address);
 
@@ -67,10 +67,9 @@ describe("ArtistStaking2", function () {
 
         await timeMachine(1);
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
-            .to.revertedWith('ArtistStaking: stake not found')
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address)).to.revertedWith('ArtistStaking: stake not found')
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist2.address, addr1.address))
+        await expect(ArtistStaking.connect(addr1).redeem(artist2.address))
             .to.emit(ArtistStaking, 'StakeRedeemed')
             .withArgs(artist2.address, addr1.address);
 
@@ -158,7 +157,7 @@ describe("ArtistStaking2", function () {
 
         await expect(ArtistStaking.removeArtist(artist1.address, owner.address)).emit(ArtistStaking, "ArtistRemoved");
 
-        await ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
+        await ArtistStaking.connect(addr1).redeem(artist1.address);
 
         expect(await MusicProtocolRECORDToken.balanceOf(addr1.address)).to.equal(10000000000000000000n);
 
@@ -208,7 +207,7 @@ describe("ArtistStaking2", function () {
 
         await timeMachine(30);
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address)).emit(ArtistStaking, "StakeRedeemed");
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address,)).emit(ArtistStaking, "StakeRedeemed");
     })
 
     describe('Reverts', () => {
@@ -340,7 +339,7 @@ describe("ArtistStaking2", function () {
                 .to.emit(ArtistStaking, 'StakeCreated')
                 .withArgs(artist1.address, addr1.address, amount, anyValue);
 
-            await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+            await expect(ArtistStaking.connect(addr1).redeem(artist1.address,))
                 .to.revertedWith("ArtistStaking: the stake is not ended")
         });
 

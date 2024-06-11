@@ -55,7 +55,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await timeMachine(1);
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address)).to.emit(ArtistStaking, "StakeRedeemed");
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address,)).to.emit(ArtistStaking, "StakeRedeemed");
 
 
     });
@@ -84,7 +84,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await timeMachine(1);
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address,))
             .to.emit(ArtistStaking, 'StakeRedeemed')
             .withArgs(artist1.address, addr1.address);
 
@@ -109,7 +109,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await timeMachine(1);
 
-        await expect(ArtistStaking.connect(addr2).redeem(artist1.address, addr2.address))
+        await expect(ArtistStaking.connect(addr2).redeem(artist1.address))
             .to.emit(ArtistStaking, 'StakeRedeemed')
             .withArgs(artist1.address, addr2.address);
 
@@ -128,7 +128,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await timeMachine(120);
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address,))
             .to.emit(ArtistStaking, 'StakeRedeemed')
             .withArgs(artist1.address, addr1.address);
 
@@ -146,7 +146,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await timeMachine(120);
 
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address,))
             .to.emit(ArtistStaking, 'StakeRedeemed')
             .withArgs(artist1.address, addr1.address);
 
@@ -165,7 +165,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await timeMachine(1);
 
-        await ArtistStaking.connect(addr1).redeem(artist3.address, addr1.address);
+        await ArtistStaking.connect(addr1).redeem(artist3.address);
         expect(await MusicProtocolRECORDToken.balanceOf(addr1.address)).to.be.equal(amount / 2n);
     });
 
@@ -194,7 +194,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
         await timeMachine(2);
 
-        const tx = await ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
+        const tx = await ArtistStaking.connect(addr1).redeem(artist1.address);
         const rx = await tx.wait()
         const data = rx.logs[0].data;
         const topics = rx.logs[0].topics;
@@ -223,7 +223,7 @@ describe("Redeem of releasable tokens after creating a stake", function () {
 
             await timeMachine(1);
 
-            await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+            await expect(ArtistStaking.connect(addr1).redeem(artist1.address,))
                 .to.emit(ArtistStaking, 'StakeRedeemed')
                 .withArgs(artist1.address, addr1.address);
 

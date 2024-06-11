@@ -441,23 +441,34 @@ contract ArtistStaking is
         emit StakeChangedArtist(artist, _msgSender(), newArtist);
     }
 
-    function redeem(
-        address artist,
-        address user
-    ) external onlyEnded(_stake[artist][user].end) {
+    function redeemStakes(
+        address[] calldata artists
+    ) external {
         require(
-            _isStakingNow(artist, user),
+            artists.length != 0,
+            "ArtistStaking: calldata format error"
+        );
+        for (uint256 i = 0; i < artists.length; i++) {
+            redeem(artists[i]);
+        }
+    }
+
+    function redeem(
+        address artist
+    ) public onlyEnded(_stake[artist][_msgSender()].end) {
+        require(
+            _isStakingNow(artist, _msgSender()),
             "ArtistStaking: stake not found"
         );
         require(
-            _MusicProtocolRECORDToken.transfer(user, _stake[artist][user].amount),
+            _MusicProtocolRECORDToken.transfer(_msgSender(), _stake[artist][_msgSender()].amount),
             "ArtistStaking: error while redeeming"
         );
-        _calcSinceLastPosition(artist, _stake[artist][user].amount, false);
-        _transferVotingUnits(user, address(0), _stake[artist][user].amount);
-        _votingPower[user] -= _stake[artist][user].amount;
-        delete _stake[artist][user];
-        emit StakeRedeemed(artist, user);
+        _calcSinceLastPosition(artist, _stake[artist][_msgSender()].amount, false);
+        _transferVotingUnits(_msgSender(), address(0), _stake[artist][_msgSender()].amount);
+        _votingPower[_msgSender()] -= _stake[artist][_msgSender()].amount;
+        delete _stake[artist][_msgSender()];
+        emit StakeRedeemed(artist, _msgSender());
     }
 
     function isVerified(address artist) external view returns (bool) {
