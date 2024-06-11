@@ -107,7 +107,7 @@ describe('ArtistStaking', () => {
         it('Should be able to redeem the token locked', async () => {
             //pass time
             await ethers.provider.send('evm_mine', [(60 * 10) + await getTimestamp()]);
-            await ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address);
+            await ArtistStaking.connect(addr1).redeem(artist1.address);
             stake1.redeemed = true;
 
             expect(await MusicProtocolRECORDToken.balanceOf(ArtistStaking.address)).to.equal(0);
@@ -148,7 +148,7 @@ describe('ArtistStaking', () => {
             });
 
             it('Should not be able to redeem a non existent stake', async () => {
-                await expect(ArtistStaking.connect(addr1).redeem(artist3.address, addr1.address))
+                await expect(ArtistStaking.connect(addr1).redeem(artist3.address))
                     .to.be.revertedWith('ArtistStaking: stake not found');
             });
 

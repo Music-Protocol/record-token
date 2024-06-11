@@ -19,7 +19,7 @@ describe('Stake Simulation', () => {
     const stakeAndRedeem = async (user: SignerWithAddress, artist: SignerWithAddress, amount: BigNumberish, time: BigNumberish) => {
         await ftas.connect(user).stake(artist.address, amount, time);
         await timeMachine(Number(time) / 60);
-        await ftas.connect(user).redeem(artist.address, user.address);
+        await ftas.connect(user).redeem(artist.address);
     };
 
     const expectedRedeem = (amount: any, time: any, reward: any) => {
@@ -81,9 +81,9 @@ describe('Stake Simulation', () => {
             await expect(MusicProtocolRECORDToken.connect(users[1]).approve(ftas.address, 100));
             await ftas.connect(users[1]).stake(artists[0].address, 100, 600); // 10 minutes for s2
             await timeMachine(5); // we let 5 min pass, full s1 and half2
-            await ftas.redeem(artists[0].address, users[0].address); // redeem s1
+            await ftas.connect(users[0]).redeem(artists[0].address,); // redeem s1
             await timeMachine(5); // we let 5 min pass, full s2
-            await ftas.redeem(artists[0].address, users[1].address); // redeem s2
+            await ftas.connect(users[1]).redeem(artists[0].address); // redeem s2
 
             await ftas.getReward(artists[0].address);
             expect(await MusicProtocolRECORDToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 2.5, artistRewardPerc) * 2);
@@ -95,7 +95,7 @@ describe('Stake Simulation', () => {
             await timeMachine(10); // we let 10 min pass, half s1
             await expect(ftas.changeArtistRewardRate(3 * 10e8, users[0].address)).emit(ftas, "ArtistMusicProtocolRECORDTokenRewardChanged");
             await timeMachine(10); // we let 5 min pass, full s1 and half2
-            await ftas.redeem(artists[0].address, users[0].address); // redeem s1
+            await ftas.connect(users[0]).redeem(artists[0].address,); // redeem s1
 
             await ftas.getReward(artists[0].address);
             expect(await MusicProtocolRECORDToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 1, artistRewardPerc) + expectedRedeem(100, 600 + 1, 3 * 10e8 / 10e9));
@@ -109,7 +109,7 @@ describe('Stake Simulation', () => {
             await timeMachine(10); // we let 10 min pass, 2/3 s1
             await expect(ftas.changeArtistRewardRate(20e8, users[0].address)).emit(ftas, "ArtistMusicProtocolRECORDTokenRewardChanged");
             await timeMachine(10); // we let 10 min pass, full s1
-            await ftas.redeem(artists[0].address, users[0].address); // redeem s1
+            await ftas.connect(users[0]).redeem(artists[0].address,); // redeem s1
 
             await ftas.getReward(artists[0].address);
             expect(await MusicProtocolRECORDToken.balanceOf(artists[0].address)).to.equal(expectedRedeem(100, 600 + 1, artistRewardPerc) + expectedRedeem(100, 600 + 1, 3 * 10e8 / 10e9) + expectedRedeem(100, 600 + 1, 2 * 10e8 / 10e9));

@@ -80,7 +80,7 @@ describe("Voting Power", function () {
         await timeMachine(1);
 
         //BLOCK 2
-        await expect(ArtistStaking.connect(addr1).redeem(artist1.address, addr1.address))
+        await expect(ArtistStaking.connect(addr1).redeem(artist1.address))
             .to.emit(ArtistStaking, 'StakeRedeemed')
             .withArgs(artist1.address, addr1.address);
         const block2 = await ethers.provider.getBlockNumber();
