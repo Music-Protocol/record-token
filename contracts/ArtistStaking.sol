@@ -441,10 +441,23 @@ contract ArtistStaking is
         emit StakeChangedArtist(artist, _msgSender(), newArtist);
     }
 
+    function redeemStakes(
+        address[] calldata artists,
+        address[] calldata users
+    ) external {
+        require(
+            artists.length == users.length,
+            "ArtistStaking: calldata format error"
+        );
+        for (uint256 i = 0; i < artists.length; i++) {
+            redeem(artists[i], users[i]);
+        }
+    }
+
     function redeem(
         address artist,
         address user
-    ) external onlyEnded(_stake[artist][user].end) {
+    ) public onlyEnded(_stake[artist][user].end) {
         require(
             _isStakingNow(artist, user),
             "ArtistStaking: stake not found"
