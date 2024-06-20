@@ -191,7 +191,7 @@ contract ArtistStaking is
                 if (_artistReward[index].end < start) break;
 
                 accumulator += (_artistCheckpoints[artist].tokenAmount *
-                    (end - start)).mulDiv(_artistReward[index].rate, 10e9);
+                    (end - start)).mulDiv(_artistReward[index].rate, 10e18);
             }
         }
 
